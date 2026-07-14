@@ -1,8 +1,8 @@
-import { SunIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { NavMenu } from "@/components/nav-menu";
 import { NavigationSheet } from "@/components/navigation-sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const Navbar = () => {
   return (
@@ -20,9 +20,7 @@ const Navbar = () => {
             Entrar
           </Button>
           <Button>Cadastrar-se</Button>
-          <Button size="icon" variant="outline">
-            <SunIcon />
-          </Button>
+          <ThemeToggle size="icon" variant="outline"/>
 
           {/* Mobile Menu */}
           <div className="md:hidden">
