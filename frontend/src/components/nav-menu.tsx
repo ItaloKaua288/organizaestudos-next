@@ -10,9 +10,13 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
-export const NavMenu = (props: ComponentProps<typeof NavigationMenu>) => (
+type NavMenuProps = ComponentProps<typeof NavigationMenu> & {
+  vertical?: boolean;
+};
+
+export const NavMenu = ({ vertical, ...props }: NavMenuProps) => (
   <NavigationMenu {...props}>
-    <NavigationMenuList className="data-[orientation=vertical]:-ms-2 data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-start data-[orientation=vertical]:justify-start">
+    <NavigationMenuList vertical={vertical} className="data-[orientation=vertical]:-ms-2 data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-start data-[orientation=vertical]:justify-start ">
       <NavigationMenuItem>
         <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Dashboard</NavigationMenuLink>
       </NavigationMenuItem>

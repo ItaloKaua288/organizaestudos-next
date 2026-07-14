@@ -27,14 +27,19 @@ function NavigationMenu({
 }
 
 function NavigationMenuList({
+  vertical = false,
   className,
   ...props
-}: React.ComponentPropsWithRef<typeof NavigationMenuPrimitive.List>) {
+}: React.ComponentPropsWithRef<typeof NavigationMenuPrimitive.List> & {vertical?: boolean
+})  {
   return (
     <NavigationMenuPrimitive.List
       data-slot="navigation-menu-list"
       className={cn(
-        "group flex flex-1 list-none items-center justify-center gap-0",
+        "flex list-none gap-0",
+        vertical
+          ? "flex-col items-start justify-start"
+          : "items-center justify-center",
         className
       )}
       {...props}
