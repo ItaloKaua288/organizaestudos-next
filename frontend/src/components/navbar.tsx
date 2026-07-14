@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 
 const Navbar = () => {
   return (
-    <nav className="h-16 border-b bg-background">
+    <nav className="h-16 border-b">
       <div className="mx-auto flex h-full max-w-(--breakpoint-3xl) items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-12">
           <Logo />
