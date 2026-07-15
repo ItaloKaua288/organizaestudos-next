@@ -8,6 +8,8 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
+  NavigationMenuContent,
+  NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 
 type NavMenuProps = ComponentProps<typeof NavigationMenu> & {
@@ -21,13 +23,19 @@ export const NavMenu = ({ vertical, ...props }: NavMenuProps) => (
         <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Dashboard</NavigationMenuLink>
       </NavigationMenuItem>
       <NavigationMenuItem>
-        <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Matérias</NavigationMenuLink>
+        <NavigationMenuTrigger>Estudos</NavigationMenuTrigger>
+        <NavigationMenuContent>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Matérias</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Revisões</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Notas</NavigationMenuLink>
+        </NavigationMenuContent>
       </NavigationMenuItem>
       <NavigationMenuItem>
-        <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Revisões</NavigationMenuLink>
-      </NavigationMenuItem>
-      <NavigationMenuItem>
-        <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Notas</NavigationMenuLink>
+        <NavigationMenuTrigger>Planejamento</NavigationMenuTrigger>
+        <NavigationMenuContent>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Metas</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Cronograma</NavigationMenuLink>
+        </NavigationMenuContent>
       </NavigationMenuItem>
     </NavigationMenuList>
   </NavigationMenu>
