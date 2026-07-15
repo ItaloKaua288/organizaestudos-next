@@ -20,21 +20,21 @@ export const NavMenu = ({ vertical, ...props }: NavMenuProps) => (
   <NavigationMenu {...props}>
     <NavigationMenuList vertical={vertical} className="data-[orientation=vertical]:-ms-2 data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-start data-[orientation=vertical]:justify-start ">
       <NavigationMenuItem>
-        <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Dashboard</NavigationMenuLink>
+        <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/" />}>Dashboard</NavigationMenuLink>
       </NavigationMenuItem>
       <NavigationMenuItem>
         <NavigationMenuTrigger>Estudos</NavigationMenuTrigger>
         <NavigationMenuContent>
-          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Matérias</NavigationMenuLink>
-          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Revisões</NavigationMenuLink>
-          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Notas</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/materias" />}>Matérias</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/revisoes" />}>Revisões</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/notas" />}>Notas</NavigationMenuLink>
         </NavigationMenuContent>
       </NavigationMenuItem>
       <NavigationMenuItem>
         <NavigationMenuTrigger>Planejamento</NavigationMenuTrigger>
         <NavigationMenuContent>
-          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Metas</NavigationMenuLink>
-          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="#" />}>Cronograma</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/metas" />}>Metas</NavigationMenuLink>
+          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/cronograma" />}>Cronograma</NavigationMenuLink>
         </NavigationMenuContent>
       </NavigationMenuItem>
     </NavigationMenuList>
