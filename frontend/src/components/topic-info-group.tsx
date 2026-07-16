@@ -31,7 +31,7 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
             </Field>
             <Field>
                 <Label>Cronograma de Revisões:</Label>
-                <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm bg-neutral-800/50">
+                <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
                     <span>1° Revisão (24h): </span>
                     <span className="text-right font-mono">18/06/2026</span>
                     <span>2° Revisão (7 dias): </span>
