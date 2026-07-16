@@ -77,16 +77,17 @@ export default async function NotasPage() {
                             key={subject.id}
                             variant="outline"
                             className="h-auto justify-start p-6"
-                        >
-                            <Link href={`/notas/${subject.id}`} className="flex gap-2 items-center" >
-                                <span
-                                    className="inline-block h-3.5 w-3.5 shrink-0 rounded-full shadow-sm"
-                                    style={{ backgroundColor: subject.color }}
-                                    aria-hidden="true"
-                                />
-                                <span className="truncate font-medium">{subject.title}</span>
-                            </Link>
-                        </Button>
+                            render={
+                                <Link href={`/notas/${subject.id}`} className="flex gap-2 items-center" >
+                                    <span
+                                        className="inline-block h-3.5 w-3.5 shrink-0 rounded-full shadow-sm"
+                                        style={{ backgroundColor: subject.color }}
+                                        aria-hidden="true"
+                                    />
+                                    <span className="truncate font-medium">{subject.title}</span>
+                                </Link>
+                            }
+                        />
                     ))}
                 </div>
             )}
