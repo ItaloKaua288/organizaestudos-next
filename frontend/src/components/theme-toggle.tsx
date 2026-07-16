@@ -24,17 +24,19 @@ export const ThemeToggle = ({
 }: ThemeToggleProps) => {
   const { theme, setTheme } = useTheme()
 
+  const isDark = theme === "dark";
+
   return (
     <button
       type="button"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(buttonVariants({ variant, size }), className)}
-      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       {...props}
     >
-      {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
       {size === "default" && (
-        <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+        <span>{isDark ? "Light mode" : "Dark mode"}</span>
       )}
     </button>
   );
