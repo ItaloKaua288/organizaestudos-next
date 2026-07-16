@@ -46,7 +46,7 @@ export default function MateriasPage() {
             <div className="flex items-center gap-3 justify-between p-2">
                 <p className="font-medium">Gerencie suas matérias e assuntos</p>
                 <DialogDemo 
-                    nameBtn="Nova Matéria" 
+                    contentBtn="Nova Matéria"
                     title="Nova Matéria" 
                     description="Crie uma nova matéria para organizar seus estudos." 
                     nameConfirmBtn="Criar Matéria"

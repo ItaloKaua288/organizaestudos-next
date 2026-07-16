@@ -11,32 +11,48 @@ import {
 } from "@/components/ui/dialog"
 
 type DialogDemoProps = {
-  nameBtn?: string | React.ReactNode;
+  contentBtn?: string | React.ReactNode;
   title?: string;
   description?: string;
   nameConfirmBtn?: string;
   children?: React.ReactNode;
+  variant?: "button" | "label";
+  onSubmit?: (e: React.FormEvent) => void;
 };
 
-export function DialogDemo({ nameBtn, title, description, nameConfirmBtn, children }: DialogDemoProps) {
+export function DialogDemo({ contentBtn, title, description, nameConfirmBtn, children, variant = "button", onSubmit }: DialogDemoProps) {
   return (
     <Dialog>
-      <form>
-        <DialogTrigger render={<Button variant="outline">{nameBtn || "Open Dialog"}</Button>} />
-        <DialogContent className="sm:max-w-sm">
+      {variant === "button" ? (
+        <DialogTrigger render={<Button variant="outline">{contentBtn || "Open Dialog"}</Button>}></DialogTrigger>
+      ) : (
+        <DialogTrigger className="w-full">
+          <div className="w-full h-auto min-h-0 block p-0 cursor-pointer">
+            {contentBtn}
+          </div>
+        </DialogTrigger>
+      )}
+
+      <DialogContent className="sm:max-w-sm">
+        <form onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{title || "Title"}</DialogTitle>
             <DialogDescription>
               {description || "Description for the dialog."}
             </DialogDescription>
           </DialogHeader>
-          {children}
+
+          <div className="py-4">
+            {children}
+          </div>
+
           <DialogFooter>
-            <DialogClose render={<Button variant="outline">Cancelar</Button>} />
+            <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>}>
+            </DialogClose>
             <Button type="submit">{nameConfirmBtn || "Confirmar"}</Button>
           </DialogFooter>
-        </DialogContent>
-      </form>
+        </form>
+      </DialogContent>
     </Dialog>
   )
 }
