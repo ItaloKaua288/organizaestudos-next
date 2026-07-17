@@ -77,6 +77,7 @@ export default async function NotasPage() {
                             key={subject.id}
                             variant="outline"
                             className="h-auto justify-start p-6"
+                            nativeButton={false}
                             render={
                                 <Link href={`/notas/${subject.id}`} className="flex gap-2 items-center" >
                                     <span
