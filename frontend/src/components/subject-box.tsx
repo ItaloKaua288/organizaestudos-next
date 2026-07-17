@@ -3,23 +3,7 @@
 import { ArrowUp, ArrowDown, CheckCircle2, Paperclip, PencilLine, Trash2, Eye, FileText, Clock } from "lucide-react";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group"
-
-export type TopicStatus = 'PENDENTE' | 'CONCLUIDO';
-
-export type Attachment = {
-    id: string;
-    name: string;
-    url?: string;
-    file?: File;
-};
-
-export type Topic = {
-    id: string;
-    title: string;
-    status: TopicStatus;
-    description?: string;
-    attachments?: Attachment[];
-};
+import { Topic, TopicStatus } from "@/types/topic";
 
 
 type SubjectBoxProps = {
@@ -107,7 +91,7 @@ export default function SubjectBox({ subject, color, topics, onStatusChange, onM
                                         <DialogDemo
                                             contentBtn={<Eye className="w-4 h-4" />}
                                             title={topic.title}
-                                            description={topic.description}
+                                            description={"Informações do assunto"}
                                         >
                                             <TopicInfoGroup subject={subject} topic={topic} color={color} hasAttachments={hasAttachments} />
                                         </DialogDemo>

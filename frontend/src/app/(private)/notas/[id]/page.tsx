@@ -7,97 +7,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FieldGroup, Field } from "@/components/ui/field"
 import { DialogDemo } from "@/components/dialog-button"
-import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import { CornerDownLeft, Search, Plus, Pin, PencilLine, Trash2 } from "lucide-react"
-
 import { RichTextEditor } from "@/components/rich-text-editor"
+import { getNotes } from "@/services/notes.service"
 
-const exempleApiResponse = {
-    "success": true,
-    "notes": [
-        {
-            "_id": "6a3ef91724e7ac2d794e151b",
-            "title": "Se Então (P -> Q)",
-            "content": "<ul><li><b>Negação:</b> P ^ ~Q (Mané = Mantém a primeira e nega a segunda)</li><li><b style=\"color: oklab(0.8487 0 0 / 0.9);\">Equivalencia:</b><span style=\"color: oklab(0.8487 0 0 / 0.9);\">&nbsp;\n\n<!--StartFragment-->~Q<!--EndFragment-->&nbsp;&nbsp;-&gt;<!--EndFragment-->&nbsp;~P / ~P V Q (Neymar = Nega a primeira OU mantem a segunda)</span></li></ul>",
-            "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-            "isPinned": false,
-            "matter_id": {
-                "_id": "6a2ee40263fe8e34b7fa9e6c",
-                "title": "Raciocinio Logico",
-                "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-                "color": "#05df72",
-                "createdAt": "2026-06-14T17:25:22.501Z",
-                "updatedAt": "2026-06-14T17:25:22.501Z",
-                "__v": 0
-            },
-            "createdAt": "2026-06-26T22:11:35.642Z",
-            "updatedAt": "2026-06-26T22:47:02.645Z",
-            "__v": 0
-        },
-        {
-            "_id": "6a3efa8824e7ac2d794e151f",
-            "title": "U (OU)",
-            "content": "<ul><li><b>Negação:</b>&nbsp;P U Q, fica ~P V ~Q</li><li><b>Equivalencia: </b>P V Q, fica ~P -&gt; Q</li><li><b>Equivalencia: </b>P V Q, fica ~P -&gt; Q</li><li><b>Equivalencia: </b>P V Q, fica ~P -&gt; Q</li></ul>",
-            "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-            "isPinned": false,
-            "matter_id": {
-                "_id": "6a2ee40263fe8e34b7fa9e6c",
-                "title": "Raciocinio Logico",
-                "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-                "color": "#05df72",
-                "createdAt": "2026-06-14T17:25:22.501Z",
-                "updatedAt": "2026-06-14T17:25:22.501Z",
-                "__v": 0
-            },
-            "createdAt": "2026-06-26T22:17:44.832Z",
-            "updatedAt": "2026-06-26T22:23:35.678Z",
-            "__v": 0
-        },
-        {
-            "_id": "6a3efdec24e7ac2d794e1526",
-            "title": "Bicondicional (<->)",
-            "content": "<ul><li><b>Negação: </b>2 formas: Usa Ou e Ou ( P V Q) ou&nbsp;\n(P ^ ~Q) V (~P ^ Q)<!--EndFragment--></li><li><b>Equivalencia: </b>Para ser equivalente é necessário dois Se...Então. P &lt;-&gt; Q, fica (P -&gt; Q) ^ (Q -&gt; P)</li></ul>",
-            "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-            "isPinned": false,
-            "matter_id": {
-                "_id": "6a2ee40263fe8e34b7fa9e6c",
-                "title": "Raciocinio Logico",
-                "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-                "color": "#05df72",
-                "createdAt": "2026-06-14T17:25:22.501Z",
-                "updatedAt": "2026-06-14T17:25:22.501Z",
-                "__v": 0
-            },
-            "createdAt": "2026-06-26T22:32:12.229Z",
-            "updatedAt": "2026-06-26T22:36:32.060Z",
-            "__v": 0
-        }
-    ]
-}
-
-async function getNotes() {
-    try {
-        // const res = await fetch("URL", { next: { revalidate: 3600 }})
-        // if (!res.ok) throw new Error("Falha ao buscar as anotações")
-        // const data = await res.json()
-
-        return exempleApiResponse.notes.map<Note>((note) => ({
-            id: note._id,
-            title: note.title,
-            content: note.content,
-            is_pined: note.isPinned,
-            subject: {
-                id: note.matter_id._id,
-                title: note.matter_id.title,
-                color: note.matter_id.color
-            }
-        }))
-    } catch (error) {
-        console.error("Erro ao buscar as anotações", error)
-        return []
-    }
-}
 
 export default function NotasOverviewPage() {
     const [notes, setNotes] = useState<Note[]>([])

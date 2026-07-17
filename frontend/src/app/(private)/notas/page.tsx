@@ -1,56 +1,7 @@
-import { Subject } from "@/types/topic"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { getSubjects } from "@/services/subjects.service"
 
-const exempleApiResponse = {
-    "success": true,
-    "matters": [
-        {
-            "_id": "6a2ee3f863fe8e34b7fa9e68",
-            "title": "Portugues",
-            "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-            "color": "#ff6467",
-            "createdAt": "2026-06-14T17:25:12.510Z",
-            "updatedAt": "2026-06-14T17:25:12.510Z",
-            "__v": 0
-        },
-        {
-            "_id": "6a2ee40263fe8e34b7fa9e6c",
-            "title": "Raciocinio Logico",
-            "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-            "color": "#05df72",
-            "createdAt": "2026-06-14T17:25:22.501Z",
-            "updatedAt": "2026-06-14T17:25:22.501Z",
-            "__v": 0
-        },
-        {
-            "_id": "6a333f9f660406f94f04d3e2",
-            "title": "Noções de Informática",
-            "user_id": "6a2ee3ee63fe8e34b7fa9e60",
-            "color": "#ff8904",
-            "createdAt": "2026-06-18T00:45:19.434Z",
-            "updatedAt": "2026-06-18T00:45:24.883Z",
-            "__v": 0
-        }
-    ]
-}
-
-async function getSubjects(): Promise<Subject[]> {
-    try {
-        // const res = await fetch("https://api.exemplo.com/matters", { next: { revalidate: 3600 } })
-        // if (!res.ok) throw new Error("Falha ao buscar matérias")
-        //    const data = await res.json()
-
-        return exempleApiResponse.matters.map((subject) => ({
-            id: subject._id,
-            title: subject.title,
-            color: subject.color
-        }))
-    } catch (error) {
-        console.error("Erro ao buscar matérias:", error)
-        return []
-    }
-}
 
 export default async function NotasPage() {
     const subjects = await getSubjects()

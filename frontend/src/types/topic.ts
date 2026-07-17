@@ -43,6 +43,7 @@ export interface Subject {
     id: string;
     title: string;
     color: string;
+    topics?: Topic[]
 }
 
 export type Attachment = {
@@ -51,6 +52,8 @@ export type Attachment = {
     url?: string;
     file?: File;
 };
+
+export type TopicStatus = 'PENDENTE' | 'CONCLUIDO';
 
 export interface Topic {
     id: string;

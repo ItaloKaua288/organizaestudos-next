@@ -5,40 +5,52 @@ import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ColorPicker } from "@/components/ui/color-picker";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SubjectBox from "@/components/subject-box";
+import { getTopics } from "@/services/topics.service";
+import { Subject, Topic } from "@/types/topic";
+
+export type TopicsBySubject = Record<
+  string,
+  {
+    subject: Subject
+    topics: Topic[]
+  }
+>
+
+export function groupTopicsBySubject(topics: Topic[]): Subject[] {
+  const subjectsMap = new Map<string, Subject>()
+
+  topics.forEach((topic) => {
+    const subjectId = topic.subject.id
+    const subject = subjectsMap.get(subjectId)
+
+    if (subject) {
+      subject.topics?.push(topic)
+      return
+    }
+
+    subjectsMap.set(subjectId, {
+      ...topic.subject,
+      topics: [topic],
+    })
+  })
+  return Array.from(subjectsMap.values())
+}
 
 export default function MateriasPage() {
     const [color, setColor] = useState("#3b82f6") 
     const [name, setName] = useState("")
+    const [subjects, setSubjects] = useState<Subject[]>([])
 
-    const exempleSubjects = [
-        { id: "1", name: "Matéria 1", color: "#3b82f6" , topics: [
-            { id: "1", title: "Assunto 1", status: "PENDENTE" as const, description: "Descrição do assunto 1", attachments: [
-                { id: "1", name: "Anexo 1", url: undefined, file: undefined },
-            ]},
-            { id: "2", title: "Assunto 2", status: "CONCLUIDO" as const, description: "Descrição do assunto 2", attachments: [
-                { id: "1", name: "Anexo 1", url: "https://example.com/anexo1.pdf", file: undefined },
-                { id: "2", name: "Anexo 2", url: undefined, file: undefined },
-            ]},
-            { id: "3", title: "Assunto 3", status: "PENDENTE" as const, description: "Descrição do assunto 3", attachments: [
-                { id: "1", name: "Anexo 1", url: undefined, file: undefined },
-            ]},
-        ]},
-        { id: "2", name: "Matéria 2", color: "#ef4444" , topics: [
-            { id: "4", title: "Assunto 4", status: "PENDENTE" as const, description: "Descrição do assunto 4", attachments: [
-                { id: "1", name: "Anexo 1", url: undefined, file: undefined },
-                { id: "2", name: "Anexo 2", url: undefined, file: undefined },
-            ]},
-            { id: "5", title: "Assunto 5", status: "CONCLUIDO" as const, description: "Descrição do assunto 5", attachments: [
-                { id: "1", name: "Anexo 1", url: undefined, file: undefined },
-                { id: "2", name: "Anexo 2", url: undefined, file: undefined },
-            ]},
-        ]},
-        { id: "3", name: "Matéria 3", color: "#facc15" , topics: [
-            { id: "6", title: "Assunto 6", status: "PENDENTE" as const, description: "Descrição do assunto 6", attachments: []},
-        ]},
-    ];
+    useEffect(() => {
+            async function loadNotes() {
+                const data = await getTopics()
+                const topicsBySubject = groupTopicsBySubject(data)
+                setSubjects(topicsBySubject)
+            }
+            loadNotes()
+        }, [])
   
     return (
         <div className="flex flex-col min-h-screen">
@@ -64,8 +76,8 @@ export default function MateriasPage() {
                 </DialogDemo>
             </div>
             <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-2">
-                {exempleSubjects.map((subject) => (
-                    <SubjectBox key={subject.id} subject={subject.name} color={subject.color} topics={subject.topics } />
+                {subjects.map((subject) => (
+                    <SubjectBox key={subject.id} subject={subject.title} color={subject.color} topics={subject.topics ?? [] } />
                 ))}
             </div>
         </div>
