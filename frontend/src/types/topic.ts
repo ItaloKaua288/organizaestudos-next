@@ -66,3 +66,11 @@ export interface Topic {
     link: string | null;
     attachments: Attachment[];
 }
+
+export interface Note {
+    id: string;
+    title: string;
+    content: string;
+    is_pined: boolean;
+    subject: Subject;
+}
