@@ -123,12 +123,12 @@ export default function NotasOverviewPage() {
 
                 {/* Barra de ferramentas e navegação */}
                 <nav aria-label="Ações das anotações" className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
-                    <Button variant="outline" render={
+                    <Button variant="outline" >
                         <Link href="/notas" className="flex items-center gap-2 w-full sm:w-auto">
                             <CornerDownLeft className="h-4 w-4" />
                             <span>Voltar</span>
                         </Link>
-                    } />
+                    </Button>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <div className="relative flex-1 sm:w-64">
