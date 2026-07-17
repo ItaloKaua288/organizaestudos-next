@@ -74,3 +74,11 @@ export interface Note {
     is_pined: boolean;
     subject: Subject;
 }
+
+export interface Timeline {
+    id: string,
+    day: string,
+    start_time: string,
+    end_time: string,
+    subject?: Subject,
+}
