@@ -157,4 +157,66 @@ export const mockOrganizaEstudosApi = {
             }
         ]
     },
+    notes: {
+        "success": true,
+        "notes": [
+            {
+                "_id": "6a3ef91724e7ac2d794e151b",
+                "title": "Se Então (P -> Q)",
+                "content": "<ul><li><b>Negação:</b> P ^ ~Q (Mané = Mantém a primeira e nega a segunda)</li><li><b style=\"color: oklab(0.8487 0 0 / 0.9);\">Equivalencia:</b><span style=\"color: oklab(0.8487 0 0 / 0.9);\">&nbsp;\n\n<!--StartFragment-->~Q<!--EndFragment-->&nbsp;&nbsp;-&gt;<!--EndFragment-->&nbsp;~P / ~P V Q (Neymar = Nega a primeira OU mantem a segunda)</span></li></ul>",
+                "user_id": "6a2ee3ee63fe8e34b7fa9e60",
+                "isPinned": false,
+                "matter_id": {
+                    "_id": "6a2ee40263fe8e34b7fa9e6c",
+                    "title": "Raciocinio Logico",
+                    "user_id": "6a2ee3ee63fe8e34b7fa9e60",
+                    "color": "#05df72",
+                    "createdAt": "2026-06-14T17:25:22.501Z",
+                    "updatedAt": "2026-06-14T17:25:22.501Z",
+                    "__v": 0
+                },
+                "createdAt": "2026-06-26T22:11:35.642Z",
+                "updatedAt": "2026-06-26T22:47:02.645Z",
+                "__v": 0
+            },
+            {
+                "_id": "6a3efa8824e7ac2d794e151f",
+                "title": "U (OU)",
+                "content": "<ul><li><b>Negação:</b>&nbsp;P U Q, fica ~P V ~Q</li><li><b>Equivalencia: </b>P V Q, fica ~P -&gt; Q</li><li><b>Equivalencia: </b>P V Q, fica ~P -&gt; Q</li><li><b>Equivalencia: </b>P V Q, fica ~P -&gt; Q</li></ul>",
+                "user_id": "6a2ee3ee63fe8e34b7fa9e60",
+                "isPinned": false,
+                "matter_id": {
+                    "_id": "6a2ee40263fe8e34b7fa9e6c",
+                    "title": "Raciocinio Logico",
+                    "user_id": "6a2ee3ee63fe8e34b7fa9e60",
+                    "color": "#05df72",
+                    "createdAt": "2026-06-14T17:25:22.501Z",
+                    "updatedAt": "2026-06-14T17:25:22.501Z",
+                    "__v": 0
+                },
+                "createdAt": "2026-06-26T22:17:44.832Z",
+                "updatedAt": "2026-06-26T22:23:35.678Z",
+                "__v": 0
+            },
+            {
+                "_id": "6a3efdec24e7ac2d794e1526",
+                "title": "Bicondicional (<->)",
+                "content": "<ul><li><b>Negação: </b>2 formas: Usa Ou e Ou ( P V Q) ou&nbsp;\n(P ^ ~Q) V (~P ^ Q)<!--EndFragment--></li><li><b>Equivalencia: </b>Para ser equivalente é necessário dois Se...Então. P &lt;-&gt; Q, fica (P -&gt; Q) ^ (Q -&gt; P)</li></ul>",
+                "user_id": "6a2ee3ee63fe8e34b7fa9e60",
+                "isPinned": false,
+                "matter_id": {
+                    "_id": "6a2ee40263fe8e34b7fa9e6c",
+                    "title": "Raciocinio Logico",
+                    "user_id": "6a2ee3ee63fe8e34b7fa9e60",
+                    "color": "#05df72",
+                    "createdAt": "2026-06-14T17:25:22.501Z",
+                    "updatedAt": "2026-06-14T17:25:22.501Z",
+                    "__v": 0
+                },
+                "createdAt": "2026-06-26T22:32:12.229Z",
+                "updatedAt": "2026-06-26T22:36:32.060Z",
+                "__v": 0
+            }
+        ]
+    },
 }

@@ -1,7 +1,7 @@
 import { mockOrganizaEstudosApi } from "@/mocks/organizaestudosapi.mock"
 import type { Timeline } from "@/types/topic"
 
-export async function getSubjects(): Promise<Timeline[]> {
+export async function getTimeline(): Promise<Timeline[]> {
     try {
         // const res = await fetch("https://api.exemplo.com/timeline", { next: {revalidate: 3600} })
 
