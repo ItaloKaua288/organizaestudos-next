@@ -26,11 +26,11 @@ export function DialogDemo({ contentBtn, title, description, nameConfirmBtn, chi
       {variant === "button" ? (
         <DialogTrigger render={<Button variant="outline">{contentBtn || "Open Dialog"}</Button>}></DialogTrigger>
       ) : (
-        <DialogTrigger className="w-full">
-          <div className="w-full h-auto min-h-0 block p-0 cursor-pointer">
+        <DialogTrigger className="w-full" nativeButton={false} render={
+          <span className="w-full h-auto min-h-0 block p-0 cursor-pointer">
             {contentBtn}
-          </div>
-        </DialogTrigger>
+          </span>
+        } />
       )}
 
       <DialogContent className="sm:max-w-sm">
