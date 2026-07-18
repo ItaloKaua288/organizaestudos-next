@@ -34,7 +34,7 @@ export function DialogDemo({ contentBtn, title, description, nameConfirmBtn, chi
       )}
 
       <DialogContent className="sm:max-w-sm">
-        <form onSubmit={onSubmit}>
+        <form className="min-w-0" onSubmit={onSubmit}>
           <DialogHeader>
             <DialogTitle>{title || "Title"}</DialogTitle>
             <DialogDescription>
