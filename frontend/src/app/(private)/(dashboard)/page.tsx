@@ -12,44 +12,29 @@ import { getSubjects } from "@/services/subjects.service";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Subject, Topic } from "@/types/topic";
 import { ptBR } from "date-fns/locale";
-import { format, isToday } from "date-fns";
+import { isToday } from "date-fns";
 
 
-// const subscribeToCurrentDay = () => () => { }
+const subscribeToCurrentDay = () => () => { }
 
-// const getBrowserCurrentDay = () =>
-//     new Intl.DateTimeFormat("pt-BR", {
-//         weekday: "long",
-//     }).format(new Date())
+const getBrowserCurrentDay = () =>
+    new Intl.DateTimeFormat("pt-BR", {
+        weekday: "long",
+    }).format(new Date())
 
-// const getServerCurrentDay = () => ""
+const getServerCurrentDay = () => ""
 
 export default function DashboardPage() {
-    // const [topics, setTopics] = useState<Topic[]>([])
-    // const [subjects, setSubjects] = useState<Subject[]>([])
-    // const pending_topics = topics.filter((topic) => topic.status === "PENDENTE")
-    // const concluded_topics = topics.filter((topic) => topic.status === "CONCLUIDO")
-
     const [topics, setTopics] = useState<Topic[]>([])
     const [subjects, setSubjects] = useState<Subject[]>([])
-    const [currentDay, setCurrentDay] = useState<string>("")
 
-    const todayTopics = topics.filter((topic) =>
-        Object.values(topic.reviews).some(
-            (review) => !review.concluded && isToday(new Date(review.date))
-        )
-    );
-
-    // const currentDay = useSyncExternalStore(
-    //     subscribeToCurrentDay,
-    //     getBrowserCurrentDay,
-    //     getServerCurrentDay
-    // )
+    const currentDay = useSyncExternalStore(
+        subscribeToCurrentDay,
+        getBrowserCurrentDay,
+        getServerCurrentDay
+    )
 
     useEffect(() => {
-        const formattedDay = format(new Date(), "eeee", { locale: ptBR })
-        // setCurrentDay(formattedDay.charAt(0).toUpperCase() + formattedDay.slice(1))
-
         async function loadData() {
             try {
                 const [topicsData, subjectsData] = await Promise.all([
