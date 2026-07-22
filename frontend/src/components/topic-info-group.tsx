@@ -2,7 +2,7 @@ import { FileText } from "lucide-react";
 import { Field, FieldGroup } from "./ui/field";
 import { Label } from "./ui/label";
 import { Badge } from "./ui/badge";
-import { Topic } from "./subject-box";
+import { Topic } from "@/types/topic";
 
 type TopicInfoDialogProps = {
     subject: string;
