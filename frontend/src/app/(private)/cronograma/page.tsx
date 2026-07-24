@@ -99,31 +99,16 @@ export default function CronogramaPage() {
                             <CardHeader>
                                 <CardTitle className="truncate">{dayLabel}</CardTitle>
                                 <CardAction>
-                                    <DialogDemo contentBtn={
-                                        <div className="flex items-center gap-1">
-                                            <Plus className="h-4 w-4" />
-                                            <span>Adicionar</span>
-                                        </div>
-                                    }>
+                                    <DialogDemo
+                                        title="Adicionar Matéria"
+                                        description=" "
+                                        contentBtn={
+                                            <div className="flex items-center gap-1">
+                                                <Plus className="h-4 w-4" />
+                                                <span>Adicionar</span>
+                                            </div>
+                                        }>
                                         <FieldGroup >
-                                            <Field>
-                                                <Label>Dia da semana:</Label>
-                                                <Select>
-                                                    <SelectTrigger>
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectGroup>
-                                                            <SelectLabel>Dias da Semana</SelectLabel>
-                                                            {WEEK_DAYS.map((day) => (
-                                                                <SelectItem key={day} value={day}>
-                                                                    {day}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectGroup>
-                                                    </SelectContent>
-                                                </Select>
-                                            </Field>
                                             <Field>
                                                 <Label>Matéria:</Label>
                                                 <Select>
