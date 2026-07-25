@@ -137,20 +137,13 @@ export default function DashboardPage() {
                         ) : (
                             <div className="flex max-h-48 flex-col gap-1 overflow-y-auto pr-1">
                                 {pendingTopics.map((topic) => (
-                                    <Button
-                                        key={`study-${topic.id}`}
-                                        variant="outline"
-                                        className="h-auto w-full justify-start py-2"
-                                        render={
-                                            <Link href={`/topicos/${topic.id}`}>
-                                                <span
-                                                    className="mr-2 h-2 w-2 shrink-0 rounded-full"
-                                                    style={{ backgroundColor: topic.subject.color || "#ccc" }}
-                                                />
-                                                <span className="truncate">{topic.title}</span>
-                                            </Link>
-                                        }
-                                    />
+                                    <div key={topic.id} className="flex gap-1 items-center p-2 bg-muted rounded-sm">
+                                        <span
+                                            className="mr-2 h-2 w-2 shrink-0 rounded-full"
+                                            style={{ backgroundColor: topic.subject.color }}
+                                        />
+                                        <span className="truncate">{topic.title}</span>
+                                    </div>
                                 ))}
                             </div>
                         )}
