@@ -1,18 +1,21 @@
-import { mockOrganizaEstudosApi } from "@/mocks/organizaestudosapi.mock"
-import type { Subject } from "@/types/topic"
+import type { Subject } from "@/types/subject"
+import { ApiSubjectResponse } from "@/types/apiResponse"
 
 export async function getSubjects(): Promise<Subject[]> {
     try {
-        // const res = await fetch("https://api.exemplo.com/subjects", { next: {revalidate: 3600} })
-        
-        // if (!res.ok) throw new Error("Falha ao buscar as matérias")
-        // const data = await res.json()
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}subjects`, {
+            credentials: "include",
+            next: { revalidate: 3600 },
+        })
 
+        if (!res.ok) throw new Error("Falha ao buscar as matérias")
 
-        const formattedSubjects: Subject[] = mockOrganizaEstudosApi.subjects.matters.map((item) => ({
+        const data: ApiSubjectResponse = await res.json()
+
+        const formattedSubjects: Subject[] = data.subjects.map((item) => ({
             id: item._id,
             title: item.title,
-            color: item.color
+            color: item.color,
         }))
 
         return formattedSubjects

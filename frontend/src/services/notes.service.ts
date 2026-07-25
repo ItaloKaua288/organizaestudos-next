@@ -1,23 +1,26 @@
-import { mockOrganizaEstudosApi } from "@/mocks/organizaestudosapi.mock"
-import type { Note } from "@/types/topic"
+import { NoteApiResponse } from "@/types/apiResponse"
+import type { Note } from "@/types/note"
 
-export async function getNotes(): Promise<Note[]> {
+export async function getNotes(id:string): Promise<Note[]> {
     try {
-        // const res = await fetch("https://api.exemplo.com/note", { next: {revalidate: 3600} })
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}notes/${id}`, {
+            credentials: "include",
+            next: { revalidate: 3600 },
+        })
 
-        // if (!res.ok) throw new Error("Falha ao buscar as anotações")
-        // const data = await res.json()
+        if (!res.ok) throw new Error("Falha ao buscar as anotações")
 
+        const data: NoteApiResponse = await res.json()
 
-        const formattedNotes: Note[] = mockOrganizaEstudosApi.notes.notes.map((item) => ({
+        const formattedNotes: Note[] = data.notes.map((item) => ({
             id: item._id,
             title: item.title,
             content: item.content,
             is_pined: item.isPinned,
             subject: {
-                id: item.matter_id._id,
-                title: item.matter_id.title,
-                color: item.matter_id.color
+                id: item.subject_id._id,
+                title: item.subject_id.title,
+                color: item.subject_id.color
             },
         }))
 
