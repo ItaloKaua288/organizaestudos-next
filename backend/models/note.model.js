@@ -21,7 +21,7 @@ const noteSchema = new mongoose.Schema({
     },
     subject_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "subject",
+        ref: "Subject",
         required: true
     },
 }, { timestamps: true });
