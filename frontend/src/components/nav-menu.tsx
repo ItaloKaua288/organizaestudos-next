@@ -33,7 +33,6 @@ export const NavMenu = ({ vertical, ...props }: NavMenuProps) => (
       <NavigationMenuItem>
         <NavigationMenuTrigger>Planejamento</NavigationMenuTrigger>
         <NavigationMenuContent>
-          <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/metas" />}>Metas</NavigationMenuLink>
           <NavigationMenuLink className={navigationMenuTriggerStyle()} render={<Link href="/cronograma" />}>Cronograma</NavigationMenuLink>
         </NavigationMenuContent>
       </NavigationMenuItem>
