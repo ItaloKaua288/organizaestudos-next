@@ -1,10 +1,25 @@
+"use client"
+
 import Link from "next/link"
+import { useEffect, useState } from "react"
+
 import { Button } from "@/components/ui/button"
 import { getSubjects } from "@/services/subjects.service"
+import type { Subject } from "@/types/subject"
 
+export default function NotasPage() {
+    const [subjects, setSubjects] = useState<Subject[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
-export default async function NotasPage() {
-    const subjects = await getSubjects()
+    useEffect(() => {
+        async function loadSubjects() {
+            const data = await getSubjects()
+            setSubjects(data)
+            setIsLoading(false)
+        }
+
+        void loadSubjects()
+    }, [])
 
     return (
         <div className="space-y-4">
@@ -17,7 +32,11 @@ export default async function NotasPage() {
                 </p>
             </header>
 
-            {subjects.length === 0 ? (
+            {isLoading ? (
+                <p className="p-2 text-sm text-muted-foreground">
+                    Carregando matérias...
+                </p>
+            ) : subjects.length === 0 ? (
                 <p className="p-2 text-sm text-muted-foreground">
                     Nenhuma matéria encontrada.
                 </p>
@@ -45,4 +64,4 @@ export default async function NotasPage() {
             )}
         </div>
     )
-};
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { Note } from "@/types/topic"
+import { Note } from "@/types/note"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,17 +14,18 @@ import { RichTextEditor } from "@/components/rich-text-editor"
 import { getNotes } from "@/services/notes.service"
 
 
-export default function NotasOverviewPage() {
+export default function NotasOverviewPage({ params }: { params: Promise<{ id: string }> }) {
     const [notes, setNotes] = useState<Note[]>([])
     const [conteudo, setConteudo] = useState("")
 
     useEffect(() => {
         async function loadNotes() {
-            const data = await getNotes()
+            const subject_id = (await params).id
+            const data = await getNotes(subject_id)
             setNotes(data)
         }
         loadNotes()
-    }, [])
+    }, [params])
 
     return (
         <main className="space-y-4">
@@ -102,7 +103,7 @@ export default function NotasOverviewPage() {
 
                                     <div className="flex items-center gap-1 shrink-0" role="group" aria-label="Ações da nota">
                                         <Button variant="ghost" size="icon" title="Fixar nota">
-                                            <Pin className="h-4 w-4" />
+                                            <Pin className={`h-4 w-4 ${note.is_pined ? "text-primary" : ""}`} />
                                             <span className="sr-only">Fixar nota {note.title}</span>
                                         </Button>
                                         <Button variant="ghost" size="icon" title="Editar nota">

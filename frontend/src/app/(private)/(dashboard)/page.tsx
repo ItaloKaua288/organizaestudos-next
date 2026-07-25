@@ -10,7 +10,8 @@ import Link from "next/link"
 import { Calendar } from "@/components/ui/calendar";
 import { getSubjects } from "@/services/subjects.service";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { Subject, Topic } from "@/types/topic";
+import { Topic } from "@/types/topic";
+import { Subject } from "@/types/subject";
 import { ptBR } from "date-fns/locale";
 import { isToday } from "date-fns";
 

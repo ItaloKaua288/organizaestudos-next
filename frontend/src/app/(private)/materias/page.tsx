@@ -8,7 +8,8 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { useEffect, useState } from "react";
 import SubjectBox from "@/components/subject-box";
 import { getTopics } from "@/services/topics.service";
-import { Subject, Topic } from "@/types/topic";
+import { Topic } from "@/types/topic";
+import { Subject } from "@/types/subject";
 
 export type TopicsBySubject = Record<
   string,
