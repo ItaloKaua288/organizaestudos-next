@@ -1,3 +1,7 @@
+"use server";
+
+import { cookies } from "next/headers";
+
 type LoginCredentials = {
     email: string;
     password: string;
@@ -14,7 +18,6 @@ export default async function login({
             headers: {
                 "Content-Type": "application/json",
             },
-            credentials: "include",
             body: JSON.stringify({
                 email,
                 password,
@@ -25,5 +28,17 @@ export default async function login({
         throw new Error("Invalid email or password");
     }
 
-    return res.json();
+    const data = await res.json();
+
+    if (data.token) {
+        (await cookies()).set("token", data.token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60,
+            path: "/",
+        })
+    }
+
+    return data;
 }
