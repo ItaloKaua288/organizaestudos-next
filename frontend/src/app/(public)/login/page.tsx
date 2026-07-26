@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { ArrowRight, LockKeyhole, Mail } from "lucide-react"
 
 import { Logo } from "@/components/logo"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,6 +17,14 @@ import { Field, FieldError, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import login from "@/services/login.service"
+import dynamic from "next/dynamic"
+
+const ThemeToggle = dynamic(
+  () => import("@/components/theme-toggle").then((m) => m.ThemeToggle),
+  {
+    ssr: false,
+  }
+);
 
 export default function LoginPage() {
   const router = useRouter()

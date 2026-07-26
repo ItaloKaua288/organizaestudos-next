@@ -18,6 +18,8 @@ export default async function login({
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: "include",
+            cache: "no-store",
             body: JSON.stringify({
                 email,
                 password,
