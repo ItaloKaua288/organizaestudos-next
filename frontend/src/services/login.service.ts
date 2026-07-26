@@ -1,18 +1,23 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { getAppUrl } from "@/utils/url.utils"
 
 type LoginCredentials = {
     email: string;
     password: string;
 };
 
+
+
 export default async function login({
     email,
     password,
 }: LoginCredentials) {
+    const appUrl = getAppUrl();
+
     const res = await fetch(
-        `/api/auth/login`,
+        `${appUrl}/api/auth/login`,
         {
             method: "POST",
             headers: {

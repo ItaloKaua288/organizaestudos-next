@@ -1,9 +1,12 @@
 import { TimelineApiResponse } from "@/types/apiResponse"
 import type { Timeline } from "@/types/timeline"
+import { getAppUrl } from "@/utils/url.utils";
 
 export async function getTimeline(): Promise<Timeline[]> {
     try {
-        const res = await fetch(`/api/timelines`, {
+        const appUrl = getAppUrl();
+        
+        const res = await fetch(`${appUrl}/api/timelines`, {
             credentials: "include",
             next: { revalidate: 3600 },
         })

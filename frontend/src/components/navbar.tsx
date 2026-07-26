@@ -9,6 +9,7 @@ import { NavMenu } from "@/components/nav-menu";
 import { NavigationSheet } from "@/components/navigation-sheet";
 
 import dynamic from "next/dynamic";
+import { getAppUrl } from "@/utils/url.utils";
 
 const ThemeToggle = dynamic(
   () => import("@/components/theme-toggle").then((m) => m.ThemeToggle),
@@ -25,8 +26,10 @@ const Navbar = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const appUrl = getAppUrl();
+        
         const response = await fetch(
-          `/api/auth/check-auth`,
+          `${appUrl}/api/auth/check-auth`,
           {
             credentials: "include",
             cache: "no-store",
