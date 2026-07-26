@@ -26,7 +26,7 @@ const Navbar = () => {
     const checkAuth = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}auth/check-auth`,
+          `/api/auth/check-auth`,
           {
             credentials: "include",
             cache: "no-store",
@@ -46,7 +46,7 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}auth/logout`, {
+      await fetch(`/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });

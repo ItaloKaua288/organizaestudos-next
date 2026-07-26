@@ -3,7 +3,7 @@ import { ApiSubjectResponse } from "@/types/apiResponse"
 
 export async function getSubjects(): Promise<Subject[]> {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}subjects`, {
+        const res = await fetch(`/api/subjects`, {
             credentials: "include",
             next: { revalidate: 3600 },
         })

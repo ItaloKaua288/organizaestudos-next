@@ -3,7 +3,7 @@ import { TopicsApiResponse } from "@/types/apiResponse"
 
 export async function getTopics(): Promise<Topic[]> {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}topics`, {
+        const res = await fetch(`/api/topics`, {
             credentials: "include",
             next: { revalidate: 3600 },
         })

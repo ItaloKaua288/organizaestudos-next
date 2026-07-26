@@ -3,7 +3,7 @@ import type { Timeline } from "@/types/timeline"
 
 export async function getTimeline(): Promise<Timeline[]> {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}timelines`, {
+        const res = await fetch(`/api/timelines`, {
             credentials: "include",
             next: { revalidate: 3600 },
         })

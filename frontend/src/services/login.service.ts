@@ -12,7 +12,7 @@ export default async function login({
     password,
 }: LoginCredentials) {
     const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}auth/login`,
+        `/api/auth/login`,
         {
             method: "POST",
             headers: {

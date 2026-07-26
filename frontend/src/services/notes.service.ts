@@ -3,7 +3,7 @@ import type { Note } from "@/types/note"
 
 export async function getNotes(id:string): Promise<Note[]> {
     try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}notes/${id}`, {
+        const res = await fetch(`/api/notes/${id}`, {
             credentials: "include",
             next: { revalidate: 3600 },
         })
