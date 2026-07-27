@@ -4,6 +4,7 @@ import "../globals.css";
 import { cn } from "@/lib/utils";
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -34,6 +35,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col max-w-[1920px] mx-auto">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <Toaster />
           <Navbar />
           {children}
         </ThemeProvider>

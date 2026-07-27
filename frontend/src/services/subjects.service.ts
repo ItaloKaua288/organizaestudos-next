@@ -23,3 +23,20 @@ export async function getSubjects(): Promise<Subject[]> {
         return []
     }
 }
+
+export async function createSubject(title:string, color:string) {
+    try {
+        const res = await fetch("/api/subjects", {
+            next: { revalidate: 3600 },
+            method: "POST",
+            headers: {"Content-Type": "application/json",},
+            body: JSON.stringify({title, color})
+        })
+
+        if (!res.ok) throw new Error("Falha ao criar matéria")
+    } catch (error) {
+        console.error("Falha ao criar matéria", error)
+    }
+
+
+}
