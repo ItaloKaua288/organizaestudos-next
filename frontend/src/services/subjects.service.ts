@@ -1,13 +1,9 @@
 import type { Subject } from "@/types/subject"
 import { ApiSubjectResponse } from "@/types/apiResponse"
-import { getAppUrl } from "@/utils/url.utils";
 
 export async function getSubjects(): Promise<Subject[]> {
     try {
-        const appUrl = getAppUrl();
-        
-        const res = await fetch(`${appUrl}/api/subjects`, {
-            credentials: "include",
+        const res = await fetch(`/api/subjects`, {
             next: { revalidate: 3600 },
         })
 

@@ -66,10 +66,10 @@ export default function LoginPage() {
 
           <div className="mt-5 space-y-1">
             <CardTitle className="text-xl">
-              Que bom ter você de volta
+              Bem-vindo de volta!
             </CardTitle>
             <CardDescription>
-              Entre para continuar organizando seus estudos.
+              Faça login para acessar seus estudos
             </CardDescription>
           </div>
         </CardHeader>

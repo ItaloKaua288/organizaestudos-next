@@ -9,7 +9,6 @@ import { NavMenu } from "@/components/nav-menu";
 import { NavigationSheet } from "@/components/navigation-sheet";
 
 import dynamic from "next/dynamic";
-import { getAppUrl } from "@/utils/url.utils";
 
 const ThemeToggle = dynamic(
   () => import("@/components/theme-toggle").then((m) => m.ThemeToggle),
@@ -26,18 +25,10 @@ const Navbar = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const appUrl = getAppUrl();
-
-        const response = await fetch(
-          `${appUrl}/api/auth/check-auth`,
-          {
-            credentials: "include",
-            cache: "no-store",
-          }
-        );
+        const response = await fetch(`/api/auth/check-auth`,);
         setIsAuthenticated(response.ok);
-        if (response.status !== 200)
-          router.push("/login")
+        if (!response.ok)
+           router.push("/login");
       } catch {
         setIsAuthenticated(false);
       } finally {
@@ -50,13 +41,11 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
+      await fetch(`/api/auth/logout`, {method: "POST",});
+
       setIsAuthenticated(false);
       router.push("/login");
+    } finally {
       router.refresh();
     }
   };

@@ -1,15 +1,12 @@
 import type { Topic } from "@/types/topic"
 import { TopicsApiResponse } from "@/types/apiResponse"
-import { getAppUrl } from "@/utils/url.utils";
 
 export async function getTopics(): Promise<Topic[]> {
     try {
-        const appUrl = getAppUrl();
-        
-        const res = await fetch(`${appUrl}/api/topics`, {
-            credentials: "include",
+        const res = await fetch(`/api/topics`, {
             next: { revalidate: 3600 },
         })
+        
         if (!res.ok) throw new Error("Falha ao buscar os tópicos")
         const data: TopicsApiResponse = await res.json()
 

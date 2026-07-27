@@ -1,13 +1,9 @@
 import { NoteApiResponse } from "@/types/apiResponse"
 import type { Note } from "@/types/note"
-import { getAppUrl } from "@/utils/url.utils"
 
 export async function getNotes(id:string): Promise<Note[]> {
     try {
-        const appUrl = getAppUrl();
-        
-        const res = await fetch(`${appUrl}/api/notes/${id}`, {
-            credentials: "include",
+        const res = await fetch(`/api/notes/${id}`, {
             next: { revalidate: 3600 },
         })
 
