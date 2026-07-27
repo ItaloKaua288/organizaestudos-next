@@ -81,9 +81,9 @@ export default function DashboardPage() {
             </header>
             <div className="gap-4 py-2 px-2 grid grid-cols-1 md:grid-cols-3 w-full">
                 <Card>
-                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-                        <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                         <CardTitle className="text-sm font-medium">Matérias</CardTitle>
+                        <BookOpen className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <span className="text-2xl font-bold">{subjects.length}</span>
@@ -91,9 +91,9 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card>
-                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-                        <ClipboardClock className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                         <CardTitle className="text-sm font-medium">Assuntos Pendentes</CardTitle>
+                        <ClipboardClock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <span className="text-2xl font-bold">{pendingTopics.length}</span>
@@ -101,9 +101,9 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card>
-                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-                        <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                         <CardTitle className="text-sm font-medium">Assuntos Concluídos</CardTitle>
+                        <BadgeCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <span className="text-2xl font-bold">{concludedTopics.length}</span>
@@ -113,9 +113,9 @@ export default function DashboardPage() {
 
             <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-2">
                 <Card className="flex flex-col justify-start">
-                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
-                        <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                         <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
+                        <BadgeCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <ProgressLabelDemo
@@ -135,9 +135,9 @@ export default function DashboardPage() {
                         {!pendingTopics.length ? (
                             <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
                         ) : (
-                            <div className="flex max-h-48 flex-col gap-1 overflow-y-auto pr-1">
+                            <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
                                 {pendingTopics.map((topic) => (
-                                    <div key={topic.id} className="flex gap-1 items-center p-2 bg-muted rounded-sm">
+                                    <div key={topic.id} className="flex gap-1 items-center p-2 rounded-sm bg-muted/50 hover:bg-muted hover:shadow-sm ">
                                         <span
                                             className="mr-2 h-2 w-2 shrink-0 rounded-full"
                                             style={{ backgroundColor: topic.subject.color }}
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                     <CardContent className="flex justify-center pt-0">
                         <Calendar
                             locale={ptBR}
-                            className="rounded-xl border p-3 shadow-sm max-w-65 w-full"
+                            className="rounded-xl border p-3 max-w-65 w-full"
                             classNames={{
                                 today: "rounded-md bg-primary text-primary-foreground font-semibold",
                             }}

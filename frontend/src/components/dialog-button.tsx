@@ -13,6 +13,7 @@ import {
 type DialogDemoProps = {
   contentBtn?: string | React.ReactNode;
   title?: string;
+  classNameBtn?: string;
   description?: string;
   nameConfirmBtn?: string;
   children?: React.ReactNode;
@@ -22,11 +23,11 @@ type DialogDemoProps = {
   onOpenChange?: (open: boolean) => void;
 };
 
-export function DialogDemo({ contentBtn, title, description, nameConfirmBtn, children, variant = "button", onSubmit, open, onOpenChange }: DialogDemoProps) {
+export function DialogDemo({ classNameBtn, contentBtn, title, description, nameConfirmBtn, children, variant = "button", onSubmit, open, onOpenChange }: DialogDemoProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {variant === "button" ? (
-        <DialogTrigger render={<Button variant="outline">{contentBtn || "Open Dialog"}</Button>}></DialogTrigger>
+        <DialogTrigger render={<Button variant="outline" className={`${classNameBtn}`}>{contentBtn || "Open Dialog"}</Button>}></DialogTrigger>
       ) : (
         <DialogTrigger className="w-full" nativeButton={false} render={
           <span className="w-full h-auto min-h-0 block p-0 cursor-pointer">

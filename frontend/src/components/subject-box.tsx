@@ -117,6 +117,7 @@ export default function SubjectBox({
                         title="Editar a matéria"
                         description="Modifique os detalhes desta matéria."
                         contentBtn={<PencilLine size={15} />}
+                        classNameBtn="border-none dark:bg-transparent bg-transparent"
                         onSubmit={handleSubjectFormSubmit}
                         open={isEditOpen}
                         onOpenChange={setIsEditOpen}
@@ -141,6 +142,7 @@ export default function SubjectBox({
                         title="Deletar matéria"
                         description="Tem certeza que deseja deletar a matéria? Esta ação é irreversível."
                         contentBtn={<Trash2 size={15} className="text-destructive" />}
+                        classNameBtn="border-none dark:bg-transparent bg-transparent"
                         onSubmit={handleSubjectFormDelete}
                     />
                 </div>
@@ -210,7 +212,7 @@ function TopicRow({
 
     return (
         <div>
-            <div className="bg-input/30 flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-colors hover:bg-input/40 hover:shadow-sm hover:-translate-y-0.5 ">
+            <div className="dark:bg-input/30 flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-colors hover:bg-input/40 hover:shadow-sm hover:-translate-y-0.5 ">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex flex-col">
                         <button
@@ -236,7 +238,7 @@ function TopicRow({
                     {topic.status === "CONCLUIDO" ? (
                         <CheckCircle2 size={15} className="shrink-0 text-green-500" />
                     ) : (
-                        <Clock size={15} className="shrink-0 text-red-400" />
+                        <Clock size={15} className="shrink-0 text-destructive" />
                     )}
 
                     <span
@@ -295,7 +297,7 @@ function TopicRow({
                         <button
                             type="button"
                             onClick={() => onDeleteTopic?.(topic.id)}
-                            className="btn btn-ghost btn-xs p-1 hover:text-red-500 sm:btn-sm"
+                            className="btn btn-ghost btn-xs p-1 hover:text-destructive sm:btn-sm"
                             title="Deletar Assunto"
                         >
                             <Trash2 size={15} />
