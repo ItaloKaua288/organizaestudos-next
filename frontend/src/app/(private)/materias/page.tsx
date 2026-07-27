@@ -91,7 +91,7 @@ export default function MateriasPage() {
                     </FieldGroup>
                 </DialogDemo>
             </div>
-            <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {subjects.map((subject) => (
                     <SubjectBox key={subject.id} subject={subject} onUpdate={loadSubjects}/>
                 ))}

@@ -101,7 +101,7 @@ export default function SubjectBox({
     const topics = subject.topics || [];
 
     return (
-        <div className="rounded-lg border p-1.5 shadow-sm">
+        <div className="rounded-lg border p-4 shadow-sm bg-card">
             <header className="mb-2 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <span
@@ -146,7 +146,7 @@ export default function SubjectBox({
                 </div>
             </header>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
                 {topics.map((topic, index) => (
                     <TopicRow
                         key={topic.id}
@@ -165,7 +165,7 @@ export default function SubjectBox({
                 ))}
                 {topics.length === 0 && (
                     <p className="text-sm text-muted-foreground p-2 text-center">
-                        Nenhum tópico cadastrado.
+                        Nenhum assunto cadastrado.
                     </p>
                 )}
                 <Field className="flex flex-row">
@@ -210,7 +210,7 @@ function TopicRow({
 
     return (
         <div>
-            <div className="flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 bg-base-200/60 py-2 pl-3 pr-2 text-sm transition-colors hover:bg-base-200">
+            <div className="bg-input/30 flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-colors hover:bg-input/40 hover:shadow-sm hover:-translate-y-0.5 ">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex flex-col">
                         <button

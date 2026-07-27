@@ -112,7 +112,7 @@ export default function DashboardPage() {
             </div>
 
             <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-2">
-                <Card className="flex flex-col justify-between">
+                <Card className="flex flex-col justify-start">
                     <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
                         <BadgeCheck className="h-4 w-4 text-muted-foreground" />
                         <CardTitle className="text-sm font-medium">Desempenho</CardTitle>

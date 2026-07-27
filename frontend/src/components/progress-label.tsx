@@ -12,7 +12,7 @@ type ProgressLabelDemoProps = {
 
 const ProgressLabelDemo = ({ value, displayValue, label, description }: ProgressLabelDemoProps) => {
     return (
-        <div className='flex w-full flex-col gap-4 border border-border rounded-md p-2'>
+        <div className='flex w-full flex-col gap-4 border-0 border-border rounded-md p-2 '>
             <Field>
                 <Progress value={value ?? 0} className='transition-all duration-300'>
                     <ProgressLabel>{label || "Exemple label"}</ProgressLabel>
