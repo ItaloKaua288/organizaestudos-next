@@ -137,7 +137,7 @@ export const login = async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid credentials" });
         }
 
-        const token = generateTokenAndSetCookie(res, user._id);
+        generateTokenAndSetCookie(res, user._id);
         user.lastLogin = Date.now();
         await user.save();
 
@@ -153,9 +153,7 @@ export const login = async (req, res) => {
                 isVerified: user.isVerified,
                 isAdmin: user.isAdmin,
                 quickLinks: user.quickLinks
-
             },
-            token: token
         });
 
     } catch (error) {

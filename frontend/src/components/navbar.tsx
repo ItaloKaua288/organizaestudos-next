@@ -27,7 +27,7 @@ const Navbar = () => {
     const checkAuth = async () => {
       try {
         const appUrl = getAppUrl();
-        
+
         const response = await fetch(
           `${appUrl}/api/auth/check-auth`,
           {
@@ -35,8 +35,9 @@ const Navbar = () => {
             cache: "no-store",
           }
         );
-
         setIsAuthenticated(response.ok);
+        if (response.status !== 200)
+          router.push("/login")
       } catch {
         setIsAuthenticated(false);
       } finally {
@@ -45,7 +46,7 @@ const Navbar = () => {
     };
 
     checkAuth();
-  }, []);
+  }, [router]);
 
   const handleLogout = async () => {
     try {

@@ -35,17 +35,23 @@ export default async function login({
         throw new Error("Invalid email or password");
     }
 
-    const data = await res.json();
-
-    if (data.token) {
-        (await cookies()).set("token", data.token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 7 * 24 * 60 * 60,
-            path: "/",
-        })
+    const setCookieHeader = res.headers.get("set-cookie");
+    
+    if (setCookieHeader) {
+        const tokenMatch = setCookieHeader.match(/token=([^;]+)/);
+        
+        if (tokenMatch && tokenMatch[1]) {
+            (await cookies()).set("token", tokenMatch[1], {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                maxAge: 7 * 24 * 60 * 60 * 1000,
+                path: "/",
+            });
+        }
     }
+    
+    const data = await res.json();
 
     return data;
 }
