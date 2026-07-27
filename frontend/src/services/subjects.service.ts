@@ -37,6 +37,33 @@ export async function createSubject(title:string, color:string) {
     } catch (error) {
         console.error("Falha ao criar matéria", error)
     }
+}
 
+export async function updateSubject(title: string, color: string, subject_id: string) {
+    try {
+        const res = await fetch(`/api/subjects/${subject_id}`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json",},
+            body: JSON.stringify({title, color})
+        })
 
+        if (!res.ok) throw new Error("Falha ao atualizar a matéria")
+    } catch (error) {
+        console.error("Falha ao atualizar a matéria", error)
+        throw error
+    }
+}
+
+export async function deleteSubject(subject_id: string) {
+    try {
+        const res = await fetch(`/api/subjects/${subject_id}`, {
+            method: "DELETE",
+            headers: {"Content-Type": "application/json",},
+        })
+
+        if (!res.ok) throw new Error("Falha ao deletar a matéria")
+    } catch (error) {
+        console.error("Falha ao deletar a matéria", error)
+        throw error
+    }
 }

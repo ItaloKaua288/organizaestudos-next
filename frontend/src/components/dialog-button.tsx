@@ -18,11 +18,13 @@ type DialogDemoProps = {
   children?: React.ReactNode;
   variant?: "button" | "label";
   onSubmit?: (e: React.FormEvent) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function DialogDemo({ contentBtn, title, description, nameConfirmBtn, children, variant = "button", onSubmit }: DialogDemoProps) {
+export function DialogDemo({ contentBtn, title, description, nameConfirmBtn, children, variant = "button", onSubmit, open, onOpenChange }: DialogDemoProps) {
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       {variant === "button" ? (
         <DialogTrigger render={<Button variant="outline">{contentBtn || "Open Dialog"}</Button>}></DialogTrigger>
       ) : (

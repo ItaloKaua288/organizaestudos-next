@@ -35,3 +35,19 @@ export async function getTopics(): Promise<Topic[]> {
         return []
     }
 }
+
+export async function createTopic(title: string, subject_id: string) {
+    try {
+        const res = await fetch("/api/topics", {
+            next: { revalidate: 3600 },
+            method: "POST",
+            headers: {"Content-Type": "application/json",},
+            body: JSON.stringify({title, subject_id})
+        })
+
+        if (!res.ok) throw new Error("Falha ao criar o assunto")
+    } catch (error) {
+        console.error("Falha ao criar o assunto", error)
+        throw error
+    }
+}
