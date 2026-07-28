@@ -75,7 +75,7 @@ export default function DashboardPage() {
     return (
         <main className="flex min-h-screen flex-col space-y-4 pb-8">
             <header className="space-y-1">
-                <h1 className="bg-card py-2 px-2 text-xl font-bold shadow-sm">
+                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
                     Dashboard
                 </h1>
             </header>
@@ -137,7 +137,7 @@ export default function DashboardPage() {
                         ) : (
                             <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
                                 {pendingTopics.map((topic) => (
-                                    <div key={topic.id} className="flex gap-1 items-center p-2 rounded-sm bg-muted/50 hover:bg-muted hover:shadow-sm ">
+                                    <div key={topic.id} className="flex gap-1 items-center p-2 rounded-sm hoverComponentsStatic">
                                         <span
                                             className="mr-2 h-2 w-2 shrink-0 rounded-full"
                                             style={{ backgroundColor: topic.subject.color }}

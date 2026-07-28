@@ -75,7 +75,7 @@ export default function CronogramaPage() {
     return (
         <main className="space-y-4">
             <header className="space-y-1">
-                <h1 className="bg-card py-2 px-2 text-xl font-bold shadow-sm">
+                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
                     Cronograma
                 </h1>
                 <div className="flex justify-between p-2 items-center">

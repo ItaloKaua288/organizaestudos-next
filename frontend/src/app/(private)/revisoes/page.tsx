@@ -64,7 +64,7 @@ export default function RevisaoPage() {
     return (
         <div className="flex flex-col gap-4 min-h-screen pb-10">
             <header className="space-y-1">
-                <h1 className="px-2 text-xl font-bold shadow-sm bg-card py-2">
+                <h1 className="px-2 text-xl font-bold shadow-sm bg-card py-4">
                     Revisões
                 </h1>
                 <p className="font-medium px-2 text-sm text-muted-foreground">

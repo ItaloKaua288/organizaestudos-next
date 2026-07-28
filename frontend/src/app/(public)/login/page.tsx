@@ -53,9 +53,12 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-muted/40 px-4 py-8 sm:px-6">
-      <div className="absolute inset-x-0 top-0 h-72 bg-linear-to-br from-primary/15 via-primary/5 to-transparent" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden ">
+      <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-blue-500/10" />
+      <div className="absolute -left-40 top-0 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[32px_32px]"/>
 
+      <div className="absolute right-0 bottom-0 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
       <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
         <ThemeToggle />
       </div>

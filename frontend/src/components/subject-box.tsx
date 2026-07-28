@@ -112,7 +112,7 @@ export default function SubjectBox({
                     <h2 className="text-md font-bold">{subject.title}</h2>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                     <DialogDemo
                         title="Editar a matéria"
                         description="Modifique os detalhes desta matéria."
@@ -171,8 +171,8 @@ export default function SubjectBox({
                     </p>
                 )}
                 <Field className="flex flex-row">
-                    <Input placeholder="Adicione um assunto" onChange={(e) => (setTopicTitle(e.target.value))}/>
-                    <Button variant={"outline"} className={"max-w-10"} nativeButton={false} render={<Plus size={15} />} onClick={handleSubjectCreate}></Button>
+                    <Input className="dark:bg-input/30 bg-input/10 " placeholder="Adicione um assunto" onChange={(e) => (setTopicTitle(e.target.value))} />
+                    <Button variant={"outline"} className={"max-w-10 dark:bg-input/30 bg-input/10 "} nativeButton={false} render={<Plus size={15} />} onClick={handleSubjectCreate}></Button>
                 </Field>
             </div>
         </div>
@@ -212,7 +212,7 @@ function TopicRow({
 
     return (
         <div>
-            <div className="dark:bg-input/30 flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-colors hover:bg-input/40 hover:shadow-sm hover:-translate-y-0.5 ">
+            <div className="hoverComponents flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm ">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex flex-col">
                         <button

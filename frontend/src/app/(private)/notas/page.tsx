@@ -24,7 +24,7 @@ export default function NotasPage() {
     return (
         <div className="space-y-4">
             <header className="space-y-1">
-                <h1 className="bg-card py-2 px-2 text-xl font-bold shadow-sm">
+                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
                     Anotações
                 </h1>
                 <p className="px-2 text-sm font-medium text-muted-foreground">
@@ -46,7 +46,7 @@ export default function NotasPage() {
                         <Button
                             key={subject.id}
                             variant="outline"
-                            className="h-auto justify-start p-6"
+                            className="h-auto justify-start p-6 antiTransparenceBtn"
                             nativeButton={false}
                             render={
                                 <Link href={`/notas/${subject.id}`} className="flex gap-2 items-center" >

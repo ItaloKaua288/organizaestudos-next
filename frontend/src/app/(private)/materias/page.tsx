@@ -69,7 +69,7 @@ export default function MateriasPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <h1 className="px-2 text-xl font-bold shadow-sm bg-card">Matérias</h1>
+            <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card">Matérias</h1>
             <div className="flex items-center gap-3 justify-between p-2">
                 <p className="font-medium">Gerencie suas matérias e assuntos</p>
                 <DialogDemo

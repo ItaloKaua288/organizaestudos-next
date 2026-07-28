@@ -6,7 +6,7 @@ import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from 'react-hot-toast';
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +37,8 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Toaster />
           <Navbar />
+          <div className="absolute -z-10 inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[32px_32px]" />
+
           {children}
         </ThemeProvider>
       </body>

@@ -28,7 +28,7 @@ const Navbar = () => {
         const response = await fetch(`/api/auth/check-auth`,);
         setIsAuthenticated(response.ok);
         if (!response.ok)
-           router.push("/login");
+          router.push("/login");
       } catch {
         setIsAuthenticated(false);
       } finally {
@@ -41,7 +41,7 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`/api/auth/logout`, {method: "POST",});
+      await fetch(`/api/auth/logout`, { method: "POST", });
 
       setIsAuthenticated(false);
       router.push("/login");
@@ -51,10 +51,10 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="h-16 min-h-16 border-b">
+    <nav className="h-16 min-h-16 border-b bg-muted">
       <div className="mx-auto flex h-full max-w-(--breakpoint-3xl) items-center justify-between px-2">
         <div className="flex items-center gap-12">
-          <Logo />
+            <Logo />
 
           {/* Desktop Menu */}
           <NavMenu className="hidden md:block" />

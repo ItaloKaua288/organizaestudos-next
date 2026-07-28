@@ -12,7 +12,7 @@ interface ReviewSectionProps {
 
 export function ReviewSection({ title, icon, topics }: ReviewSectionProps) {
     return (
-        <div className="p-3 mx-2 border border-base-content/10 rounded-lg overflow-hidden bg-base-100 shadow-sm">
+        <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden bg-base-100 shadow-sm bg-card">
             <div className="flex gap-2 items-center mb-3 font-semibold text-base-content">
                 {icon}
                 <h2 className="text-lg">{title}</h2>
@@ -38,7 +38,7 @@ export function ReviewSection({ title, icon, topics }: ReviewSectionProps) {
                                     title={item.title}
                                     description="Informações sobre o tópico da revisão"
                                     contentBtn={
-                                        <div className="flex items-center justify-between w-full gap-3 border border-base-content/10 bg-base-200/30 p-3 rounded-md hover:bg-base-200/60 transition-all">
+                                        <div className="hoverComponents flex items-center justify-between w-full gap-3 border border-base-content/10 bg-base-200/30 p-2 rounded-md hover:bg-base-200/60 transition-all">
                                             <div className="flex-1 min-w-0 text-sm flex items-center gap-2.5">
                                                 <span
                                                     className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"

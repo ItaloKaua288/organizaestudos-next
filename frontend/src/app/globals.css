@@ -147,3 +147,16 @@
     @apply font-sans;
   }
 }
+
+/* isso é usado para tirar a transparencia do botão tipo autline*/
+.antiTransparenceBtn {
+  @apply bg-card transition-all hover:shadow-sm dark:shadow-sm  hover:-translate-y-0.5 hover:brightness-75 dark:hover:brightness-125;
+}
+
+.hoverComponents {
+  @apply bg-input/10 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm hover:-translate-y-0.5 transition-all;
+}
+
+.hoverComponentsStatic {
+  @apply bg-input/10 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm transition-all;
+}
