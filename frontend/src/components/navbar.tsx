@@ -51,7 +51,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="h-16 min-h-16 border-b bg-muted">
+    <nav className="fixed h-16 min-h-16 border-b bg-muted w-full">
       <div className="mx-auto flex h-full max-w-(--breakpoint-3xl) items-center justify-between px-2">
         <div className="flex items-center gap-12">
             <Logo />
