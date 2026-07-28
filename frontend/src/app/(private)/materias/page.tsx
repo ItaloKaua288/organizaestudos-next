@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FormEvent, useEffect, useState } from "react";
 import SubjectBox from "@/components/subject-box";
-import { getTopics } from "@/services/topics.service";
-import { Topic } from "@/types/topic";
+import { getTopics, updateTopicStatus } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
+import { Topic, TopicStatus } from "@/types/topic";
 import { createSubject, getSubjects } from "@/services/subjects.service";
 import toast from "react-hot-toast";
 
@@ -67,6 +67,17 @@ export default function MateriasPage() {
         await loadSubjects()
     }
 
+    async function handleTopicStatusChange(topicId: string, newStatus: TopicStatus) {
+        try {
+            await updateTopicStatus(topicId, newStatus);
+            toast.success("Status do tópico atualizado!");
+            await loadSubjects();
+        } catch (error) {
+            toast.error("Falha ao atualizar o status.");
+            console.error("Erro ao mudar status do tópico:", error);
+        }
+    }
+
     return (
         <div className="flex flex-col min-h-screen">
             <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card">Matérias</h1>
@@ -93,7 +104,12 @@ export default function MateriasPage() {
             </div>
             <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {subjects.map((subject) => (
-                    <SubjectBox key={subject.id} subject={subject} onUpdate={loadSubjects}/>
+                    <SubjectBox
+                        key={subject.id}
+                        subject={subject}
+                        onUpdate={loadSubjects}
+                        onStatusChange={handleTopicStatusChange}
+                    />
                 ))}
             </div>
         </div>

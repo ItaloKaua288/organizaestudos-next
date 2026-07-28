@@ -1,4 +1,4 @@
-import type { Topic } from "@/types/topic"
+import type { Topic, TopicStatus } from "@/types/topic"
 import { TopicsApiResponse } from "@/types/apiResponse"
 
 export async function getTopics(): Promise<Topic[]> {
@@ -49,5 +49,26 @@ export async function createTopic(title: string, subject_id: string) {
     } catch (error) {
         console.error("Falha ao criar o assunto", error)
         throw error
+    }
+}
+
+export async function updateTopicStatus(topicId: string, status: TopicStatus) {
+    try {
+        const res = await fetch(`/api/topics/${topicId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status })
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Falha ao atualizar o status do tópico");
+        }
+        
+        return await res.json();
+
+    } catch (error) {
+        console.error("Falha ao atualizar o status do tópico", error);
+        throw error;
     }
 }
