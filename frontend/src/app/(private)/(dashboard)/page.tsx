@@ -14,6 +14,8 @@ import { Topic } from "@/types/topic";
 import { Subject } from "@/types/subject";
 import { ptBR } from "date-fns/locale";
 import { isToday } from "date-fns";
+import { Timeline } from "@/types/timeline";
+import { getTimeline } from "@/services/timeline.service";
 
 
 const subscribeToCurrentDay = () => () => { }
@@ -28,6 +30,7 @@ const getServerCurrentDay = () => ""
 export default function DashboardPage() {
     const [topics, setTopics] = useState<Topic[]>([])
     const [subjects, setSubjects] = useState<Subject[]>([])
+    const [timelines, setTimelines] = useState<Timeline[]>([])
 
     const currentDay = useSyncExternalStore(
         subscribeToCurrentDay,
@@ -38,12 +41,14 @@ export default function DashboardPage() {
     useEffect(() => {
         async function loadData() {
             try {
-                const [topicsData, subjectsData] = await Promise.all([
+                const [topicsData, subjectsData, timelinesData] = await Promise.all([
                     getTopics(),
                     getSubjects(),
+                    getTimeline(),
                 ])
                 setTopics(topicsData)
                 setSubjects(subjectsData)
+                setTimelines(timelinesData)
             } catch (error) {
                 console.error("Erro ao carregar dados do dashboard:", error)
             }
@@ -51,22 +56,36 @@ export default function DashboardPage() {
         loadData()
     }, [])
 
-    const { pendingTopics, concludedTopics, reviewTodayTopics } = useMemo(() => {
+    const { pendingTopics, concludedTopics, reviewTodayTopics, subjectsToday } = useMemo(() => {
         const pending = topics.filter((topic) => topic.status === "PENDENTE")
         const concluded = topics.filter((topic) => topic.status === "CONCLUIDO")
 
-        const reviewToday = topics.filter((topic) =>
+        const reviewToday = topics.filter((topic) => (
             Object.values(topic.reviews || {}).some(
                 (review) => !review.concluded && isToday(new Date(review.date))
             )
-        )
+        ))
+        
+        const reviewTodaySubjects = reviewToday.map(topic => topic.subject);
+        
+        const timelineSubjects = timelines
+            .filter(timeline => timeline.day.toLowerCase() === currentDay.toLowerCase() && timeline.subject)
+            .map(timeline => timeline.subject!);
+
+        const subjectsToday = [
+            ...new Map(
+                [...timelineSubjects, ...reviewTodaySubjects]
+                    .map(subject => [subject.id, subject])
+            ).values()
+        ];
 
         return {
             pendingTopics: pending,
             concludedTopics: concluded,
             reviewTodayTopics: reviewToday,
-        }
-    }, [topics])
+            subjectsToday,
+        };
+    }, [topics, timelines, currentDay])
 
     const progressPercentage = topics.length > 0
         ? (concludedTopics.length / topics.length) * 100
@@ -136,13 +155,13 @@ export default function DashboardPage() {
                             <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
                         ) : (
                             <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
-                                {pendingTopics.map((topic) => (
-                                    <div key={topic.id} className="flex gap-1 items-center p-2 rounded-sm hoverComponentsStatic">
+                                {subjectsToday.map((subject) => (
+                                    <div key={subject.id} className="flex gap-1 items-center p-2 rounded-sm hoverComponentsStatic">
                                         <span
                                             className="mr-2 h-2 w-2 shrink-0 rounded-full"
-                                            style={{ backgroundColor: topic.subject.color }}
+                                            style={{ backgroundColor: subject.color }}
                                         />
-                                        <span className="truncate">{topic.title}</span>
+                                        <span className="truncate">{subject.title}</span>
                                     </div>
                                 ))}
                             </div>
@@ -171,7 +190,7 @@ export default function DashboardPage() {
                                         variant="outline"
                                         className="h-auto w-full justify-start py-2"
                                         render={
-                                            <Link href={`/revisao/${topic.id}`} className="flex items-center gap-2">
+                                            <Link href={`#`} className="flex items-center gap-2">
                                                 <BookOpen
                                                     className="h-4 w-4 shrink-0"
                                                     style={{ color: topic.subject.color }}

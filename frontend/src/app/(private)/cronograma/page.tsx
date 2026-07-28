@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Input } from "@/components/ui/input"
 
 const WEEK_DAYS = [
-    "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"
+    "Segunda", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"
 ]
 
 const subscribeToCurrentDay = () => () => { }
