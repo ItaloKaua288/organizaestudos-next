@@ -85,7 +85,7 @@ export default function CronogramaPage() {
                 </div>
             </header>
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-2 gap-3">
+            <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-2 pt-0 gap-3">
                 {WEEK_DAYS.map((dayLabel) => {
                     const isToday =
                         currentDay !== "" &&
@@ -95,7 +95,7 @@ export default function CronogramaPage() {
                     return (
                         <Card
                             key={dayLabel}
-                            className={`max-h-150 overflow-y-auto transition-all ${isToday ? "border border-primary/50 shadow-sm shadow-primary/50" : ""}`}
+                            className={`border max-h-150 overflow-y-auto transition-all ${isToday ? "border border-primary/50 shadow-sm shadow-primary/50" : ""}`}
                         >
                             <CardHeader>
                                 <CardTitle className="truncate">{dayLabel}</CardTitle>

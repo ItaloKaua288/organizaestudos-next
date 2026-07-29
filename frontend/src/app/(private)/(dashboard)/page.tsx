@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-base font-semibold">Estudar Hoje <Badge variant="secondary">{subjectsToday.length}</Badge></CardTitle>
+                        <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje <Badge variant="secondary">{subjectsToday.length}</Badge></CardTitle>
                         {currentDay && <Badge variant="outline">{currentDay}</Badge>}
                     </CardHeader>
                     <CardContent>

@@ -62,12 +62,12 @@ export default function RevisaoPage() {
     ];
 
     return (
-        <div className="flex flex-col gap-4 min-h-screen pb-10">
-            <header className="space-y-1">
+        <div className="flex flex-col gap-1 min-h-screen pb-10">
+            <header className="">
                 <h1 className="px-2 text-xl font-bold shadow-sm bg-card py-4">
                     Revisões
                 </h1>
-                <p className="font-medium px-2 text-sm text-muted-foreground">
+                <p className="p-2 py-4 font-medium text-sm text-muted-foreground">
                     Visualise suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
                 </p>
             </header>

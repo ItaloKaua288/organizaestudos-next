@@ -54,7 +54,9 @@ const Navbar = () => {
     <nav className="fixed left-1/2 z-10 h-16 min-h-16 w-full  -translate-x-1/2 border-b bg-muted">
       <div className="relative mx-auto flex h-full max-w-(--breakpoint-3xl) items-center justify-between px-2 ">
         <div className="flex items-center">
+          <a className="hover:text-primary hover:scale-105 transition-all" href="/">
             <Logo />
+          </a>
         </div>
         {/* Desktop Menu */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
