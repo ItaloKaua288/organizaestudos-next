@@ -99,7 +99,7 @@ export default function SubjectBox({
     const handleTopicDelete = async (topicId: string) => {
         try {
             setIsPending(true);
-            await deleteTopic(topicId); // Certifique-se de importar o deleteTopic dos services
+            await deleteTopic(topicId);
             toast.success("Assunto deletado com sucesso");
             if (onUpdate) onUpdate();
         } catch (error) {
@@ -212,7 +212,7 @@ type TopicRowProps = {
     isFirst: boolean;
     isLast: boolean;
     subject: Subject;
-    onDeleteTopic: (topicId:string) => void;
+    onDeleteTopic: (topicId: string) => void;
 } & Omit<SubjectBoxProps, "subject">;
 
 function TopicRow({
@@ -395,7 +395,7 @@ function TopicRow({
                             contentBtn={<Trash2 className="" size={15} />}
                             classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-destructive"
                             nameConfirmBtn="Excluir"
-                            onSubmit={() => onDeleteTopic(topic.id)}
+                            onSubmit={(e) => { e.preventDefault(); onDeleteTopic(topic.id); }}
                         >
                         </DialogDemo>
                     </div>
