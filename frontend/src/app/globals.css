@@ -154,9 +154,9 @@
 }
 
 .hoverComponents {
-  @apply bg-input/10 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm hover:-translate-y-0.5 transition-all;
+  @apply  bg-input/20 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm hover:-translate-y-0.5 transition-all;
 }
 
 .hoverComponentsStatic {
-  @apply bg-input/10 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm transition-all;
+  @apply  bg-input/20 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm transition-all;
 }

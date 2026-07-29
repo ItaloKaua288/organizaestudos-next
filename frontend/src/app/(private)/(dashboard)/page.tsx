@@ -147,7 +147,7 @@ export default function DashboardPage() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-base font-semibold">Estudar Hoje</CardTitle>
+                        <CardTitle className="text-base font-semibold">Estudar Hoje <Badge variant="secondary">{subjectsToday.length}</Badge></CardTitle>
                         {currentDay && <Badge variant="outline">{currentDay}</Badge>}
                     </CardHeader>
                     <CardContent>
@@ -188,7 +188,7 @@ export default function DashboardPage() {
                                     <Button
                                         key={`review-${topic.id}`}
                                         variant="outline"
-                                        className="h-auto w-full justify-start py-2"
+                                        className="h-auto w-full justify-start py-2  hoverComponentsStatic border-0"
                                         render={
                                             <Link href={`#`} className="flex items-center gap-2">
                                                 <BookOpen
