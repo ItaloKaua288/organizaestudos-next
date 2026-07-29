@@ -31,14 +31,18 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
             </Field>
             <Field>
                 <Label>Cronograma de Revisões:</Label>
-                <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
-                    <span>1° Revisão (24h): </span>
-                    <span className="text-right font-mono">18/06/2026</span>
-                    <span>2° Revisão (7 dias): </span>
-                    <span className="text-right font-mono">18/06/2026</span>
-                    <span>3° Revisão (30 dias): </span>
-                    <span className="text-right font-mono">18/06/2026</span>
-                </div>
+                {topic.status === "CONCLUIDO" ? (
+                    <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
+                        <span>1° Revisão (24h): </span>
+                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : new Date(topic.reviews.first.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{new Date(topic.reviews.first.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                        <span>2° Revisão (7 dias): </span>
+                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : new Date(topic.reviews.second.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{new Date(topic.reviews.second.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                        <span>3° Revisão (30 dias): </span>
+                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : new Date(topic.reviews.third.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{new Date(topic.reviews.third.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                    </div>
+                ) : (
+                    <p className="text-xs text-base-content/50 italic mt-1">Conclua o assunto para ver o cronograma de revisões.</p>
+                )}
             </Field>
             <Field>
                 <Label>Anexos ({topic.attachments?.length || 0}):</Label>
