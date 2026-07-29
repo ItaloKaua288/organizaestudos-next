@@ -100,6 +100,7 @@ export default function MateriasPage() {
                     description="Crie uma nova matéria para organizar seus estudos."
                     nameConfirmBtn="Criar Matéria"
                     onSubmit={handleSubmitSubject}
+                    classNameBtn="mr-2"
                 >
                     <FieldGroup>
                         <Field>
