@@ -60,11 +60,20 @@ export default function DashboardPage() {
         const pending = topics.filter((topic) => topic.status === "PENDENTE")
         const concluded = topics.filter((topic) => topic.status === "CONCLUIDO")
 
-        const reviewToday = topics.filter((topic) => (
-            Object.values(topic.reviews || {}).some(
-                (review) => !review.concluded && isToday(new Date(review.date))
-            )
-        ))
+        const reviewToday = topics.filter((topic) =>
+            Object.values(topic.reviews || {}).some((review) => {
+                if (!review.date || review.concluded) {
+                    return false;
+                }
+                const reviewDate = new Date(review.date);
+                const adjustedDate = new Date(
+                    reviewDate.getUTCFullYear(),
+                    reviewDate.getUTCMonth(),
+                    reviewDate.getUTCDate()
+                );
+                return isToday(adjustedDate);
+            })
+        );
         
         const reviewTodaySubjects = reviewToday.map(topic => topic.subject);
         

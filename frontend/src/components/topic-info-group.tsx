@@ -11,7 +11,7 @@ type TopicInfoDialogProps = {
     hasAttachments: boolean | undefined;
 }
 
-const formatUtcDateToLocalDisplay = (utcDateString: string | Date | undefined): string => {
+export const formatUtcDateToLocalDisplay = (utcDateString: string | Date | undefined): string => {
     if (!utcDateString) return '';
     const dateObj = new Date(utcDateString);
     if (isNaN(dateObj.getTime())) return '';

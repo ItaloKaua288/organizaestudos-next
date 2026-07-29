@@ -85,9 +85,17 @@ export const updateTopic = async (req, res) => {
             topic.status = status;
             if (status === "CONCLUIDO") {
                 // Só cria novas datas automaticamente se não estivermos enviando elas na edição
-                if (!review1) topic.review1 = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                if (!review2) topic.review2 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-                if (!review3) topic.review3 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                const today = new Date();
+                today.setUTCHours(0, 0, 0, 0); // Zera a hora para UTC meia-noite
+
+                if (!review1) topic.review1 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000); // 1 dia depois
+                if (!review2) topic.review2 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 dias depois
+                if (!review3) topic.review3 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 dias depois
+
+                // As datas de revisão concluídas devem ser definidas como false por padrão ao concluir um tópico
+                // topic.review1_concluded = false;
+                // topic.review2_concluded = false;
+                // topic.review3_concluded = false;
             } else {
                 topic.review1 = null;
                 topic.review2 = null;
