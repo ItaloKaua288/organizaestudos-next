@@ -6,7 +6,7 @@ export async function getTopics(): Promise<Topic[]> {
         const res = await fetch(`/api/topics`, {
             next: { revalidate: 3600 },
         })
-        
+
         if (!res.ok) throw new Error("Falha ao buscar os tópicos")
         const data: TopicsApiResponse = await res.json()
 
@@ -41,8 +41,8 @@ export async function createTopic(title: string, subject_id: string) {
         const res = await fetch("/api/topics", {
             next: { revalidate: 3600 },
             method: "POST",
-            headers: {"Content-Type": "application/json",},
-            body: JSON.stringify({title, subject_id})
+            headers: { "Content-Type": "application/json", },
+            body: JSON.stringify({ title, subject_id })
         })
 
         if (!res.ok) throw new Error("Falha ao criar o assunto")
@@ -62,13 +62,33 @@ export async function updateTopicStatus(topicId: string, status: TopicStatus) {
 
         if (!res.ok) {
             const errorData = await res.json();
-            throw new Error(errorData.message || "Falha ao atualizar o status do tópico");
+            throw new Error(errorData.message || "Falha ao atualizar o status do tópico!");
         }
-        
+
         return await res.json();
 
     } catch (error) {
         console.error("Falha ao atualizar o status do tópico", error);
+        throw error;
+    }
+}
+
+export async function updateTopic(topicId: string, title: string, link: string, review1: string) {
+    try {
+        const res = await fetch(`/api/topics/${topicId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, link, review1 })
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Falha ao atualizar o assunto!");
+        }
+
+        return await res.json();
+    } catch (error) {
+        console.error("Falha ao atualizar o assunto", error);
         throw error;
     }
 }

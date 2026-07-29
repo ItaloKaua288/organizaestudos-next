@@ -11,6 +11,19 @@ type TopicInfoDialogProps = {
     hasAttachments: boolean | undefined;
 }
 
+const formatUtcDateToLocalDisplay = (utcDateString: string | Date | undefined): string => {
+    if (!utcDateString) return '';
+    const dateObj = new Date(utcDateString);
+    if (isNaN(dateObj.getTime())) return '';
+
+    const year = dateObj.getUTCFullYear();
+    const month = dateObj.getUTCMonth();
+    const day = dateObj.getUTCDate();
+
+    const localDate = new Date(year, month, day);
+    return localDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+};
+
 export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicInfoDialogProps) {
     return (
         <FieldGroup>
@@ -34,11 +47,11 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                 {topic.status === "CONCLUIDO" ? (
                     <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
                         <span>1° Revisão (24h): </span>
-                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : new Date(topic.reviews.first.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{new Date(topic.reviews.first.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : new Date(topic.reviews.first.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.first.date)}</span>
                         <span>2° Revisão (7 dias): </span>
-                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : new Date(topic.reviews.second.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{new Date(topic.reviews.second.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : new Date(topic.reviews.second.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
                         <span>3° Revisão (30 dias): </span>
-                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : new Date(topic.reviews.third.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{new Date(topic.reviews.third.date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : new Date(topic.reviews.third.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
                     </div>
                 ) : (
                     <p className="text-xs text-base-content/50 italic mt-1">Conclua o assunto para ver o cronograma de revisões.</p>

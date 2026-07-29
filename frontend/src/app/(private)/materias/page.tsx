@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { FormEvent, useEffect, useState } from "react";
 import SubjectBox from "@/components/subject-box";
-import { getTopics, updateTopicStatus } from "@/services/topics.service";
+import { getTopics, updateTopic, updateTopicStatus } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 import { createSubject, getSubjects } from "@/services/subjects.service";
@@ -78,6 +78,17 @@ export default function MateriasPage() {
         }
     }
 
+    async function handleEditTopic(topicId: string, title: string, link: string, review1: string) {
+        try {
+            await updateTopic(topicId, title, link, review1);
+            toast.success("Assunto editado!");
+            await loadSubjects();
+        } catch (error) {
+            toast.error("Falha ao editar assunto!");
+            console.error("Erro ao editar assunto:", error);
+        }
+    }
+
     return (
         <div className="flex flex-col min-h-screen">
             <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card">Matérias</h1>
@@ -109,6 +120,7 @@ export default function MateriasPage() {
                         subject={subject}
                         onUpdate={loadSubjects}
                         onStatusChange={handleTopicStatusChange}
+                        onEditTopic={handleEditTopic}
                     />
                 ))}
             </div>

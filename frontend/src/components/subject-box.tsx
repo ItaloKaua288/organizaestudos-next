@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, ArrowDown, CheckCircle2, Paperclip, PencilLine, Trash2, Eye, FileText, Clock, Plus } from "lucide-react";
+import { ArrowUp, ArrowDown, CheckCircle2, Paperclip, PencilLine, Trash2, Eye, FileText, Clock, Plus, Link } from "lucide-react";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { FieldGroup, Field } from "./ui/field";
@@ -23,7 +23,7 @@ type SubjectBoxProps = {
     onMoveUp?: (index: number) => void;
     onMoveDown?: (index: number) => void;
     onAttachPDF?: (topicId: string, file: File) => void;
-    onEditTopic?: (topicId: string) => void;
+    onEditTopic?: (topicId: string, title: string, link: string, review1: string) => void;
     onDeleteTopic?: (topicId: string) => void;
     onUpdate?: () => void;
 };
@@ -179,6 +179,21 @@ export default function SubjectBox({
     );
 }
 
+function formatDateForInput(dateSource: string | Date | undefined): string {
+    if (!dateSource) {
+        return '';
+    }
+    try {
+        const date = new Date(dateSource);
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+        return date.toISOString().split('T')[0];
+    } catch (e) {
+        return '';
+    }
+}
+
 type TopicRowProps = {
     topic: Topic;
     index: number;
@@ -201,6 +216,11 @@ function TopicRow({
     onDeleteTopic,
 }: TopicRowProps) {
     const hasAttachments = topic.attachments && topic.attachments.length > 0;
+    const [editedTitle, setEditedTitle] = useState(topic.title);
+    const [editedLink, setEditedLink] = useState((topic as any).link || '');
+    const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -208,6 +228,24 @@ function TopicRow({
             onAttachPDF(topic.id, file);
         }
         e.target.value = "";
+    };
+
+    const handleEditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (onEditTopic) {
+            onEditTopic(topic.id, editedTitle, editedLink, editedFirstReviewDate);
+            setIsEditDialogOpen(false);
+        }
+    };
+
+    const handleOpenChange = (open: boolean) => {
+        if (open) {
+            setEditedTitle(topic.title);
+            setEditedLink((topic as any).link || '');
+            const firstReviewDate = topic.status === 'CONCLUIDO' ? (topic as any).reviews?.first?.date : undefined;
+            setEditedFirstReviewDate(formatDateForInput(firstReviewDate));
+        }
+        setIsEditDialogOpen(open);
     };
 
     return (
@@ -272,6 +310,17 @@ function TopicRow({
                             />
                         </DialogDemo>
 
+                        {topic.link && (
+                            <a
+                                href={topic.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-ghost btn-xs p-1 hover:text-primary sm:btn-sm"
+                            >
+                                <Link size={15} />
+                            </a>
+                        )}
+
                         <label
                             className="btn btn-ghost btn-xs cursor-pointer p-1 transition-colors hover:text-primary sm:btn-sm"
                             title="Anexar PDF"
@@ -291,7 +340,40 @@ function TopicRow({
                             contentBtn={<PencilLine className="" size={15} />}
                             classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-primary"
                             nameConfirmBtn="Editar"
+                            onSubmit={handleEditSubmit}
+                            open={isEditDialogOpen}
+                            onOpenChange={handleOpenChange}
                         >
+                            <FieldGroup>
+                                <Field>
+                                    <Label htmlFor="topic-title">Título</Label>
+                                    <Input
+                                        id="topic-title"
+                                        value={editedTitle}
+                                        onChange={(e) => setEditedTitle(e.target.value)}
+                                    />
+                                </Field>
+                                <Field>
+                                    <Label className="flex gap-1" htmlFor="topic-link">Link<span className="p-0 m-0 text-card-foreground/40">(Opcional)</span> </Label>
+                                    <Input
+                                        id="topic-link"
+                                        value={editedLink}
+                                        onChange={(e) => setEditedLink(e.target.value)}
+                                        placeholder="https://..."
+                                    />
+                                </Field>
+                                {topic.status === 'CONCLUIDO' && (
+                                    <Field>
+                                        <label htmlFor="topic-first-review-date">Data da primeira revisão </label>
+                                        <Input
+                                            type="date"
+                                            id="topic-first-review-date"
+                                            value={editedFirstReviewDate}
+                                            onChange={(e) => setEditedFirstReviewDate(e.target.value)}
+                                        />
+                                    </Field>
+                                )}
+                            </FieldGroup>
                         </DialogDemo>
 
                         <DialogDemo
@@ -302,14 +384,6 @@ function TopicRow({
                             nameConfirmBtn="Excluir"
                         >
                         </DialogDemo>
-                        {/* <button
-                            type="button"
-                            onClick={() => onDeleteTopic?.(topic.id)}
-                            className="btn btn-ghost btn-xs p-1 hover:text-destructive sm:btn-sm"
-                            title="Deletar Assunto"
-                        >
-                            <Trash2 size={15} />
-                        </button> */}
                     </div>
                 </div>
             </div>
