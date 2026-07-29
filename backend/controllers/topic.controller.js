@@ -71,31 +71,18 @@ export const updateTopic = async (req, res) => {
         }
 
         if (title) topic.title = title;
-
-        // Atualiza o link. A verificação `!== undefined` permite que um link seja limpo (enviando uma string vazia).
         if (link !== undefined) topic.link = link;
 
-        // NOVO: Atualiza as datas manualmente se vierem na requisição
-        if (review1) topic.review1 = review1;
-        if (review2) topic.review2 = review2;
-        if (review3) topic.review3 = review3;
-
-        // Mantém a lógica existente do status
         if (status) {
-            topic.status = status;
+            topic.status = status
+
             if (status === "CONCLUIDO") {
-                // Só cria novas datas automaticamente se não estivermos enviando elas na edição
                 const today = new Date();
-                today.setUTCHours(0, 0, 0, 0); // Zera a hora para UTC meia-noite
+                today.setUTCHours(0, 0, 0, 0);
 
-                if (!review1) topic.review1 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000); // 1 dia depois
-                if (!review2) topic.review2 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 dias depois
-                if (!review3) topic.review3 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 dias depois
-
-                // As datas de revisão concluídas devem ser definidas como false por padrão ao concluir um tópico
-                // topic.review1_concluded = false;
-                // topic.review2_concluded = false;
-                // topic.review3_concluded = false;
+                topic.review1 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000);
+                topic.review2 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                topic.review3 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
             } else {
                 topic.review1 = null;
                 topic.review2 = null;
@@ -103,6 +90,14 @@ export const updateTopic = async (req, res) => {
                 topic.review1_concluded = false;
                 topic.review2_concluded = false;
                 topic.review3_concluded = false;
+            }
+        } else {
+            if (review1) {
+                const baseDate = new Date(review1);
+
+                topic.review1 = baseDate;
+                topic.review2 = new Date(baseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+                topic.review3 = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
             }
         }
 
@@ -114,7 +109,6 @@ export const updateTopic = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error" });
     }
 }
-
 
 
 export const reorderTopics = async (req, res) => {
