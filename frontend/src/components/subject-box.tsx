@@ -15,7 +15,7 @@ import { deleteSubject, updateSubject } from "@/services/subjects.service";
 import { Subject } from "@/types/subject";
 import { TopicStatus, Topic } from "@/types/topic";
 import { Button } from "./ui/button";
-import { createTopic } from "@/services/topics.service";
+import { createTopic, deleteTopic } from "@/services/topics.service";
 
 type SubjectBoxProps = {
     subject: Subject;
@@ -24,7 +24,6 @@ type SubjectBoxProps = {
     onMoveDown?: (index: number) => void;
     onAttachPDF?: (topicId: string, file: File) => void;
     onEditTopic?: (topicId: string, title: string, link: string, review1: string) => void;
-    onDeleteTopic?: (topicId: string) => void;
     onUpdate?: () => void;
 };
 
@@ -35,7 +34,6 @@ export default function SubjectBox({
     onMoveDown,
     onAttachPDF,
     onEditTopic,
-    onDeleteTopic,
     onUpdate,
 }: SubjectBoxProps) {
     const [draftTitle, setDraftTitle] = useState(subject.title);
@@ -97,6 +95,20 @@ export default function SubjectBox({
             setIsPending(false);
         }
     }
+
+    const handleTopicDelete = async (topicId: string) => {
+        try {
+            setIsPending(true);
+            await deleteTopic(topicId); // Certifique-se de importar o deleteTopic dos services
+            toast.success("Assunto deletado com sucesso");
+            if (onUpdate) onUpdate();
+        } catch (error) {
+            console.error("Falha ao deletar o assunto", error);
+            toast.error("Falha ao deletar o assunto");
+        } finally {
+            setIsPending(false);
+        }
+    };
 
     const topics = subject.topics || [];
 
@@ -162,7 +174,7 @@ export default function SubjectBox({
                         onStatusChange={onStatusChange}
                         onAttachPDF={onAttachPDF}
                         onEditTopic={onEditTopic}
-                        onDeleteTopic={onDeleteTopic}
+                        onDeleteTopic={handleTopicDelete}
                     />
                 ))}
                 {topics.length === 0 && (
@@ -179,7 +191,7 @@ export default function SubjectBox({
     );
 }
 
-function formatDateForInput(dateSource: string | Date | undefined): string {
+function formatDateForInput(dateSource: string | Date | null): string {
     if (!dateSource) {
         return '';
     }
@@ -200,6 +212,7 @@ type TopicRowProps = {
     isFirst: boolean;
     isLast: boolean;
     subject: Subject;
+    onDeleteTopic: (topicId:string) => void;
 } & Omit<SubjectBoxProps, "subject">;
 
 function TopicRow({
@@ -217,7 +230,7 @@ function TopicRow({
 }: TopicRowProps) {
     const hasAttachments = topic.attachments && topic.attachments.length > 0;
     const [editedTitle, setEditedTitle] = useState(topic.title);
-    const [editedLink, setEditedLink] = useState((topic as any).link || '');
+    const [editedLink, setEditedLink] = useState((topic as Topic).link || '');
     const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
@@ -241,8 +254,8 @@ function TopicRow({
     const handleOpenChange = (open: boolean) => {
         if (open) {
             setEditedTitle(topic.title);
-            setEditedLink((topic as any).link || '');
-            const firstReviewDate = topic.status === 'CONCLUIDO' ? (topic as any).reviews?.first?.date : undefined;
+            setEditedLink((topic as Topic).link || '');
+            const firstReviewDate = topic.status === 'CONCLUIDO' ? new Date((topic as Topic).reviews?.first?.date) : null;
             setEditedFirstReviewDate(formatDateForInput(firstReviewDate));
         }
         setIsEditDialogOpen(open);
@@ -382,6 +395,7 @@ function TopicRow({
                             contentBtn={<Trash2 className="" size={15} />}
                             classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-destructive"
                             nameConfirmBtn="Excluir"
+                            onSubmit={() => onDeleteTopic(topic.id)}
                         >
                         </DialogDemo>
                     </div>

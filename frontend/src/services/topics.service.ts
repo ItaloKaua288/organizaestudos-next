@@ -92,3 +92,22 @@ export async function updateTopic(topicId: string, title: string, link: string, 
         throw error;
     }
 }
+
+export async function deleteTopic(topicId: string) {
+    try {
+        const res = await fetch(`/api/topics/${topicId}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Falha ao deletar o assunto!");
+        }
+
+        return await res.json();
+    } catch (error) {
+        console.error("Falha ao deletar o assunto", error);
+        throw error;
+    }
+}
