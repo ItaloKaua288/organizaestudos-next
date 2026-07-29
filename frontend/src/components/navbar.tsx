@@ -51,15 +51,15 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed z-10 h-16 min-h-16 border-b bg-muted w-full">
-      <div className="mx-auto flex h-full max-w-(--breakpoint-3xl) items-center justify-between px-2">
-        <div className="flex items-center gap-12">
+    <nav className="fixed left-1/2 z-10 h-16 min-h-16 w-full  -translate-x-1/2 border-b bg-muted">
+      <div className="relative mx-auto flex h-full max-w-(--breakpoint-3xl) items-center justify-between px-2 ">
+        <div className="flex items-center">
             <Logo />
-
-          {/* Desktop Menu */}
+        </div>
+        {/* Desktop Menu */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <NavMenu className="hidden md:block" />
         </div>
-
         <div className="flex items-center gap-2 sm:gap-3">
           {!isLoading && !isAuthenticated && (
             <>
