@@ -138,7 +138,7 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <ProgressLabelDemo
-                            value={progressPercentage}
+                            value={Number(progressPercentage.toFixed(2))}
                             label="Progresso Geral"
                             description="dos assuntos foram concluídos"
                         />

@@ -285,23 +285,31 @@ function TopicRow({
                             <Paperclip size={15} />
                         </label>
 
-                        <button
-                            type="button"
-                            onClick={() => onEditTopic?.(topic.id)}
-                            className="btn btn-ghost btn-xs p-1 hover:text-primary sm:btn-sm"
+                        <DialogDemo
                             title="Editar Assunto"
+                            description="Modifique os detalhes deste assunto."
+                            contentBtn={<PencilLine className="" size={15} />}
+                            classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-primary"
+                            nameConfirmBtn="Editar"
                         >
-                            <PencilLine size={15} />
-                        </button>
+                        </DialogDemo>
 
-                        <button
+                        <DialogDemo
+                            title="Excluir Assunto"
+                            description="Tem certeza que deseja deletar este assunto? Esta ação é irreversível."
+                            contentBtn={<Trash2 className="" size={15} />}
+                            classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-destructive"
+                            nameConfirmBtn="Excluir"
+                        >
+                        </DialogDemo>
+                        {/* <button
                             type="button"
                             onClick={() => onDeleteTopic?.(topic.id)}
                             className="btn btn-ghost btn-xs p-1 hover:text-destructive sm:btn-sm"
                             title="Deletar Assunto"
                         >
                             <Trash2 size={15} />
-                        </button>
+                        </button> */}
                     </div>
                 </div>
             </div>
