@@ -48,16 +48,16 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
             <Field className="flex flex-row gap-2 items-center">
                 <Label htmlFor="description-1">
                     Matéria:
-                    <span className="w-4 h-4 rounded-full shrink-0 inline-block ml-1 align-middle" style={{ backgroundColor: color }} aria-hidden="true"></span>
-                    <span className="ml-1 font-semibold truncate">
-                        {subject}
-                    </span>
+                    <div className="flex items-center gap-1">
+                        <span className="w-4 h-4 rounded-full shrink-0 inline-block align-middle" style={{ backgroundColor: color }} aria-hidden="true"></span>
+                        <span className="font-semibold truncate">{subject}</span>
+                    </div>
                 </Label>
             </Field>
             <Field>
                 <Label>
                     Status:
-                    <Badge className="ml-2" {...(topic.status === "CONCLUIDO" ? { variant: "secondary" } : {})}>{topic.status}</Badge>
+                    <Badge className="" {...(topic.status === "CONCLUIDO" ? { variant: "default" } : { variant: "secondary" })}>{topic.status}</Badge>
                 </Label>
             </Field>
             <Field>
