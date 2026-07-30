@@ -310,6 +310,7 @@ function TopicRow({
                             contentBtn={<Eye className="h-4 w-4" />}
                             title={topic.title}
                             description="Informações do assunto"
+                            disableBtns={true}
                         >
                             <TopicInfoGroup
                                 subject={subject.title}
@@ -391,7 +392,7 @@ function TopicRow({
                             contentBtn={<Trash2 className="" size={15} />}
                             classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-destructive"
                             nameConfirmBtn="Excluir"
-                            onSubmit={() => onDeleteTopic(topic.id)}
+                            onSubmit={(e) => { e.preventDefault(); onDeleteTopic(topic.id); }}
                         >
                         </DialogDemo>
                     </div>

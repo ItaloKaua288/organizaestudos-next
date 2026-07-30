@@ -16,6 +16,8 @@ import { ptBR } from "date-fns/locale";
 import { isToday } from "date-fns";
 import { Timeline } from "@/types/timeline";
 import { getTimeline } from "@/services/timeline.service";
+import { DialogDemo } from "@/components/dialog-button";
+import { TopicInfoGroup } from "@/components/topic-info-group";
 
 
 const subscribeToCurrentDay = () => () => { }
@@ -74,9 +76,9 @@ export default function DashboardPage() {
                 return isToday(adjustedDate);
             })
         );
-        
+
         const reviewTodaySubjects = reviewToday.map(topic => topic.subject);
-        
+
         const timelineSubjects = timelines
             .filter(timeline => timeline.day.toLowerCase() === currentDay.toLowerCase() && timeline.subject)
             .map(timeline => timeline.subject!);
@@ -156,7 +158,7 @@ export default function DashboardPage() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-base font-semibold">Estudar Hoje <Badge variant="secondary">{subjectsToday.length}</Badge></CardTitle>
+                        <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje <Badge variant="secondary">{subjectsToday.length}</Badge></CardTitle>
                         {currentDay && <Badge variant="outline">{currentDay}</Badge>}
                     </CardHeader>
                     <CardContent>
@@ -193,26 +195,27 @@ export default function DashboardPage() {
                             <p className="text-sm text-muted-foreground">Nenhuma revisão agendada para hoje.</p>
                         ) : (
                             <div className="flex flex-col gap-1.5">
+                                <span></span>
                                 {reviewTodayTopics.map((topic) => (
-                                    <Button
-                                        key={`review-${topic.id}`}
-                                        variant="outline"
-                                        className="h-auto w-full justify-start py-2  hoverComponentsStatic border-0"
-                                        render={
-                                            <Link href={`#`} className="flex items-center gap-2">
-                                                <BookOpen
-                                                    className="h-4 w-4 shrink-0"
-                                                    style={{ color: topic.subject.color }}
-                                                />
-                                                <div className="flex min-w-0 flex-col text-left">
-                                                    <span className="truncate font-medium">{topic.title}</span>
-                                                    <span className="truncate text-xs text-muted-foreground">
-                                                        {topic.subject.title}
-                                                    </span>
+                                    <DialogDemo
+                                        key={topic.id}
+                                        title={topic.title}
+                                        description="Informações sobre o tópico da revisão"
+                                        contentBtn={
+                                            <div className="flex items-center gap-2">
+                                                <BookOpen style={{ color: topic.subject.color }} />
+                                                <div className="flex flex-col  items-start gap-1 ">
+                                                    <span>{topic.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{topic.subject.title}</span>
                                                 </div>
-                                            </Link>
+                                            </div>
+
                                         }
-                                    />
+                                        disableBtns={true}
+                                        classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-6 rounded-sm"
+                                    >
+                                        <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
+                                    </DialogDemo>
                                 ))}
                             </div>
                         )}

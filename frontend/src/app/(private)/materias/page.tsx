@@ -5,13 +5,16 @@ import { Topic } from "@/types/topic";
 import { Subject } from "@/types/subject";
 
 export default async function MateriasPage() {
-    let subjectsWithTopics: (Subject & { topics: Topic[] })[];
+    let subjectsWithTopics: (Subject & { topics: Topic[] })[] = [];
 
     try {
-        const [allSubjects, allTopics] = await Promise.all([
+        let [allSubjects, allTopics] = await Promise.all([
             getSubjects(),
             getTopics()
         ]);
+
+        allSubjects = []
+        allTopics = []
 
         const topicsMap = new Map();
         allTopics.forEach((topic: Topic) => {
@@ -29,12 +32,6 @@ export default async function MateriasPage() {
 
     } catch (error) {
         console.error("Erro ao carregar dados no servidor:", error);
-
-        return (
-            <div className="p-4 text-red-500">
-                <h2>Erro ao carregar as matérias.</h2>
-            </div>
-        );
     }
     return <MateriasClient subjects={subjectsWithTopics} />;
 }

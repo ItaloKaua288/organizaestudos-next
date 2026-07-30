@@ -21,7 +21,25 @@ export const formatUtcDateToLocalDisplay = (utcDateString: string | Date | undef
     const day = dateObj.getUTCDate();
 
     const localDate = new Date(year, month, day);
-    return localDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    return localDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+const isDateOverdue = (dateString: string | Date | undefined): boolean => {
+    if (!dateString) return false;
+
+    const reviewDateUTC = new Date(dateString);
+    if (isNaN(reviewDateUTC.getTime())) return false;
+
+    const reviewDate = new Date(
+        reviewDateUTC.getUTCFullYear(),
+        reviewDateUTC.getUTCMonth(),
+        reviewDateUTC.getUTCDate()
+    );
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return today.getTime() >= reviewDate.getTime();
 };
 
 export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicInfoDialogProps) {
@@ -30,16 +48,16 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
             <Field className="flex flex-row gap-2 items-center">
                 <Label htmlFor="description-1">
                     Matéria:
-                    <span className="w-4 h-4 rounded-full shrink-0 inline-block ml-1 align-middle" style={{ backgroundColor: color }} aria-hidden="true"></span>
-                    <span className="ml-1 font-semibold truncate">
-                        {subject}
-                    </span>
+                    <div className="flex items-center gap-1">
+                        <span className="w-4 h-4 rounded-full shrink-0 inline-block align-middle" style={{ backgroundColor: color }} aria-hidden="true"></span>
+                        <span className="font-semibold truncate">{subject}</span>
+                    </div>
                 </Label>
             </Field>
             <Field>
                 <Label>
                     Status:
-                    <Badge className="ml-2" {...(topic.status === "CONCLUIDO" ? { variant: "secondary" } : {})}>{topic.status}</Badge>
+                    <Badge className="" {...(topic.status === "CONCLUIDO" ? { variant: "default" } : { variant: "secondary" })}>{topic.status}</Badge>
                 </Label>
             </Field>
             <Field>
@@ -47,11 +65,11 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                 {topic.status === "CONCLUIDO" ? (
                     <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
                         <span>1° Revisão (24h): </span>
-                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : new Date(topic.reviews.first.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.first.date)}</span>
+                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : isDateOverdue(topic.reviews.first.date) ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.first.date)}</span>
                         <span>2° Revisão (7 dias): </span>
-                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : new Date(topic.reviews.second.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
+                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : isDateOverdue(topic.reviews.second.date) ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
                         <span>3° Revisão (30 dias): </span>
-                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : new Date(topic.reviews.third.date).getTime() < Date.now() ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
+                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : isDateOverdue(topic.reviews.third.date) ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
                     </div>
                 ) : (
                     <p className="text-xs text-base-content/50 italic mt-1">Conclua o assunto para ver o cronograma de revisões.</p>
