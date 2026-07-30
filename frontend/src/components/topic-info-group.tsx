@@ -42,6 +42,23 @@ const isDateOverdue = (dateString: string | Date | undefined): boolean => {
     return today.getTime() >= reviewDate.getTime();
 };
 
+const isToday = (date: Date | string): boolean => {
+    if (!date) return false;
+    const targetUTC = new Date(date);
+    if (isNaN(targetUTC.getTime())) return false;
+
+    const target = new Date(
+        targetUTC.getUTCFullYear(),
+        targetUTC.getUTCMonth(),
+        targetUTC.getUTCDate()
+    );
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return today.getTime() === target.getTime();
+};
+
 export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicInfoDialogProps) {
     return (
         <FieldGroup>
@@ -65,11 +82,11 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                 {topic.status === "CONCLUIDO" ? (
                     <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
                         <span>1° Revisão (24h): </span>
-                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : isDateOverdue(topic.reviews.first.date) ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.first.date)}</span>
+                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : isToday(topic.reviews.first.date) ? "text-primary" : isDateOverdue(topic.reviews.first.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.first.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.first.date)} </span>
                         <span>2° Revisão (7 dias): </span>
-                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : isDateOverdue(topic.reviews.second.date) ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
+                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : isToday(topic.reviews.second.date) ? "text-primary" : isDateOverdue(topic.reviews.second.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.second.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
                         <span>3° Revisão (30 dias): </span>
-                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : isDateOverdue(topic.reviews.third.date) ? "text-destructive" : ""} text-right font-mono`}>{formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
+                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : isToday(topic.reviews.third.date) ? "text-primary" : isDateOverdue(topic.reviews.third.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.third.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
                     </div>
                 ) : (
                     <p className="text-xs text-base-content/50 italic mt-1">Conclua o assunto para ver o cronograma de revisões.</p>
