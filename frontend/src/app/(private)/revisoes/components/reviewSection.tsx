@@ -37,6 +37,7 @@ export function ReviewSection({ title, icon, topics }: ReviewSectionProps) {
                                     variant="label"
                                     title={item.title}
                                     description="Informações sobre o tópico da revisão"
+                                    disableBtns={true}
                                     contentBtn={
                                         <div className="hoverComponents flex items-center justify-between w-full gap-3 border border-base-content/10 bg-base-200/30 p-2 rounded-md hover:bg-base-200/60 transition-all">
                                             <div className="flex-1 min-w-0 text-sm flex items-center gap-2.5">

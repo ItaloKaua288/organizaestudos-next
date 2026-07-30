@@ -13,6 +13,8 @@ import { Field, FieldGroup } from "@/components/ui/field"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { Subject } from "@/types/subject"
+import { getSubjects } from "@/services/subjects.service"
 
 const WEEK_DAYS = [
     "Segunda", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"
@@ -50,6 +52,7 @@ export default function CronogramaPage() {
             }
         }
         loadData()
+        loadSubjects()
     }, [])
 
     const { timelineByDay, activeTopicsMap } = useMemo(() => {
@@ -71,6 +74,32 @@ export default function CronogramaPage() {
 
         return { timelineByDay: grouped, activeTopicsMap: topicsMap }
     }, [timeline, topics])
+
+
+    const [subjects, setSubjects] = useState<Subject[]>([])
+
+    async function loadSubjects() {
+        const [allSubjects, allTopics] = await Promise.all([
+            getSubjects(),
+            getTopics()
+        ])
+
+        const topicsMap = new Map<string, Topic[]>()
+        allTopics.forEach((topic) => {
+            const subjectId = topic.subject.id
+            if (!topicsMap.has(subjectId)) {
+                topicsMap.set(subjectId, [])
+            }
+            topicsMap.get(subjectId)?.push(topic)
+        })
+
+        const subjectsWithTopics = allSubjects.map((subject) => ({
+            ...subject,
+            topics: topicsMap.get(subject.id) ?? []
+        }))
+
+        setSubjects(subjectsWithTopics)
+    }
 
     return (
         <main className="space-y-4">
@@ -101,8 +130,9 @@ export default function CronogramaPage() {
                                 <CardTitle className="truncate">{dayLabel}</CardTitle>
                                 <CardAction>
                                     <DialogDemo
-                                        title="Adicionar Matéria"
+                                        title={`Adicionar matéria na ${dayLabel}`}
                                         description=" "
+                                        nameConfirmBtn="Adicionar"
                                         contentBtn={
                                             <div className="flex items-center gap-1">
                                                 <Plus className="h-4 w-4" />
@@ -114,14 +144,14 @@ export default function CronogramaPage() {
                                                 <Label>Matéria:</Label>
                                                 <Select>
                                                     <SelectTrigger>
-                                                        <SelectValue />
+                                                        <SelectValue placeholder="Selecione uma matéria" />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectGroup>
-                                                            <SelectLabel>Dias da Semana</SelectLabel>
-                                                            {WEEK_DAYS.map((day) => (
-                                                                <SelectItem key={day} value={day}>
-                                                                    {day}
+                                                            <SelectLabel>Matérias</SelectLabel>
+                                                            {subjects.map((subject) => (
+                                                                <SelectItem key={subject.id} value={subject.title}>
+                                                                    {subject.title}
                                                                 </SelectItem>
                                                             ))}
                                                         </SelectGroup>

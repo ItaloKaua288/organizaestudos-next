@@ -314,6 +314,7 @@ function TopicRow({
                             contentBtn={<Eye className="h-4 w-4" />}
                             title={topic.title}
                             description="Informações do assunto"
+                            disableBtns={true}
                         >
                             <TopicInfoGroup
                                 subject={subject.title}
