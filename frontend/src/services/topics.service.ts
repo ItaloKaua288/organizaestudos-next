@@ -1,14 +1,35 @@
+"use server";
+
 import type { Topic, TopicStatus } from "@/types/topic"
 import { TopicsApiResponse } from "@/types/apiResponse"
+import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
+
+const getBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://organizaestudos-api.vercel.app/api";
+
+async function getAuthHeaders() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    return {
+        "Content-Type": "application/json",
+        ...(token ? { "Cookie": `token=${token}` } : {})
+    };
+}
 
 export async function getTopics(): Promise<Topic[]> {
     try {
-        const res = await fetch(`/api/topics`, {
-            next: { revalidate: 3600 },
-        })
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
 
-        if (!res.ok) throw new Error("Falha ao buscar os tópicos")
-        const data: TopicsApiResponse = await res.json()
+        const res = await fetch(`${baseUrl}/topics`, {
+            headers,
+            next: { revalidate: 3600, tags: ["topics"] },
+        });
+
+        if (!res.ok) throw new Error("Falha ao buscar os tópicos");
+
+        const data: TopicsApiResponse = await res.json();
 
         const formattedTopics: Topic[] = data.topics.map((item) => ({
             id: item._id,
@@ -38,14 +59,18 @@ export async function getTopics(): Promise<Topic[]> {
 
 export async function createTopic(title: string, subject_id: string) {
     try {
-        const res = await fetch("/api/topics", {
-            next: { revalidate: 3600 },
-            method: "POST",
-            headers: { "Content-Type": "application/json", },
-            body: JSON.stringify({ title, subject_id })
-        })
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
 
-        if (!res.ok) throw new Error("Falha ao criar o assunto")
+        const res = await fetch(`${baseUrl}/topics`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ title, subject_id })
+        });
+
+        if (!res.ok) throw new Error("Falha ao criar o assunto");
+
+        revalidatePath("/materias")
     } catch (error) {
         console.error("Falha ao criar o assunto", error)
         throw error
@@ -54,9 +79,12 @@ export async function createTopic(title: string, subject_id: string) {
 
 export async function updateTopicStatus(topicId: string, status: TopicStatus) {
     try {
-        const res = await fetch(`/api/topics/${topicId}`, {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/topics/${topicId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ status })
         });
 
@@ -65,8 +93,8 @@ export async function updateTopicStatus(topicId: string, status: TopicStatus) {
             throw new Error(errorData.message || "Falha ao atualizar o status do tópico!");
         }
 
+        revalidatePath("/materias")
         return await res.json();
-
     } catch (error) {
         console.error("Falha ao atualizar o status do tópico", error);
         throw error;
@@ -75,9 +103,12 @@ export async function updateTopicStatus(topicId: string, status: TopicStatus) {
 
 export async function updateTopic(topicId: string, title: string, link: string, review1: string) {
     try {
-        const res = await fetch(`/api/topics/${topicId}`, {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/topics/${topicId}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: JSON.stringify({ title, link, review1 })
         });
 
@@ -86,6 +117,7 @@ export async function updateTopic(topicId: string, title: string, link: string, 
             throw new Error(errorData.message || "Falha ao atualizar o assunto!");
         }
 
+        revalidatePath("/materias")
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o assunto", error);
@@ -95,9 +127,12 @@ export async function updateTopic(topicId: string, title: string, link: string, 
 
 export async function deleteTopic(topicId: string) {
     try {
-        const res = await fetch(`/api/topics/${topicId}`, {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/topics/${topicId}`, {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" }
+            headers
         });
 
         if (!res.ok) {
@@ -105,6 +140,7 @@ export async function deleteTopic(topicId: string) {
             throw new Error(errorData.message || "Falha ao deletar o assunto!");
         }
 
+        revalidatePath("/materias")
         return await res.json();
     } catch (error) {
         console.error("Falha ao deletar o assunto", error);

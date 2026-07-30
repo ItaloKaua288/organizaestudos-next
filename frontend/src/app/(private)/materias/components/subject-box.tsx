@@ -3,10 +3,10 @@
 import { ArrowUp, ArrowDown, CheckCircle2, Paperclip, PencilLine, Trash2, Eye, FileText, Clock, Plus, Link } from "lucide-react";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
-import { FieldGroup, Field } from "./ui/field";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
-import { ColorPicker } from "./ui/color-picker";
+import { FieldGroup, Field } from "@/components/ui/field";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
@@ -14,7 +14,7 @@ import toast from "react-hot-toast";
 import { deleteSubject, updateSubject } from "@/services/subjects.service";
 import { Subject } from "@/types/subject";
 import { TopicStatus, Topic } from "@/types/topic";
-import { Button } from "./ui/button";
+import { Button } from "../../../../components/ui/button";
 import { createTopic, deleteTopic } from "@/services/topics.service";
 
 type SubjectBoxProps = {
@@ -34,7 +34,6 @@ export default function SubjectBox({
     onMoveDown,
     onAttachPDF,
     onEditTopic,
-    onUpdate,
 }: SubjectBoxProps) {
     const [draftTitle, setDraftTitle] = useState(subject.title);
     const [draftColor, setDraftColor] = useState(subject.color);
@@ -57,7 +56,6 @@ export default function SubjectBox({
             await updateSubject(draftTitle, draftColor, subject.id);
             toast.success("Matéria atualizada");
             setIsEditOpen(false)
-            if (onUpdate) onUpdate();
         } catch (error) {
             console.error("Falha ao atualizar a matéria", error);
             toast.error("Falha ao atualizar a matéria");
@@ -72,7 +70,6 @@ export default function SubjectBox({
             setIsPending(true);
             await deleteSubject(subject.id);
             toast.success("Matéria deletada");
-            if (onUpdate) onUpdate();
         } catch (error) {
             console.error("Falha ao deletar a matéria", error);
             toast.error("Falha ao deletar a matéria");
@@ -87,7 +84,7 @@ export default function SubjectBox({
             setIsPending(true);
             await createTopic(topicTitle, subject.id);
             toast.success("Assunto criado");
-            if (onUpdate) onUpdate();
+            setTopicTitle("");
         } catch (error) {
             console.error("Falha ao criar o assunto", error);
             toast.error("Falha ao criar o assunto");
@@ -99,9 +96,8 @@ export default function SubjectBox({
     const handleTopicDelete = async (topicId: string) => {
         try {
             setIsPending(true);
-            await deleteTopic(topicId); // Certifique-se de importar o deleteTopic dos services
+            await deleteTopic(topicId);
             toast.success("Assunto deletado com sucesso");
-            if (onUpdate) onUpdate();
         } catch (error) {
             console.error("Falha ao deletar o assunto", error);
             toast.error("Falha ao deletar o assunto");
@@ -212,7 +208,7 @@ type TopicRowProps = {
     isFirst: boolean;
     isLast: boolean;
     subject: Subject;
-    onDeleteTopic: (topicId:string) => void;
+    onDeleteTopic: (topicId: string) => void;
 } & Omit<SubjectBoxProps, "subject">;
 
 function TopicRow({
