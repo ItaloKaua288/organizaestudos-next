@@ -8,13 +8,10 @@ export default async function MateriasPage() {
     let subjectsWithTopics: (Subject & { topics: Topic[] })[] = [];
 
     try {
-        let [allSubjects, allTopics] = await Promise.all([
+        const [allSubjects, allTopics] = await Promise.all([
             getSubjects(),
             getTopics()
         ]);
-
-        allSubjects = []
-        allTopics = []
 
         const topicsMap = new Map();
         allTopics.forEach((topic: Topic) => {
