@@ -202,12 +202,17 @@ export default function DashboardPage() {
                                         title={topic.title}
                                         description="Informações sobre o tópico da revisão"
                                         contentBtn={
-                                            <span className="flex items-center gap-1">
-                                                <BookOpen style={{ color: topic.subject.color }} /> {topic.title}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <BookOpen style={{ color: topic.subject.color }} />
+                                                <div className="flex flex-col  items-start gap-1 ">
+                                                    <span>{topic.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{topic.subject.title}</span>
+                                                </div>
+                                            </div>
+
                                         }
                                         disableBtns={true}
-                                        classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-4.5"
+                                        classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-6 rounded-sm"
                                     >
                                         <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
                                     </DialogDemo>
