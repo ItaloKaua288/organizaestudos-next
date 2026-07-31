@@ -1,112 +1,77 @@
-"use client"
-
-import { BookOpen, ClipboardClock, BadgeCheck } from "lucide-react";
-import ProgressLabelDemo from "@/components/progress-label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { getTopics } from "@/services/topics.service";
-import { Button } from "@/components/ui/button";
-import Link from "next/link"
-import { Calendar } from "@/components/ui/calendar";
-import { getSubjects } from "@/services/subjects.service";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { Topic } from "@/types/topic";
-import { Subject } from "@/types/subject";
-import { ptBR } from "date-fns/locale";
-import { isToday } from "date-fns";
-import { Timeline } from "@/types/timeline";
-import { getTimeline } from "@/services/timeline.service";
 import { DialogDemo } from "@/components/dialog-button";
+import ProgressLabelDemo from "@/components/progress-label";
 import { TopicInfoGroup } from "@/components/topic-info-group";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getSubjects } from "@/services/subjects.service";
+import { getTimeline } from "@/services/timeline.service";
+import { getTopics } from "@/services/topics.service";
+import { isToday } from "date-fns";
+import { AlertCircle, BadgeCheck, BookOpen, ClipboardClock } from "lucide-react";
 
 
-const subscribeToCurrentDay = () => () => { }
+function isReviewScheduledForToday(reviewDateString?: string | Date) {
+    if (!reviewDateString) return false;
 
-const getBrowserCurrentDay = () =>
-    new Intl.DateTimeFormat("pt-BR", {
-        weekday: "long",
-    }).format(new Date())
+    const reviewDate = new Date(reviewDateString);
+    const adjustedDate = new Date(
+        reviewDate.getUTCFullYear(),
+        reviewDate.getUTCMonth(),
+        reviewDate.getUTCDate()
+    );
 
-const getServerCurrentDay = () => ""
+    return isToday(adjustedDate);
+}
 
-export default function DashboardPage() {
-    const [topics, setTopics] = useState<Topic[]>([])
-    const [subjects, setSubjects] = useState<Subject[]>([])
-    const [timelines, setTimelines] = useState<Timeline[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+export default async function DashboardPage() {
+    const currentDayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(new Date());
 
-    const currentDay = useSyncExternalStore(
-        subscribeToCurrentDay,
-        getBrowserCurrentDay,
-        getServerCurrentDay
-    )
+    let data = null;
 
-    useEffect(() => {
-        async function loadData() {
-            try {
-                setIsLoading(true)
-                const [topicsData, subjectsData, timelinesData] = await Promise.all([
-                    getTopics(),
-                    getSubjects(),
-                    getTimeline(),
-                ])
-                setTopics(topicsData)
-                setSubjects(subjectsData)
-                setTimelines(timelinesData)
-            } catch (error) {
-                console.error("Erro ao carregar dados do dashboard:", error)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-        loadData()
-    }, [])
-
-    const { pendingTopics, concludedTopics, reviewTodayTopics, subjectsToday } = useMemo(() => {
-        const pending = topics.filter((topic) => topic.status === "PENDENTE")
-        const concluded = topics.filter((topic) => topic.status === "CONCLUIDO")
-
-        const reviewToday = topics.filter((topic) =>
-            Object.values(topic.reviews || {}).some((review) => {
-                if (!review.date || review.concluded) {
-                    return false;
-                }
-                const reviewDate = new Date(review.date);
-                const adjustedDate = new Date(
-                    reviewDate.getUTCFullYear(),
-                    reviewDate.getUTCMonth(),
-                    reviewDate.getUTCDate()
-                );
-                return isToday(adjustedDate);
-            })
+    try {
+        const [subjectsRes, topicsRes, timelineRes] = await Promise.all([
+            getSubjects(),
+            getTopics(),
+            getTimeline()
+        ]);
+        data = { subjects: subjectsRes, topics: topicsRes, timeline: timelineRes };
+    } catch (error) {
+        console.error("Falha ao carregar os dados do dashboard:", error);
+        return (
+            <main className="flex min-h-screen items-center justify-center p-4">
+                <div className="flex flex-col items-center gap-2 text-destructive">
+                    <AlertCircle size={40} />
+                    <h2 className="text-xl font-bold">Erro ao carregar dados</h2>
+                    <p className="text-muted-foreground text-sm">Não foi possível conectar ao servidor.</p>
+                </div>
+            </main>
         );
+    }
 
-        const reviewTodaySubjects = reviewToday.map(topic => topic.subject);
+    const pendingTopics = data.topics.filter((t) => t.status === "PENDENTE");
+    const concludedTopics = data.topics.filter((t) => t.status === "CONCLUIDO");
 
-        const timelineSubjects = timelines
-            .filter(timeline => timeline.day.toLowerCase() === currentDay.toLowerCase() && timeline.subject)
-            .map(timeline => timeline.subject!);
+    const reviewTodayTopics = data.topics.filter((topic) =>
+        Object.values(topic.reviews || {}).some(
+            (review) => !review.concluded && isReviewScheduledForToday(review.date)
+        )
+    );
 
-        const subjectsToday = [
-            ...new Map(
-                [...timelineSubjects, ...reviewTodaySubjects]
-                    .map(subject => [subject.id, subject])
-            ).values()
-        ];
+    const reviewTodaySubjects = reviewTodayTopics.map(topic => topic.subject);
+    const timelineSubjects = data.timeline
+        .filter(t => t.day.toLowerCase() === currentDayName.toLowerCase() && t.subject)
+        .map(t => t.subject!);
 
-        return {
-            pendingTopics: pending,
-            concludedTopics: concluded,
-            reviewTodayTopics: reviewToday,
-            subjectsToday,
-        };
-    }, [topics, timelines, currentDay])
+    const subjectsToday = [
+        ...new Map(
+            [...timelineSubjects, ...reviewTodaySubjects].map(subject => [subject.id, subject])
+        ).values()
+    ];
 
-    const progressPercentage = topics.length > 0
-        ? (concludedTopics.length / topics.length) * 100
-        : 0
+    const progressPercentage = data.topics.length > 0
+        ? (concludedTopics.length / data.topics.length) * 100
+        : 0;
 
     return (
         <main className="flex min-h-screen flex-col space-y-4 pb-8">
@@ -122,7 +87,7 @@ export default function DashboardPage() {
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {isLoading ? <Spinner className="my-2" /> : <span className="text-2xl font-bold">{subjects.length}</span>}
+                        <span className="text-2xl font-bold">{data.subjects.length}</span>
                     </CardContent>
                 </Card>
 
@@ -132,7 +97,7 @@ export default function DashboardPage() {
                         <ClipboardClock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {isLoading ? <Spinner className="my-2" /> : <span className="text-2xl font-bold">{pendingTopics.length}</span>}
+                        <span className="text-2xl font-bold">{pendingTopics.length}</span>
                     </CardContent>
                 </Card>
 
@@ -142,70 +107,35 @@ export default function DashboardPage() {
                         <BadgeCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {isLoading ? <Spinner className="my-2" /> : <span className="text-2xl font-bold">{concludedTopics.length}</span>}
-
+                        <span className="text-2xl font-bold">{concludedTopics.length}</span>
                     </CardContent>
                 </Card>
             </div>
 
             <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-2">
                 <div className="flex flex-col justify-start">
-                    {isLoading ?
-                        <Card>
-                            <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                                <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
-                                <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-2 py-2 px-6">
-                                <div className="flex justify-between items-center">
-                                    <span className="p-0 m-0">Progresso Geral</span>
-                                    <Spinner className="" />
-                                </div>
-                                <Skeleton className="h-1 w-full mt-1"></Skeleton>
-                                <div className="flex gap-1 items-center">
-                                    <Spinner className="" /> <span className="p-0 m-0 ">dos assuntos foram concluídos</span>
-                                </div>
-                            </CardContent>
-                        </Card> :
-
-                        <Card className="flex flex-col justify-start">
-                            <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                                <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
-                                <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <ProgressLabelDemo
-                                    value={Number(progressPercentage.toFixed(2))}
-                                    label="Progresso Geral"
-                                    description="dos assuntos foram concluídos"
-                                />
-                            </CardContent>
-                        </Card>
-                    }
-
+                    <Card className="flex flex-col justify-start">
+                        <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
+                            <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
+                            <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <ProgressLabelDemo
+                                value={Number(progressPercentage.toFixed(2))}
+                                label="Progresso Geral"
+                                description="dos assuntos foram concluídos"
+                            />
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje {isLoading ? <Badge className="w-5.5 h-5.5 p-0" variant="secondary"> <Spinner className="" /></Badge> : <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{subjectsToday.length}</Badge>} </CardTitle>
-                        {isLoading ? <Skeleton className="w-20 h-5 rounded-lg"></Skeleton> : currentDay && <Badge variant="outline">{currentDay}</Badge>}
+                        <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{subjectsToday.length}</Badge></CardTitle>
+                        {currentDayName && <Badge variant="outline">{currentDayName}</Badge>}
                     </CardHeader>
                     <CardContent>
-                        {isLoading ?
-                            <div className="flex flex-col gap-1">
-                                <div className="hoverComponentsStatic w-full h-9 rounded-sm flex flex-col justify-center p-2">
-                                    <div className="flex gap-2">
-                                        <Skeleton className="w-3 h-3" />
-                                        <Skeleton className="w-20 h-3" />
-                                    </div>
-                                </div>
-                                <div className="hoverComponentsStatic w-full h-9 rounded-sm flex flex-col justify-center p-2">
-                                    <div className="flex gap-2">
-                                        <Skeleton className="w-3 h-3" />
-                                        <Skeleton className="w-20 h-3" />
-                                    </div>
-                                </div>
-                            </div> :
+                        {
                             !subjectsToday.length ? (
                                 <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
                             ) : (
@@ -230,71 +160,38 @@ export default function DashboardPage() {
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                             Revisar Hoje
-                            {isLoading ? <Badge className="w-5.5 h-5.5 p-0" variant="secondary"> <Spinner className="" /></Badge> : <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{reviewTodayTopics.length}</Badge>}
+                            <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{reviewTodayTopics.length}</Badge>
                         </CardTitle>
-                        {isLoading ? <Skeleton className="w-20 h-5 rounded-lg"></Skeleton> : currentDay && <Badge variant="outline">{currentDay}</Badge>}
+                        {currentDayName && <Badge variant="outline">{currentDayName}</Badge>}
                     </CardHeader>
                     <CardContent className="max-h-60 overflow-y-auto pb-4 ">
-                        {isLoading ?
-                            <div className="">
-                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
-                                    <Skeleton className="w-5 h-5" />
-                                    <div className="flex flex-col gap-1">
-                                        <Skeleton className="w-20 h-3" />
-                                        <Skeleton className="w-20 h-3" />
-                                    </div>
-                                </div>
-                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
-                                    <Skeleton className="w-5 h-5" />
-                                    <div className="flex flex-col gap-1">
-                                        <Skeleton className="w-20 h-3" />
-                                        <Skeleton className="w-20 h-3" />
-                                    </div>
-                                </div>
-                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
-                                    <Skeleton className="w-5 h-5" />
-                                    <div className="flex flex-col gap-1">
-                                        <Skeleton className="w-20 h-3" />
-                                        <Skeleton className="w-20 h-3" />
-                                    </div>
-                                </div>
-                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
-                                    <Skeleton className="w-5 h-5" />
-                                    <div className="flex flex-col gap-1">
-                                        <Skeleton className="w-20 h-3" />
-                                        <Skeleton className="w-20 h-3" />
-                                    </div>
-                                </div>
-
-                            </div> : !reviewTodayTopics.length ? (
-                                <p className="text-sm text-muted-foreground">Nenhuma revisão agendada para hoje.</p>
-                            ) : (
-                                <div className="flex flex-col gap-1.5">
-                                    <span></span>
-
-                                    {reviewTodayTopics.map((topic) => (
-                                        <DialogDemo
-                                            key={topic.id}
-                                            title={topic.title}
-                                            description="Informações sobre o tópico da revisão"
-                                            contentBtn={
-                                                <div className="flex items-center gap-2">
-                                                    <BookOpen style={{ color: topic.subject.color }} />
-                                                    <div className="flex flex-col  items-start gap-1 ">
-                                                        <span>{topic.title}</span>
-                                                        <span className="text-xs text-muted-foreground">{topic.subject.title}</span>
-                                                    </div>
+                        {!reviewTodayTopics.length ? (
+                            <p className="text-sm text-muted-foreground">Nenhuma revisão agendada para hoje.</p>
+                        ) : (
+                            <div className="flex flex-col gap-1.5">
+                                {reviewTodayTopics.map((topic) => (
+                                    <DialogDemo
+                                        key={topic.id}
+                                        title={topic.title}
+                                        description="Informações sobre o tópico da revisão"
+                                        contentBtn={
+                                            <div className="flex items-center gap-2">
+                                                <BookOpen style={{ color: topic.subject.color }} />
+                                                <div className="flex flex-col  items-start gap-1 ">
+                                                    <span>{topic.title}</span>
+                                                    <span className="text-xs text-muted-foreground">{topic.subject.title}</span>
                                                 </div>
+                                            </div>
 
-                                            }
-                                            disableBtns={true}
-                                            classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-6 rounded-sm"
-                                        >
-                                            <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
-                                        </DialogDemo>
-                                    ))}
-                                </div>
-                            )}
+                                        }
+                                        disableBtns={true}
+                                        classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-6 rounded-sm"
+                                    >
+                                        <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
+                                    </DialogDemo>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -304,7 +201,6 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent className="flex justify-center pt-0">
                         <Calendar
-                            locale={ptBR}
                             className="rounded-xl border p-3 max-w-65 w-full"
                             classNames={{
                                 today: "rounded-md bg-primary text-primary-foreground font-semibold",
@@ -314,5 +210,5 @@ export default function DashboardPage() {
                 </Card>
             </section>
         </main>
-    );
+    )
 }

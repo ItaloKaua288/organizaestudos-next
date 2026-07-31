@@ -1,9 +1,27 @@
-import { TimelineApiResponse } from "@/types/apiResponse"
-import type { Timeline } from "@/types/timeline"
+import { TimelineApiResponse } from "@/types/apiResponse";
+import type { Timeline } from "@/types/timeline";
+import { cookies } from "next/headers";
+
+
+const getBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://organizaestudos-api.vercel.app/api";
+
+async function getAuthHeaders() {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    return {
+        "Content-Type": "application/json",
+        ...(token ? { "Cookie": `token=${token}` } : {})
+    };
+}
 
 export async function getTimeline(): Promise<Timeline[]> {
     try {
-        const res = await fetch(`/api/timelines`, {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/timelines`, {
+            headers,
             next: { revalidate: 3600 },
         })
 
@@ -11,7 +29,7 @@ export async function getTimeline(): Promise<Timeline[]> {
 
         const data: TimelineApiResponse = await res.json()
 
-        const formattedTimeline: Timeline[] = data.timeline.map((item) => ({
+        return data.timeline.map((item) => ({
             id: item._id,
             day: item.day,
             start_time: item.startTime,
@@ -22,8 +40,6 @@ export async function getTimeline(): Promise<Timeline[]> {
                 color: item.subject_id.color,
             },
         }))
-
-        return formattedTimeline
     } catch (error) {
         console.error("Erro ao buscar a timeline", error)
         return []
