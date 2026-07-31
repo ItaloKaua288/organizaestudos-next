@@ -149,19 +149,41 @@ export default function DashboardPage() {
             </div>
 
             <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-2">
-                <Card className="flex flex-col justify-start">
-                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                        <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
-                        <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <ProgressLabelDemo
-                            value={Number(progressPercentage.toFixed(2))}
-                            label="Progresso Geral"
-                            description="dos assuntos foram concluídos"
-                        />
-                    </CardContent>
-                </Card>
+                <div className="flex flex-col justify-start">
+                    {isLoading ?
+                        <Card>
+                            <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
+                                <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
+                                <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent className="flex flex-col gap-2 py-2 px-6">
+                                <div className="flex justify-between items-center">
+                                    <span className="p-0 m-0">Progresso Geral</span>
+                                    <Spinner className="" />
+                                </div>
+                                <Skeleton className="h-1 w-full mt-1"></Skeleton>
+                                <div className="flex gap-1 items-center">
+                                    <Spinner className="" /> <span className="p-0 m-0 ">dos assuntos foram concluídos</span>
+                                </div>
+                            </CardContent>
+                        </Card> :
+
+                        <Card className="flex flex-col justify-start">
+                            <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
+                                <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
+                                <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <ProgressLabelDemo
+                                    value={Number(progressPercentage.toFixed(2))}
+                                    label="Progresso Geral"
+                                    description="dos assuntos foram concluídos"
+                                />
+                            </CardContent>
+                        </Card>
+                    }
+
+                </div>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
