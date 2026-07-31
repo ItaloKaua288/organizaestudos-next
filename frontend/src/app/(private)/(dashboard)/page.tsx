@@ -18,6 +18,8 @@ import { Timeline } from "@/types/timeline";
 import { getTimeline } from "@/services/timeline.service";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 
 
 const subscribeToCurrentDay = () => () => { }
@@ -33,6 +35,7 @@ export default function DashboardPage() {
     const [topics, setTopics] = useState<Topic[]>([])
     const [subjects, setSubjects] = useState<Subject[]>([])
     const [timelines, setTimelines] = useState<Timeline[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
     const currentDay = useSyncExternalStore(
         subscribeToCurrentDay,
@@ -43,6 +46,7 @@ export default function DashboardPage() {
     useEffect(() => {
         async function loadData() {
             try {
+                setIsLoading(true)
                 const [topicsData, subjectsData, timelinesData] = await Promise.all([
                     getTopics(),
                     getSubjects(),
@@ -53,6 +57,8 @@ export default function DashboardPage() {
                 setTimelines(timelinesData)
             } catch (error) {
                 console.error("Erro ao carregar dados do dashboard:", error)
+            } finally {
+                setIsLoading(false)
             }
         }
         loadData()
@@ -116,7 +122,7 @@ export default function DashboardPage() {
                         <BookOpen className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <span className="text-2xl font-bold">{subjects.length}</span>
+                        {isLoading ? <Spinner className="my-2" /> : <span className="text-2xl font-bold">{subjects.length}</span>}
                     </CardContent>
                 </Card>
 
@@ -126,7 +132,7 @@ export default function DashboardPage() {
                         <ClipboardClock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <span className="text-2xl font-bold">{pendingTopics.length}</span>
+                        {isLoading ? <Spinner className="my-2" /> : <span className="text-2xl font-bold">{pendingTopics.length}</span>}
                     </CardContent>
                 </Card>
 
@@ -136,7 +142,8 @@ export default function DashboardPage() {
                         <BadgeCheck className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <span className="text-2xl font-bold">{concludedTopics.length}</span>
+                        {isLoading ? <Spinner className="my-2" /> : <span className="text-2xl font-bold">{concludedTopics.length}</span>}
+
                     </CardContent>
                 </Card>
             </div>
@@ -158,25 +165,40 @@ export default function DashboardPage() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje <Badge variant="secondary">{subjectsToday.length}</Badge></CardTitle>
-                        {currentDay && <Badge variant="outline">{currentDay}</Badge>}
+                        <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje {isLoading ? <Badge className="w-5.5 h-5.5 p-0" variant="secondary"> <Spinner className="" /></Badge> : <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{subjectsToday.length}</Badge>} </CardTitle>
+                        {isLoading ? <Skeleton className="w-20 h-5 rounded-lg"></Skeleton> : currentDay && <Badge variant="outline">{currentDay}</Badge>}
                     </CardHeader>
                     <CardContent>
-                        {!pendingTopics.length ? (
-                            <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
-                        ) : (
-                            <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
-                                {subjectsToday.map((subject) => (
-                                    <div key={subject.id} className="flex gap-1 items-center p-2 rounded-sm hoverComponentsStatic">
-                                        <span
-                                            className="mr-2 h-2 w-2 shrink-0 rounded-full"
-                                            style={{ backgroundColor: subject.color }}
-                                        />
-                                        <span className="truncate">{subject.title}</span>
+                        {isLoading ?
+                            <div className="flex flex-col gap-1">
+                                <div className="hoverComponentsStatic w-full h-9 rounded-sm flex flex-col justify-center p-2">
+                                    <div className="flex gap-2">
+                                        <Skeleton className="w-3 h-3" />
+                                        <Skeleton className="w-20 h-3" />
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                </div>
+                                <div className="hoverComponentsStatic w-full h-9 rounded-sm flex flex-col justify-center p-2">
+                                    <div className="flex gap-2">
+                                        <Skeleton className="w-3 h-3" />
+                                        <Skeleton className="w-20 h-3" />
+                                    </div>
+                                </div>
+                            </div> :
+                            !pendingTopics.length ? (
+                                <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
+                            ) : (
+                                <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
+                                    {subjectsToday.map((subject) => (
+                                        <div key={subject.id} className="flex gap-1 items-center p-2 rounded-sm hoverComponentsStatic">
+                                            <span
+                                                className="mr-2 h-2 w-2 shrink-0 rounded-full"
+                                                style={{ backgroundColor: subject.color }}
+                                            />
+                                            <span className="truncate">{subject.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                     </CardContent>
                 </Card>
             </section>
@@ -186,39 +208,71 @@ export default function DashboardPage() {
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="flex items-center gap-2 text-base font-semibold">
                             Revisar Hoje
-                            <Badge variant="secondary">{reviewTodayTopics.length}</Badge>
+                            {isLoading ? <Badge className="w-5.5 h-5.5 p-0" variant="secondary"> <Spinner className="" /></Badge> : <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{reviewTodayTopics.length}</Badge>}
                         </CardTitle>
-                        {currentDay && <Badge variant="outline">{currentDay}</Badge>}
+                        {isLoading ? <Skeleton className="w-20 h-5 rounded-lg"></Skeleton> : currentDay && <Badge variant="outline">{currentDay}</Badge>}
                     </CardHeader>
                     <CardContent className="max-h-60 overflow-y-auto pb-4 pr-1">
-                        {!reviewTodayTopics.length ? (
-                            <p className="text-sm text-muted-foreground">Nenhuma revisão agendada para hoje.</p>
-                        ) : (
-                            <div className="flex flex-col gap-1.5">
-                                <span></span>
-                                {reviewTodayTopics.map((topic) => (
-                                    <DialogDemo
-                                        key={topic.id}
-                                        title={topic.title}
-                                        description="Informações sobre o tópico da revisão"
-                                        contentBtn={
-                                            <div className="flex items-center gap-2">
-                                                <BookOpen style={{ color: topic.subject.color }} />
-                                                <div className="flex flex-col  items-start gap-1 ">
-                                                    <span>{topic.title}</span>
-                                                    <span className="text-xs text-muted-foreground">{topic.subject.title}</span>
-                                                </div>
-                                            </div>
+                        {isLoading ?
+                            <div className="">
+                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
+                                    <Skeleton className="w-5 h-5" />
+                                    <div className="flex flex-col gap-1">
+                                        <Skeleton className="w-20 h-3" />
+                                        <Skeleton className="w-20 h-3" />
+                                    </div>
+                                </div>
+                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
+                                    <Skeleton className="w-5 h-5" />
+                                    <div className="flex flex-col gap-1">
+                                        <Skeleton className="w-20 h-3" />
+                                        <Skeleton className="w-20 h-3" />
+                                    </div>
+                                </div>
+                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
+                                    <Skeleton className="w-5 h-5" />
+                                    <div className="flex flex-col gap-1">
+                                        <Skeleton className="w-20 h-3" />
+                                        <Skeleton className="w-20 h-3" />
+                                    </div>
+                                </div>
+                                <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
+                                    <Skeleton className="w-5 h-5" />
+                                    <div className="flex flex-col gap-1">
+                                        <Skeleton className="w-20 h-3" />
+                                        <Skeleton className="w-20 h-3" />
+                                    </div>
+                                </div>
 
-                                        }
-                                        disableBtns={true}
-                                        classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-6 rounded-sm"
-                                    >
-                                        <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
-                                    </DialogDemo>
-                                ))}
-                            </div>
-                        )}
+                            </div> : !reviewTodayTopics.length ? (
+                                <p className="text-sm text-muted-foreground">Nenhuma revisão agendada para hoje.</p>
+                            ) : (
+                                <div className="flex flex-col gap-1.5">
+                                    <span></span>
+
+                                    {reviewTodayTopics.map((topic) => (
+                                        <DialogDemo
+                                            key={topic.id}
+                                            title={topic.title}
+                                            description="Informações sobre o tópico da revisão"
+                                            contentBtn={
+                                                <div className="flex items-center gap-2">
+                                                    <BookOpen style={{ color: topic.subject.color }} />
+                                                    <div className="flex flex-col  items-start gap-1 ">
+                                                        <span>{topic.title}</span>
+                                                        <span className="text-xs text-muted-foreground">{topic.subject.title}</span>
+                                                    </div>
+                                                </div>
+
+                                            }
+                                            disableBtns={true}
+                                            classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-6 rounded-sm"
+                                        >
+                                            <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
+                                        </DialogDemo>
+                                    ))}
+                                </div>
+                            )}
                     </CardContent>
                 </Card>
 
