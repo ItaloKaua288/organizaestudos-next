@@ -187,7 +187,7 @@ export default function DashboardPage() {
                             !pendingTopics.length ? (
                                 <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
                             ) : (
-                                <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
+                                <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto">
                                     {subjectsToday.map((subject) => (
                                         <div key={subject.id} className="flex gap-1 items-center p-2 rounded-sm hoverComponentsStatic">
                                             <span
@@ -212,7 +212,7 @@ export default function DashboardPage() {
                         </CardTitle>
                         {isLoading ? <Skeleton className="w-20 h-5 rounded-lg"></Skeleton> : currentDay && <Badge variant="outline">{currentDay}</Badge>}
                     </CardHeader>
-                    <CardContent className="max-h-60 overflow-y-auto pb-4 pr-1">
+                    <CardContent className="max-h-60 overflow-y-auto pb-4 ">
                         {isLoading ?
                             <div className="">
                                 <div className="w-full h-12 mt-1.5 rounded-sm px-2 flex items-center gap-1 hoverComponentsStatic">
