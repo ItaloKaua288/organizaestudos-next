@@ -1,63 +1,77 @@
-"use client"
+import { getTopics } from "@/services/topics.service";
+import { Topic } from "@/types/topic";
+import { CheckCircle2, Clock } from "lucide-react";
+import { ReviewSection } from "./components/reviewSection";
 
-import { Clock, CheckCircle2 } from "lucide-react"
-import { Topic } from "@/types/topic"
-import { useEffect, useState } from "react"
-import { ReviewSection } from "./components/reviewSection"
-import { getTopics } from "@/services/topics.service"
+export default async function RevisaoPage() {
+    const topics = (await getTopics()).filter(topic => topic.status === "CONCLUIDO")
 
+    const now = new Date();
 
-function formatDate(isoString: string) {
-    return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-    }).format(new Date(isoString));
-}
+    const sortReviews = (
+        topics: Topic[],
+        reviewKey: "first" | "second" | "third"
+    ) => {
+        return [...topics].sort((a, b) => {
+            const aDate = new Date(a.reviews[reviewKey].date);
+            const bDate = new Date(b.reviews[reviewKey].date);
 
-export default function RevisaoPage() {
-    const [topics, setTopics] = useState<Topic[]>([])
+            const aLate = aDate < now;
+            const bLate = bDate < now;
 
-    useEffect(() => {
-        async function loadTopics() {
-            const data = await getTopics();
-            setTopics(data);
-        }
-        loadTopics();
-    }, []);
+            if (aLate !== bLate) {
+                return aLate ? -1 : 1;
+            }
 
-    const topicTimes: Record<"day" | "week" | "month" | "concluded", Topic[]> = {
-        day: topics.filter((topic) => !topic.reviews.first.concluded),
-        week: topics.filter((topic) => !topic.reviews.second.concluded),
-        month: topics.filter((topic) => !topic.reviews.third.concluded),
+            return aDate.getTime() - bDate.getTime();
+        });
+    };
+
+    const topicTimes = {
         concluded: topics.filter(
-            (topic) =>
-                topic.reviews.first.concluded &&
-                topic.reviews.second.concluded &&
+            topic =>
+                topic.reviews.first.concluded ||
+                topic.reviews.second.concluded ||
                 topic.reviews.third.concluded
+        ),
+        day: sortReviews(
+            topics.filter(topic => !topic.reviews.first.concluded),
+            "first"
+        ),
+        week: sortReviews(
+            topics.filter(topic => !topic.reviews.second.concluded),
+            "second"
+        ),
+
+        month: sortReviews(
+            topics.filter(topic => !topic.reviews.third.concluded),
+            "third"
         ),
     }
 
     const sections = [
         {
             title: "24 horas",
+            reviewIndex: 1,
             icon: <Clock size={20} />,
-            topics: topicTimes["day"] || [],
+            topics: topicTimes.day,
         },
         {
             title: "7 dias",
+            reviewIndex: 2,
             icon: <Clock size={20} />,
-            topics: topicTimes["week"] || [],
+            topics: topicTimes.week,
         },
         {
             title: "30 dias",
+            reviewIndex: 3,
             icon: <Clock size={20} />,
-            topics: topicTimes["month"] || [],
+            topics: topicTimes.month,
         },
         {
             title: "Concluído",
             icon: <CheckCircle2 size={20} className="text-green-500" />,
-            topics: topicTimes["concluded"] || [],
+            topics: topicTimes.concluded,
         },
     ];
 
@@ -68,7 +82,7 @@ export default function RevisaoPage() {
                     Revisões
                 </h1>
                 <p className="p-2 py-4 font-medium text-sm text-muted-foreground">
-                    Visualise suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
+                    Visualize suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
                 </p>
             </header>
 
@@ -77,6 +91,7 @@ export default function RevisaoPage() {
                     <ReviewSection
                         key={index}
                         title={sec.title}
+                        reviewIndex={sec.reviewIndex!}
                         icon={sec.icon}
                         topics={sec.topics}
                     />

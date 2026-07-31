@@ -1,9 +1,9 @@
 "use server";
 
-import type { Topic, TopicStatus } from "@/types/topic"
-import { TopicsApiResponse } from "@/types/apiResponse"
-import { cookies } from "next/headers";
+import { TopicsApiResponse } from "@/types/apiResponse";
+import type { Topic, TopicStatus } from "@/types/topic";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 
 const getBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://organizaestudos-api.vercel.app/api";
 
@@ -97,6 +97,29 @@ export async function updateTopicStatus(topicId: string, status: TopicStatus) {
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o status do tópico", error);
+        throw error;
+    }
+}
+
+export async function updateTopicReviewStatus(topicId: string, review: string, isCompleted: boolean) {
+    try {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/topics/${isCompleted ? "concluded-review" : "undo-review"}/${topicId}/${review}`, {
+            method: "PUT",
+            headers
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Falha ao atualizar o status da revisão!");
+        }
+
+        revalidatePath("/revisoes")
+        return await res.json();
+    } catch (error) {
+        console.error("Falha ao atualizar o status da revisão", error);
         throw error;
     }
 }

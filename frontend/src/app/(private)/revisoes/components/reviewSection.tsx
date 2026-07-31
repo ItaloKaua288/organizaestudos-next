@@ -1,18 +1,34 @@
-import { CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { changeReviewStatus } from "@/actions/review.actions";
 import { DialogDemo } from "@/components/dialog-button";
-import { Topic } from "@/types/topic";
 import { TopicInfoGroup } from "@/components/topic-info-group";
+import { Button } from "@/components/ui/button";
+import { Topic } from "@/types/topic";
+import { CheckCircle2, Loader2 } from "lucide-react";
+import { useTransition } from "react";
 
 interface ReviewSectionProps {
     title: string;
     icon: React.ReactNode;
+    reviewIndex: string | number;
     topics: Topic[];
 }
 
-export function ReviewSection({ title, icon, topics }: ReviewSectionProps) {
+export function ReviewSection({ title, icon, reviewIndex, topics }: ReviewSectionProps) {
+    const hasTopics = topics && topics.length > 0;
+    const [isPending, startTransition] = useTransition();
+
+    const handleConclude = (e: React.MouseEvent, topicId: string) => {
+        e.stopPropagation();
+
+        startTransition(async () => {
+            await changeReviewStatus(topicId, `review${reviewIndex}`, true);
+        });
+    };
+
     return (
-        <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden bg-base-100 shadow-sm bg-card">
+        <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden shadow-sm bg-card">
             <div className="flex gap-2 items-center mb-3 font-semibold text-base-content">
                 {icon}
                 <h2 className="text-lg">{title}</h2>
@@ -21,18 +37,17 @@ export function ReviewSection({ title, icon, topics }: ReviewSectionProps) {
                 </span>
             </div>
 
-            {!topics || topics.length === 0 ? (
+            {!hasTopics ? (
                 <p className="text-xs text-base-content/50 italic py-3 text-center">
                     Nenhuma revisão para este período.
                 </p>
             ) : (
                 <div className="flex flex-col gap-3 w-full">
                     {topics.map((item, index) => {
-                        const hasAttachments = item.attachments && item.attachments.length > 0;
+                        const hasAttachments = Boolean(item.attachments && item.attachments.length > 0);
 
                         return (
-                            <div key={index} className="w-full block">
-
+                            <div key={item.id || index} className="w-full block">
                                 <DialogDemo
                                     variant="label"
                                     title={item.title}
@@ -60,15 +75,24 @@ export function ReviewSection({ title, icon, topics }: ReviewSectionProps) {
                                                 variant="secondary"
                                                 size="sm"
                                                 className="shrink-0 ml-2"
-                                                onClick={(e) => { e.stopPropagation(); }}
+                                                onClick={(e) => { handleConclude(e, item.id); }}
                                             >
-                                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                                                Feito
+                                                {isPending ? (
+                                                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                                ) : (
+                                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                                )}
+                                                {isPending ? "Salvando..." : "Feito"}
                                             </Button>
                                         </div>
                                     }
                                 >
-                                    <TopicInfoGroup subject={item.subject.title} color={item.subject.color} topic={item} hasAttachments={hasAttachments} />
+                                    <TopicInfoGroup
+                                        subject={item.subject.title}
+                                        color={item.subject.color}
+                                        topic={item}
+                                        hasAttachments={hasAttachments}
+                                    />
                                 </DialogDemo>
                             </div>
                         )

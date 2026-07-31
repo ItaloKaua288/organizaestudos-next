@@ -1,18 +1,18 @@
 "use client"
 
+import SubjectBox from "@/app/(private)/materias/components/subject-box";
 import { DialogDemo } from "@/components/dialog-button";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ColorPicker } from "@/components/ui/color-picker";
-import { FormEvent, useState } from "react";
-import SubjectBox from "@/app/(private)/materias/components/subject-box";
-import { updateTopic, updateTopicStatus } from "@/services/topics.service";
 import { createSubject } from "@/services/subjects.service";
+import { updateTopic, updateTopicStatus } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
-import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import toast from "react-hot-toast";
 
 type SubjectWithTopics = Subject & { topics: Topic[] };
 

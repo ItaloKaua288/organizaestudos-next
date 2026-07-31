@@ -1,8 +1,10 @@
-import { FileText } from "lucide-react";
+import { changeReviewStatus } from "@/actions/review.actions";
+import { Topic } from "@/types/topic";
+import { FileText, RotateCcw } from "lucide-react";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
 import { Field, FieldGroup } from "./ui/field";
 import { Label } from "./ui/label";
-import { Badge } from "./ui/badge";
-import { Topic } from "@/types/topic";
 
 type TopicInfoDialogProps = {
     subject: string;
@@ -60,6 +62,12 @@ const isToday = (date: Date | string): boolean => {
 };
 
 export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicInfoDialogProps) {
+    const handleUndoConclude = async (e: React.MouseEvent, topicId: string, reviewIndex: string | number) => {
+        e.stopPropagation();
+
+        await changeReviewStatus(topicId, `review${reviewIndex}`, false);
+    };
+
     return (
         <FieldGroup>
             <Field className="flex flex-row gap-2 items-center">
@@ -82,11 +90,20 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                 {topic.status === "CONCLUIDO" ? (
                     <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
                         <span>1° Revisão (24h): </span>
-                        <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : isToday(topic.reviews.first.date) ? "text-primary" : isDateOverdue(topic.reviews.first.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.first.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.first.date)} </span>
+                        <div className="flex gap-1 justify-end items-center">
+                            <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : isToday(topic.reviews.first.date) ? "text-primary" : isDateOverdue(topic.reviews.first.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.first.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.first.date)} </span>
+                            {topic.reviews.first.concluded ? <Button onClick={(e) => handleUndoConclude(e, topic.id, 1)} variant={"secondary"}><RotateCcw size={15} /></Button> : <span className="opacity-40 w-9.5 h-9 flex items-center justify-center"><RotateCcw size={16} /></span>}
+                        </div>
                         <span>2° Revisão (7 dias): </span>
-                        <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : isToday(topic.reviews.second.date) ? "text-primary" : isDateOverdue(topic.reviews.second.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.second.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
+                        <div className="flex gap-1 justify-end items-center">
+                            <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : isToday(topic.reviews.second.date) ? "text-primary" : isDateOverdue(topic.reviews.second.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.second.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
+                            {topic.reviews.second.concluded ? <Button onClick={(e) => handleUndoConclude(e, topic.id, 2)} variant={"secondary"}><RotateCcw size={15} /></Button> : <span className="opacity-40 w-9.5 h-9 flex items-center justify-center"><RotateCcw size={16} /></span>}
+                        </div>
                         <span>3° Revisão (30 dias): </span>
-                        <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : isToday(topic.reviews.third.date) ? "text-primary" : isDateOverdue(topic.reviews.third.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.third.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
+                        <div className="flex gap-1 justify-end items-center">
+                            <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : isToday(topic.reviews.third.date) ? "text-primary" : isDateOverdue(topic.reviews.third.date) ? "text-destructive" : ""} text-right font-mono`}>{isToday(topic.reviews.third.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""} {formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
+                            {topic.reviews.third.concluded ? <Button onClick={(e) => handleUndoConclude(e, topic.id, 3)} variant={"secondary"}><RotateCcw size={15} /></Button> : <span className="opacity-40 w-9.5 h-9 flex items-center justify-center"><RotateCcw size={16} /></span>}
+                        </div>
                     </div>
                 ) : (
                     <p className="text-xs text-base-content/50 italic mt-1">Conclua o assunto para ver o cronograma de revisões.</p>
