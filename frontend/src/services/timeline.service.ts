@@ -1,3 +1,5 @@
+"use server";
+
 import { TimelineApiResponse } from "@/types/apiResponse";
 import type { Timeline } from "@/types/timeline";
 import { cookies } from "next/headers";
