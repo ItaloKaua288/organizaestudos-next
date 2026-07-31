@@ -184,7 +184,7 @@ export default function DashboardPage() {
                                     </div>
                                 </div>
                             </div> :
-                            !pendingTopics.length ? (
+                            !subjectsToday.length ? (
                                 <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
                             ) : (
                                 <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto">
