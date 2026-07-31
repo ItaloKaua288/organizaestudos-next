@@ -1,6 +1,9 @@
+"use client";
+
 import { changeReviewStatus } from "@/actions/review.actions";
 import { Topic } from "@/types/topic";
 import { FileText, RotateCcw } from "lucide-react";
+import toast from "react-hot-toast";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Field, FieldGroup } from "./ui/field";
@@ -66,6 +69,7 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
         e.stopPropagation();
 
         await changeReviewStatus(topicId, `review${reviewIndex}`, false);
+        toast.success("Revisão desfeita!")
     };
 
     return (

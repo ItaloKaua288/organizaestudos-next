@@ -2,7 +2,7 @@
 
 import { TopicsApiResponse } from "@/types/apiResponse";
 import type { Topic, TopicStatus } from "@/types/topic";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 
 const getBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://organizaestudos-api.vercel.app/api";
@@ -117,6 +117,7 @@ export async function updateTopicReviewStatus(topicId: string, review: string, i
         }
 
         revalidatePath("/revisoes")
+        revalidatePath("/")
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o status da revisão", error);
