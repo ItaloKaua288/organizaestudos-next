@@ -113,22 +113,20 @@ export default async function DashboardPage() {
             </div>
 
             <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-2">
-                <div className="flex flex-col justify-start">
-                    <Card className="flex flex-col justify-start">
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                            <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
-                            <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <ProgressLabelDemo
-                                value={Number(progressPercentage.toFixed(2))}
-                                label="Progresso Geral"
-                                description="dos assuntos foram concluídos"
-                            />
-                        </CardContent>
-                    </Card>
-                </div>
 
+                <Card className="flex flex-col justify-start">
+                    <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
+                        <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
+                        <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <ProgressLabelDemo
+                            value={Number(progressPercentage.toFixed(2))}
+                            label="Progresso Geral"
+                            description="dos assuntos foram concluídos"
+                        />
+                    </CardContent>
+                </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{subjectsToday.length}</Badge></CardTitle>
