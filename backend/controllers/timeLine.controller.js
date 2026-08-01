@@ -81,7 +81,7 @@ export const updateTimeLine = async (req, res) => {
             return res.status(400).json({ success: false, message: "Conflito de horário! Já existe uma matéria neste período." });
         }
 
-        const timeLine = await TimeLine.findByIdAndUpdate(id, { day, startTime, endTime, subject_id }, { new: true }).populate("subject_id");
+        const timeLine = await TimeLine.findByIdAndUpdate(id, { day, startTime, endTime, subject_id }, { returnDocument: "after" }).populate("subject_id");
 
         res.status(200).json({ success: true, message: "Timeline updated successfully", timeLine });
 

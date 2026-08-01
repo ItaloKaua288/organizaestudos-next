@@ -1,25 +1,16 @@
-"use client"
-
-import Link from "next/link"
-import { useEffect, useState } from "react"
-
 import { Button } from "@/components/ui/button"
 import { getSubjects } from "@/services/subjects.service"
-import type { Subject } from "@/types/subject"
+import { Subject } from "@/types/subject"
+import Link from "next/link"
 
-export default function NotasPage() {
-    const [subjects, setSubjects] = useState<Subject[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+export default async function NotasPage() {
+    let allSubjects: Subject[] = []
 
-    useEffect(() => {
-        async function loadSubjects() {
-            const data = await getSubjects()
-            setSubjects(data)
-            setIsLoading(false)
-        }
-
-        void loadSubjects()
-    }, [])
+    try {
+        allSubjects = await getSubjects()
+    } catch (error) {
+        console.error("Erro ao carregar anotações:", error)
+    }
 
     return (
         <div className="space-y-4">
@@ -32,17 +23,13 @@ export default function NotasPage() {
                 </p>
             </header>
 
-            {isLoading ? (
-                <p className="p-2 text-sm text-muted-foreground">
-                    Carregando matérias...
-                </p>
-            ) : subjects.length === 0 ? (
+            {allSubjects.length === 0 ? (
                 <p className="p-2 text-sm text-muted-foreground">
                     Nenhuma matéria encontrada.
                 </p>
             ) : (
                 <div className="grid grid-cols-1 gap-2 p-2 pt-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {subjects.map((subject) => (
+                    {allSubjects.map((subject) => (
                         <Button
                             key={subject.id}
                             variant="outline"
