@@ -2,6 +2,7 @@
 
 import { TimelineApiResponse } from "@/types/apiResponse";
 import type { Timeline } from "@/types/timeline";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
 
@@ -45,5 +46,41 @@ export async function getTimeline(): Promise<Timeline[]> {
     } catch (error) {
         console.error("Erro ao buscar a timeline", error)
         return []
+    }
+}
+
+export async function createTimeline(timeline: { day: string, subject_id: string, startTime: string, endTime: string }): Promise<void> {
+    try {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/timelines`, {
+            headers,
+            method: "POST",
+            body: JSON.stringify(timeline)
+        })
+
+        if (!res.ok) throw new Error("Falha ao criar a timeline")
+        revalidatePath("/cronograma")
+    } catch (error) {
+        console.error("Erro ao criar a timeline", error)
+        throw error
+    }
+}
+
+export async function deleteTimeline(timelineId: string): Promise<void> {
+    try {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/timelines/${timelineId}`, {
+            headers,
+            method: "DELETE"
+        })
+
+        if (!res.ok) throw new Error("Falha ao excluir a timeline")
+        revalidatePath("/cronograma")
+    } catch (error) {
+        console.error("Erro ao excluir a timeline", error)
     }
 }
