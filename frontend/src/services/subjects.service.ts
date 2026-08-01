@@ -17,6 +17,8 @@ async function getAuthHeaders() {
     };
 }
 
+const REVALIDATE_PATHS = ["/materias", "/notas", "/", "/revisoes", "/cronograma"];
+
 export async function getSubjects(): Promise<Subject[]> {
     try {
         const baseUrl = getBaseUrl();
@@ -55,7 +57,7 @@ export async function createSubject(title: string, color: string) {
 
         if (!res.ok) throw new Error("Falha ao criar matéria")
 
-        revalidatePath("/materias")
+        REVALIDATE_PATHS.forEach(path => revalidatePath(path))
     } catch (error) {
         console.error("Falha ao criar matéria", error)
         throw error
@@ -75,7 +77,7 @@ export async function updateSubject(title: string, color: string, subject_id: st
 
         if (!res.ok) throw new Error("Falha ao atualizar a matéria");
 
-        revalidatePath("/materias")
+        REVALIDATE_PATHS.forEach(path => revalidatePath(path))
     } catch (error) {
         console.error("Falha ao atualizar a matéria", error)
         throw error
@@ -94,7 +96,7 @@ export async function deleteSubject(subject_id: string) {
 
         if (!res.ok) throw new Error("Falha ao deletar a matéria");
 
-        revalidatePath("/materias")
+        REVALIDATE_PATHS.forEach(path => revalidatePath(path))
     } catch (error) {
         console.error("Falha ao deletar a matéria", error)
         throw error
