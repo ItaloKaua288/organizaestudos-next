@@ -117,6 +117,7 @@ export async function updateTopicReviewStatus(topicId: string, review: string, i
         }
 
         revalidatePath("/revisoes")
+        revalidatePath("/materias")
         revalidatePath("/")
         return await res.json();
     } catch (error) {
