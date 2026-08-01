@@ -20,7 +20,7 @@ type DayCardProps = {
     date: Date;
     isToday: boolean;
     dayEvents: Timeline[];
-    pendingTopicsBySubject: Map<string, Topic>;
+    pendingTopicsBySubject: Record<string, Topic>;
     subjects: Subject[];
 }
 
@@ -110,7 +110,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
 
             <CardContent className="flex flex-col space-y-3 pb-4">
                 {dayEvents.map((item) => {
-                    const nextTopic = item.subject?.id ? pendingTopicsBySubject.get(item.subject.id) : undefined
+                    const nextTopic = item.subject?.id ? pendingTopicsBySubject[item.subject.id] : undefined
                     const hasAttachments = nextTopic?.attachments && nextTopic.attachments.length > 0
 
                     const scheduleCard = (

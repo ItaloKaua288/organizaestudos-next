@@ -3,6 +3,7 @@ import { getTimeline } from "@/services/timeline.service"
 import { getTopics } from "@/services/topics.service"
 import { AlertCircle } from "lucide-react"
 import { DayCard } from "./components/day-card";
+import { Topic } from "@/types/topic";
 
 const WEEK_DAYS = [
     "Domingo", "Segunda", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
@@ -43,12 +44,12 @@ export default async function CronogramaPage() {
         return { day, date: targetDate };
     });
 
-    const pendingTopicsBySubject = data.topics.reduce((acc, topic) => {
-        if (topic.status !== "CONCLUIDO" && topic.subject?.id && !acc.has(topic.subject.id)) {
-            acc.set(topic.subject.id, topic);
+    const pendingTopicsBySubject = data.topics.reduce((acc: Record<string, Topic>, topic: Topic) => {
+        if (topic.status !== "CONCLUIDO" && topic.subject?.id && !acc[topic.subject.id]) {
+            acc[topic.subject.id] = topic;
         }
         return acc;
-    }, new Map());
+    }, {});
 
     return (
         <main className="space-y-4">
