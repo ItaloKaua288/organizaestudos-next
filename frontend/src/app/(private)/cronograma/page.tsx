@@ -46,7 +46,12 @@ export default async function CronogramaPage() {
         targetDate.setDate(currentDate.getDate() + daysUntilTarget);
         targetDate.setHours(0, 0, 0, 0);
 
-        return { day, date: targetDate };
+        const formattedDate = targetDate.toLocaleDateString('pt-BR', {
+            day: 'numeric', 
+            month: 'long'
+        });
+
+        return { day, date: targetDate, formattedDate };
     });
 
     const timeline_reviews: Record<string, Topic[]> = {};
@@ -111,13 +116,13 @@ export default async function CronogramaPage() {
                 {WEEK_DAYS.map((dayLabel, index) => {
                     const isToday = currentDayName !== "" && currentDayName.toLowerCase() === dayLabel.toLowerCase();
                     const dayEvents = data.timelines.filter((t) => t.day === dayLabel) || [];
-                    const dateObj = dayDates[index].date;
+                    const dateFormatted = dayDates[index].formattedDate;
 
                     return (
                         <DayCard
                             key={dayLabel}
                             dayLabel={dayLabel}
-                            date={dateObj}
+                            date={dateFormatted}
                             isToday={isToday}
                             dayEvents={dayEvents}
                             pendingTopicsBySubject={pendingTopicsBySubject}

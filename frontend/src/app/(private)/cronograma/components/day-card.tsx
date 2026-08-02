@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 
 type DayCardProps = {
     dayLabel: string;
-    date: Date;
+    date: string;
     isToday: boolean;
     dayEvents: Timeline[];
     pendingTopicsBySubject: Record<string, Topic>;
@@ -56,7 +56,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
             <CardHeader>
                 <CardTitle className="truncate">{dayLabel}</CardTitle>
                 <CardDescription>
-                    {date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}
+                    {date}
                 </CardDescription>
 
                 <CardAction>
