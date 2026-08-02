@@ -3,6 +3,7 @@
 import { changeReviewStatus } from "@/actions/review.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Topic } from "@/types/topic";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -24,6 +25,25 @@ interface ReviewItemProps {
 function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
     const [isPending, startTransition] = useTransition();
     const hasAttachments = Boolean(item.attachments && item.attachments.length > 0);
+
+
+    const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+    const now = new Date(brString);
+
+    let reviewDate;
+
+    if (reviewIndex === 1)
+        reviewDate = new Date(item.reviews.first.date)
+    else if (reviewIndex === 2)
+        reviewDate = new Date(item.reviews.second.date)
+    else
+        reviewDate = new Date(item.reviews.third.date)
+
+    reviewDate.setHours(0, 0, 0, 0)
+
+    const diffMs = reviewDate.getTime() - now.getTime();
+    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     const handleConclude = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -58,7 +78,15 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                 </span>
                             </div>
                         </div>
-
+                        {diffHours <= 24 ? (
+                            diffHours > 1 ? (
+                                <div className="text-xs">Em {diffHours} horas</div>
+                            ) : (
+                                <Badge variant={"outline"}>Hoje</Badge>
+                            )
+                        ) : (
+                            <div className="text-xs">Em {diffDays} dias e {diffHours - (diffDays * 24)} horas</div>
+                        )}
                         <Button
                             variant="secondary"
                             size="sm"
