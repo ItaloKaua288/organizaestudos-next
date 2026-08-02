@@ -1,68 +1,20 @@
-"use client"
-
-import { type FormEvent, useState } from "react"
-import { useRouter } from "next/navigation"
-import { ArrowRight, LockKeyhole, Mail } from "lucide-react"
-
-import { Logo } from "@/components/logo"
-import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Field, FieldError, FieldGroup } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import login from "@/services/login.service"
-import dynamic from "next/dynamic"
-
-const ThemeToggle = dynamic(
-  () => import("@/components/theme-toggle").then((m) => m.ThemeToggle),
-  {
-    ssr: false,
-  }
-);
+} from "@/components/ui/card";
+import { LoginForm } from "./components/login-form";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError("")
-    setIsSubmitting(true)
-
-    const formData = new FormData(event.currentTarget)
-
-    try {
-      await login({
-        email: String(formData.get("email")),
-        password: String(formData.get("password")),
-      })
-
-      router.push("/")
-    } catch {
-      setError("Não foi possível entrar. Confira seu e-mail e senha.")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden ">
-      <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-blue-500/10" />
-      <div className="absolute -left-40 top-0 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[32px_32px]"/>
-
-      <div className="absolute right-0 bottom-0 h-80 w-80 rounded-full bg-blue-500/15 blur-3xl" />
+    <>
       <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
         <ThemeToggle />
       </div>
-
       <Card className="relative w-full max-w-md shadow-lg">
         <CardHeader className="items-center px-6 pt-7 text-center sm:px-8">
           <Logo />
@@ -78,60 +30,9 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent className="px-6 pb-7 sm:px-8">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <FieldGroup>
-              <Field>
-                <Label htmlFor="email">E-mail</Label>
-
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="voce@exemplo.com"
-                    className="h-10 pl-9"
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </Field>
-
-              <Field>
-                <div className="flex items-center justify-between gap-3">
-                  <Label htmlFor="password">Senha</Label>
-                  <span className="text-xs text-muted-foreground">
-                    Mínimo de 8 caracteres
-                  </span>
-                </div>
-
-                <div className="relative">
-                  <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    placeholder="Digite sua senha"
-                    className="h-10 pl-9"
-                    minLength={8}
-                    required
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </Field>
-            </FieldGroup>
-
-            <FieldError>{error}</FieldError>
-
-            <Button className="h-10 w-full" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Entrando..." : "Entrar"}
-              {!isSubmitting && <ArrowRight />}
-            </Button>
-          </form>
+          <LoginForm />
         </CardContent>
       </Card>
-    </main>
+    </>
   )
 }

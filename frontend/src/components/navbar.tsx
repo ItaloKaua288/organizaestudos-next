@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { NavMenu } from "@/components/nav-menu";
 import { NavigationSheet } from "@/components/navigation-sheet";
+import { Button } from "@/components/ui/button";
+import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 
 const ThemeToggle = dynamic(
   () => import("@/components/theme-toggle").then((m) => m.ThemeToggle),
@@ -25,9 +27,9 @@ const Navbar = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(`/api/auth/check-auth`,);
-        setIsAuthenticated(response.ok);
-        if (!response.ok)
+        const response = await checkAuthApi();
+        setIsAuthenticated(response.success);
+        if (!response.success)
           router.push("/login");
       } catch {
         setIsAuthenticated(false);
@@ -41,7 +43,7 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch(`/api/auth/logout`, { method: "POST", });
+      await logout();
 
       setIsAuthenticated(false);
       router.push("/login");
@@ -54,9 +56,9 @@ const Navbar = () => {
     <nav className="fixed left-1/2 z-10 h-16 min-h-16 w-full  -translate-x-1/2 border-b bg-muted">
       <div className="relative mx-auto flex h-full max-w-(--breakpoint-3xl) items-center justify-between px-2 ">
         <div className="flex items-center">
-          <a className="hover:text-primary hover:scale-105 transition-all" href="/">
+          <Link className="hover:text-primary hover:scale-105 transition-all" href="/">
             <Logo />
-          </a>
+          </Link>
         </div>
         {/* Desktop Menu */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">

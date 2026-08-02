@@ -6,9 +6,15 @@ import * as React from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+// import dynamic from "next/dynamic";
 
 type ThemeToggleVariant = "default" | "outline" | "ghost";
 type ThemeToggleSize = "default" | "icon";
+
+// const ThemeToggle = dynamic(
+//     () => import("@/components/theme-toggle").then((m) => m.ThemeToggle),
+//     { ssr: false }
+// );
 
 export interface ThemeToggleProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
