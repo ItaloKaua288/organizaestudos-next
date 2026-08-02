@@ -2,7 +2,7 @@
 
 import { TopicsApiResponse } from "@/types/apiResponse";
 import type { Topic, TopicStatus } from "@/types/topic";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 
 const getBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://organizaestudos-api.vercel.app/api";
@@ -24,7 +24,7 @@ export async function getTopics(): Promise<Topic[]> {
 
         const res = await fetch(`${baseUrl}/topics`, {
             headers,
-            next: { revalidate: 3600, tags: ["topics"] },
+            next: { tags: ["topics"] },
         });
 
         if (!res.ok) throw new Error("Falha ao buscar os tópicos");
@@ -70,7 +70,7 @@ export async function createTopic(title: string, subject_id: string) {
 
         if (!res.ok) throw new Error("Falha ao criar o assunto");
 
-        revalidatePath("/materias")
+        revalidateTag("topics", "hours")
     } catch (error) {
         console.error("Falha ao criar o assunto", error)
         throw error
@@ -93,7 +93,7 @@ export async function updateTopicStatus(topicId: string, status: TopicStatus) {
             throw new Error(errorData.message || "Falha ao atualizar o status do tópico!");
         }
 
-        revalidatePath("/materias")
+        revalidateTag("topics", "hours")
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o status do tópico", error);
@@ -116,9 +116,7 @@ export async function updateTopicReviewStatus(topicId: string, review: string, i
             throw new Error(errorData.message || "Falha ao atualizar o status da revisão!");
         }
 
-        revalidatePath("/revisoes")
-        revalidatePath("/materias")
-        revalidatePath("/")
+        revalidateTag("topics", "hours")
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o status da revisão", error);
@@ -142,7 +140,7 @@ export async function updateTopic(topicId: string, title: string, link: string, 
             throw new Error(errorData.message || "Falha ao atualizar o assunto!");
         }
 
-        revalidatePath("/materias")
+        revalidateTag("topics", "hours")
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o assunto", error);
@@ -165,7 +163,7 @@ export async function deleteTopic(topicId: string) {
             throw new Error(errorData.message || "Falha ao deletar o assunto!");
         }
 
-        revalidatePath("/materias")
+        revalidateTag("topics", "hours")
         return await res.json();
     } catch (error) {
         console.error("Falha ao deletar o assunto", error);

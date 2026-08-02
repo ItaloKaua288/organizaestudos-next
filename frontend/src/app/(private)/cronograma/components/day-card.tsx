@@ -108,7 +108,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                 </CardAction>
             </CardHeader>
 
-            <CardContent className="flex flex-col space-y-3 pb-4 overflow-y-auto">
+            <CardContent className="flex flex-col space-y-3 pt-1 pb-4 overflow-y-auto">
                 {reviews && reviews.length > 0 && (
                     <div className="border p-3 rounded-md flex flex-col gap-1 w-full max-h-40">
                         <h3 className="truncate w-full border-b pb-1 font-semibold text-sm">Revisões</h3>

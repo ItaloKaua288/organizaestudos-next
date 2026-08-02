@@ -2,7 +2,7 @@
 
 import { TimelineApiResponse } from "@/types/apiResponse";
 import type { Timeline } from "@/types/timeline";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 
 
@@ -25,7 +25,7 @@ export async function getTimeline(): Promise<Timeline[]> {
 
         const res = await fetch(`${baseUrl}/timelines`, {
             headers,
-            next: { revalidate: 3600 },
+            next: { tags: ["timelines"] },
         })
 
         if (!res.ok) throw new Error("Falha ao buscar a timeline")
@@ -61,7 +61,7 @@ export async function createTimeline(timeline: { day: string, subject_id: string
         })
 
         if (!res.ok) throw new Error("Falha ao criar a timeline")
-        revalidatePath("/cronograma")
+        revalidateTag("timelines", "hours");
     } catch (error) {
         console.error("Erro ao criar a timeline", error)
         throw error
@@ -79,7 +79,7 @@ export async function deleteTimeline(timelineId: string): Promise<void> {
         })
 
         if (!res.ok) throw new Error("Falha ao excluir a timeline")
-        revalidatePath("/cronograma")
+        revalidateTag("timelines", "hours");
     } catch (error) {
         console.error("Erro ao excluir a timeline", error)
     }
@@ -98,10 +98,9 @@ export async function updateTimeline({ day, subject_id, startTime, endTime, time
             method: "PUT",
             body: JSON.stringify({ day, subject_id, startTime, endTime })
         })
-        console.log(res)
 
         if (!res.ok) throw new Error("Falha ao atualizar a timeline")
-        revalidatePath("/cronograma")
+        revalidateTag("timelines", "hours");
     } catch (error) {
         console.error("Erro ao atualizar a timeline", error)
         throw error

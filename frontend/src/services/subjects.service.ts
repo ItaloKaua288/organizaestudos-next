@@ -1,9 +1,9 @@
 "use server";
 
-import type { Subject } from "@/types/subject"
-import { ApiSubjectResponse } from "@/types/apiResponse"
+import { ApiSubjectResponse } from "@/types/apiResponse";
+import type { Subject } from "@/types/subject";
+import { revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
 
 const getBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://organizaestudos-api.vercel.app/api";
 
@@ -17,8 +17,6 @@ async function getAuthHeaders() {
     };
 }
 
-const REVALIDATE_PATHS = ["/materias", "/notas", "/", "/revisoes", "/cronograma"];
-
 export async function getSubjects(): Promise<Subject[]> {
     try {
         const baseUrl = getBaseUrl();
@@ -26,7 +24,7 @@ export async function getSubjects(): Promise<Subject[]> {
 
         const res = await fetch(`${baseUrl}/subjects`, {
             headers,
-            next: { revalidate: 3600, tags: ["subjects"] },
+            next: { tags: ["subjects"] },
         })
 
         if (!res.ok) throw new Error("Falha ao buscar as matérias")
@@ -57,7 +55,7 @@ export async function createSubject(title: string, color: string) {
 
         if (!res.ok) throw new Error("Falha ao criar matéria")
 
-        REVALIDATE_PATHS.forEach(path => revalidatePath(path))
+        revalidateTag("subjects", "hours");
     } catch (error) {
         console.error("Falha ao criar matéria", error)
         throw error
@@ -77,7 +75,7 @@ export async function updateSubject(title: string, color: string, subject_id: st
 
         if (!res.ok) throw new Error("Falha ao atualizar a matéria");
 
-        REVALIDATE_PATHS.forEach(path => revalidatePath(path))
+        revalidateTag("subjects", "hours");
     } catch (error) {
         console.error("Falha ao atualizar a matéria", error)
         throw error
@@ -96,7 +94,7 @@ export async function deleteSubject(subject_id: string) {
 
         if (!res.ok) throw new Error("Falha ao deletar a matéria");
 
-        REVALIDATE_PATHS.forEach(path => revalidatePath(path))
+        revalidateTag("subjects", "hours");
     } catch (error) {
         console.error("Falha ao deletar a matéria", error)
         throw error
