@@ -50,7 +50,6 @@ export default async function CronogramaPage() {
             day: 'numeric', 
             month: 'long'
         });
-
         return { day, date: targetDate, formattedDate };
     });
 
@@ -78,14 +77,13 @@ export default async function CronogramaPage() {
 
         if (!reviewDate) return;
 
-        const timeline = data.timelines.find(timeline => {
-            const dayDate = dayDates.find(d => d.day === timeline.day);
-            return dayDate && isSameDay(dayDate.date, reviewDate);
-        });
+        reviewDate.setUTCHours(12, 0, 0, 0);
 
-        if (timeline) {
-            timeline_reviews[timeline.day] = [
-                ...(timeline_reviews[timeline.day] || []),
+        const reviewDay = dayDates.find(d => isSameDay(d.date, reviewDate));
+
+        if (reviewDay) {
+            timeline_reviews[reviewDay.day] = [
+                ...(timeline_reviews[reviewDay.day] || []),
                 topic,
             ];
         }
