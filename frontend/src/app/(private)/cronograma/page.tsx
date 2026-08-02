@@ -44,7 +44,7 @@ export default async function CronogramaPage() {
 
         const targetDate = new Date(currentDate);
         targetDate.setDate(currentDate.getDate() + daysUntilTarget);
-        targetDate.setHours(0, 0, 0, 0);
+        targetDate.setHours(12, 0, 0, 0);
 
         const formattedDate = targetDate.toLocaleDateString('pt-BR', {
             day: 'numeric', 
