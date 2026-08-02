@@ -29,6 +29,8 @@ export async function getNotes(id: string): Promise<Note[]> {
 
         const data: NoteApiResponse = await res.json()
 
+        console.log(data)
+
         return data.notes.map((item) => ({
             id: item._id,
             title: item.title,

@@ -1,6 +1,6 @@
 "use server"
 
-import { createTimeline, deleteTimeline } from "@/services/timeline.service"
+import { createTimeline, deleteTimeline, updateTimeline } from "@/services/timeline.service";
 
 export async function addTimelineAction(formData: FormData) {
     try {
@@ -26,5 +26,30 @@ export async function deleteTimelineAction(timelineId: string) {
     } catch (error) {
         console.error("Erro ao excluir cronograma:", error);
         return { success: false, message: "Erro ao excluir cronograma." }
+    }
+}
+
+export async function updateTimelineAction(formData: FormData) {
+    try {
+        const subject_id = formData.get("subject_id") as string;
+        const startTime = formData.get("startTime") as string;
+        const endTime = formData.get("endTime") as string;
+        const day = formData.get("day") as string;
+        const timeline_id = formData.get("timeline_id") as string;
+
+
+        await updateTimeline({ timeline_id, subject_id, startTime, endTime, day });
+
+        return {
+            success: true,
+            message: "Timeline atualizada com sucesso!",
+        };
+    } catch (error) {
+        console.error("Erro ao atualizar timeline:", error);
+
+        return {
+            success: false,
+            message: "Erro ao atualizar timeline.",
+        };
     }
 }

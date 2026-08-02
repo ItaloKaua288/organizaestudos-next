@@ -84,3 +84,26 @@ export async function deleteTimeline(timelineId: string): Promise<void> {
         console.error("Erro ao excluir a timeline", error)
     }
 }
+
+type timelineProps = {
+    day: string, subject_id: string, startTime: string, endTime: string, timeline_id: string
+}
+export async function updateTimeline({ day, subject_id, startTime, endTime, timeline_id }: timelineProps): Promise<void> {
+    try {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/timelines/${timeline_id}`, {
+            headers,
+            method: "PUT",
+            body: JSON.stringify({ day, subject_id, startTime, endTime })
+        })
+        console.log(res)
+
+        if (!res.ok) throw new Error("Falha ao atualizar a timeline")
+        revalidatePath("/cronograma")
+    } catch (error) {
+        console.error("Erro ao atualizar a timeline", error)
+        throw error
+    }
+}

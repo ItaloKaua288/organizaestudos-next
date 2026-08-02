@@ -47,7 +47,7 @@ export default async function CronogramaPage() {
         targetDate.setHours(12, 0, 0, 0);
 
         const formattedDate = targetDate.toLocaleDateString('pt-BR', {
-            day: 'numeric', 
+            day: 'numeric',
             month: 'long'
         });
         return { day, date: targetDate, formattedDate };
