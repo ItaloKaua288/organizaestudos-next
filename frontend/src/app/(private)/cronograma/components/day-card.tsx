@@ -56,7 +56,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
             <CardHeader>
                 <CardTitle className="truncate">{dayLabel}</CardTitle>
                 <CardDescription>
-                    {date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
+                    {date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })}
                 </CardDescription>
 
                 <CardAction>

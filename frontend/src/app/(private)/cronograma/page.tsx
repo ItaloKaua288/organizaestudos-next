@@ -49,8 +49,6 @@ export default async function CronogramaPage() {
         return { day, date: targetDate };
     });
 
-    console.log(dayDates)
-
     const timeline_reviews: Record<string, Topic[]> = {};
 
     const isSameDay = (a: Date, b: Date) => {
