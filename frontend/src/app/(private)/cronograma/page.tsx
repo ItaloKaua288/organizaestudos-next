@@ -1,16 +1,16 @@
-import { getSubjects } from "@/services/subjects.service"
-import { getTimeline } from "@/services/timeline.service"
-import { getTopics } from "@/services/topics.service"
-import { AlertCircle } from "lucide-react"
-import { DayCard } from "./components/day-card";
+import { getSubjects } from "@/services/subjects.service";
+import { getTimeline } from "@/services/timeline.service";
+import { getTopics } from "@/services/topics.service";
 import { Topic } from "@/types/topic";
+import { AlertCircle } from "lucide-react";
+import { DayCard } from "./components/day-card";
 
 const WEEK_DAYS = [
-    "Domingo", "Segunda", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
+    "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
 ]
 
 export default async function CronogramaPage() {
-    const currentDayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(new Date());
+    const currentDayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: "America/Sao_Paulo" }).format(new Date());
 
     let data = null;
 
@@ -34,15 +34,60 @@ export default async function CronogramaPage() {
         );
     }
 
-    const currentDate = new Date();
-    const dayDates = WEEK_DAYS.map((day) => {
+    const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+    const currentDate = new Date(brString);
+
+    const dayDates = WEEK_DAYS.map(day => {
         const currentDayIndex = currentDate.getDay();
         const targetDayIndex = WEEK_DAYS.indexOf(day);
         const daysUntilTarget = (targetDayIndex - currentDayIndex + 7) % 7;
+
         const targetDate = new Date(currentDate);
         targetDate.setDate(currentDate.getDate() + daysUntilTarget);
+        targetDate.setHours(0, 0, 0, 0);
+
         return { day, date: targetDate };
     });
+
+    console.log(dayDates)
+
+    const timeline_reviews: Record<string, Topic[]> = {};
+
+    const isSameDay = (a: Date, b: Date) => {
+        const formatBR = (d: Date) =>
+            d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+        return formatBR(a) === formatBR(b);
+    };
+
+    data.topics.forEach(topic => {
+        if (topic.status !== "CONCLUIDO") return;
+
+        let reviewDate: Date | null = null;
+
+        if (!topic.reviews.first.concluded) {
+            reviewDate = new Date(topic.reviews.first.date);
+        } else if (!topic.reviews.second.concluded) {
+            reviewDate = new Date(topic.reviews.second.date);
+        } else if (!topic.reviews.third.concluded) {
+            reviewDate = new Date(topic.reviews.third.date);
+        }
+
+        if (!reviewDate) return;
+
+        const timeline = data.timelines.find(timeline => {
+            const dayDate = dayDates.find(d => d.day === timeline.day);
+            return dayDate && isSameDay(dayDate.date, reviewDate);
+        });
+
+        if (timeline) {
+            timeline_reviews[timeline.day] = [
+                ...(timeline_reviews[timeline.day] || []),
+                topic,
+            ];
+        }
+    });
+
 
     const pendingTopicsBySubject = data.topics.reduce((acc: Record<string, Topic>, topic: Topic) => {
         if (topic.status !== "CONCLUIDO" && topic.subject?.id && !acc[topic.subject.id]) {
@@ -79,6 +124,7 @@ export default async function CronogramaPage() {
                             dayEvents={dayEvents}
                             pendingTopicsBySubject={pendingTopicsBySubject}
                             subjects={data.subjects}
+                            reviews={timeline_reviews[dayLabel]}
                         />
                     )
                 })}

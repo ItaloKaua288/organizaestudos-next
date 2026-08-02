@@ -7,25 +7,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSubjects } from "@/services/subjects.service";
 import { getTimeline } from "@/services/timeline.service";
 import { getTopics } from "@/services/topics.service";
-import { isToday } from "date-fns";
 import { AlertCircle, BadgeCheck, BookOpen, ClipboardClock } from "lucide-react";
 
 
 function isReviewScheduledForToday(reviewDateString?: string | Date) {
     if (!reviewDateString) return false;
 
-    const reviewDate = new Date(reviewDateString);
-    const adjustedDate = new Date(
-        reviewDate.getUTCFullYear(),
-        reviewDate.getUTCMonth(),
-        reviewDate.getUTCDate()
+    const reviewDateUTC = new Date(reviewDateString);
+    if (isNaN(reviewDateUTC.getTime())) return false;
+
+    const reviewDate = new Date(
+        reviewDateUTC.getUTCFullYear(),
+        reviewDateUTC.getUTCMonth(),
+        reviewDateUTC.getUTCDate()
     );
 
-    return isToday(adjustedDate);
+    const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+    const todayBR = new Date(brString);
+    todayBR.setHours(0, 0, 0, 0);
+
+    return todayBR.getTime() === reviewDate.getTime();
 }
 
 export default async function DashboardPage() {
-    const currentDayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(new Date());
+    const currentDayName = new Intl.DateTimeFormat('pt-BR', {
+        weekday: 'long',
+        timeZone: 'America/Sao_Paulo'
+    }).format(new Date());
 
     let data = null;
 

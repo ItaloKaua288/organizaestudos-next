@@ -1,19 +1,19 @@
 "use client"
 
 import { addTimelineAction, deleteTimelineAction } from "@/actions/timeline.actions";
-import { DialogDemo } from "@/components/dialog-button"
-import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldGroup } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Attachment } from "@/types/apiResponse"
-import { Subject } from "@/types/subject"
-import { Timeline } from "@/types/timeline"
-import { Topic } from "@/types/topic"
-import { BookOpen, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react"
-import toast from "react-hot-toast"
+import { DialogDemo } from "@/components/dialog-button";
+import { Button } from "@/components/ui/button";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldGroup } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Attachment } from "@/types/apiResponse";
+import { Subject } from "@/types/subject";
+import { Timeline } from "@/types/timeline";
+import { Topic } from "@/types/topic";
+import { BookOpen, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 type DayCardProps = {
     dayLabel: string;
@@ -22,9 +22,10 @@ type DayCardProps = {
     dayEvents: Timeline[];
     pendingTopicsBySubject: Record<string, Topic>;
     subjects: Subject[];
+    reviews?: Topic[];
 }
 
-export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySubject, subjects }: DayCardProps) {
+export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySubject, subjects, reviews }: DayCardProps) {
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const formData = new FormData(e.target as HTMLFormElement);
@@ -109,6 +110,19 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
             </CardHeader>
 
             <CardContent className="flex flex-col space-y-3 pb-4">
+                {reviews?.length ? (
+                    <div className="border p-3 rounded-md flex flex-col gap-1 w-full max-h-30">
+                        <h3 className="truncate w-full border-b pb-1">Revisões</h3>
+                        <div className="overflow-y-auto">
+                            {reviews.map((review) => (
+                                <div key={review.id} className="flex gap-1 text-xs items-center w-full border-b py-1">
+                                    <BookOpen className="h-3.5 w-3.5 shrink-0" color={review.subject.color} />
+                                    <span className="truncate">{review.title}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ) : null}
                 {dayEvents.map((item) => {
                     const nextTopic = item.subject?.id ? pendingTopicsBySubject[item.subject.id] : undefined
                     const hasAttachments = nextTopic?.attachments && nextTopic.attachments.length > 0

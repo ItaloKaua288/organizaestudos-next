@@ -14,7 +14,7 @@ const timeLineSchema = new mongoose.Schema({
     day: {
         type: String,
         required: true,
-        enum: ["Domingo", "Segunda", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
+        enum: ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
     },
     startTime: {
         type: String,

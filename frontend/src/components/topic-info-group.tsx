@@ -30,6 +30,13 @@ export const formatUtcDateToLocalDisplay = (utcDateString: string | Date | undef
     return localDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
+const getTodayBR = (): Date => {
+    const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+    const today = new Date(brString);
+    today.setHours(0, 0, 0, 0);
+    return today;
+};
+
 const isDateOverdue = (dateString: string | Date | undefined): boolean => {
     if (!dateString) return false;
 
@@ -42,8 +49,7 @@ const isDateOverdue = (dateString: string | Date | undefined): boolean => {
         reviewDateUTC.getUTCDate()
     );
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayBR();
 
     return today.getTime() >= reviewDate.getTime();
 };
@@ -59,8 +65,7 @@ const isToday = (date: Date | string): boolean => {
         targetUTC.getUTCDate()
     );
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getTodayBR();
 
     return today.getTime() === target.getTime();
 };
