@@ -24,6 +24,7 @@ export async function getSubjects(): Promise<Subject[]> {
 
         const res = await fetch(`${baseUrl}/subjects`, {
             headers,
+            cache: "force-cache",
             next: { tags: ["subjects"] },
         })
 

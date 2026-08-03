@@ -25,6 +25,7 @@ export async function getTimeline(): Promise<Timeline[]> {
 
         const res = await fetch(`${baseUrl}/timelines`, {
             headers,
+            cache: "force-cache",
             next: { tags: ["timelines"] },
         })
 

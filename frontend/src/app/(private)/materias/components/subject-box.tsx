@@ -16,6 +16,7 @@ import { createTopic, deleteTopic } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 import { Button } from "../../../../components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type SubjectBoxProps = {
     subject: Subject;
@@ -414,6 +415,60 @@ function TopicRow({
                     ))}
                 </div>
             )}
+        </div>
+    );
+}
+
+export function SubjectBoxSkeleton() {
+    return (
+        <div className="rounded-lg border p-4 shadow-sm bg-card">
+            <header className="mb-4 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
+                    <Skeleton className="h-5 w-40" />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                </div>
+            </header>
+
+            <div className="flex flex-col gap-2">
+                <TopicRowSkeleton />
+                <TopicRowSkeleton />
+                <TopicRowSkeleton />
+
+                <div className="flex flex-row gap-2 mt-1">
+                    <Input className="dark:bg-input/30 bg-input/10 " placeholder="Adicione um assunto" />
+                    <Button variant={"outline"} className={"max-w-10 dark:bg-input/30 bg-input/10"}><Plus size={15} /></Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function TopicRowSkeleton() {
+    return (
+        <div className="flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm h-10.5">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex flex-col gap-0.5">
+                    <Skeleton className="h-3 w-3 rounded-full" />
+                    <Skeleton className="h-3 w-3 rounded-full" />
+                </div>
+
+                <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
+
+                <Skeleton className="h-4 w-3/4 max-w-62.5" />
+
+                <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+                    <Skeleton className="h-6 w-24 rounded-md hidden sm:block" />
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                    <Skeleton className="h-5 w-5 rounded-md" />
+                </div>
+            </div>
         </div>
     );
 }

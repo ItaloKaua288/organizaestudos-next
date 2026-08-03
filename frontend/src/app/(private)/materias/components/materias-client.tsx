@@ -1,11 +1,13 @@
 "use client"
 
-import SubjectBox from "@/app/(private)/materias/components/subject-box";
+import SubjectBox, { SubjectBoxSkeleton } from "@/app/(private)/materias/components/subject-box";
 import { DialogDemo } from "@/components/dialog-button";
+import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { createSubject } from "@/services/subjects.service";
 import { updateTopic, updateTopicStatus } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
@@ -108,6 +110,27 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
                         Nenhuma matéria cadastrada.
                     </p>
                 )}
+            </div>
+        </div>
+    );
+}
+
+export function MateriasSkeleton() {
+    return (
+        <div className="flex flex-col min-h-screen">
+            <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card">Matérias</h1>
+            
+            <div className="flex items-center gap-3 justify-between">
+                <p className="p-2 py-4 pt-5 font-medium">Gerencie suas matérias e assuntos</p>
+                <Button variant={"outline"} className={"mr-2"}>Nova Matéria</Button>
+            </div>
+
+            {/* Grid dos Cartões */}
+            <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <SubjectBoxSkeleton />
+                <SubjectBoxSkeleton />
+                <SubjectBoxSkeleton />
+                <SubjectBoxSkeleton />
             </div>
         </div>
     );

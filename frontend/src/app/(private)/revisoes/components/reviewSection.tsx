@@ -5,52 +5,70 @@ import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 import { Topic } from "@/types/topic";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { useTransition } from "react";
 import toast from "react-hot-toast";
 
 interface ReviewSectionProps {
     title: string;
     icon: React.ReactNode;
-    reviewIndex: string | number;
+    reviewIndex?: number;
     topics: Topic[];
 }
 
 interface ReviewItemProps {
     item: Topic;
-    reviewIndex: string | number;
+    reviewIndex?: number;
 }
 
 function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
     const [isPending, startTransition] = useTransition();
     const hasAttachments = Boolean(item.attachments && item.attachments.length > 0);
+    const isConcludedSection = !reviewIndex;
 
+    const getReviewTimeStatus = () => {
+        if (isConcludedSection) return null;
 
-    const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-    const now = new Date(brString);
+        const reviewDateStr =
+            reviewIndex === 1 ? item.reviews.first.date :
+                reviewIndex === 2 ? item.reviews.second.date :
+                    item.reviews.third.date;
 
-    let reviewDate;
+        const reviewDate = new Date(reviewDateStr);
+        reviewDate.setHours(0, 0, 0, 0);
 
-    if (reviewIndex === 1)
-        reviewDate = new Date(item.reviews.first.date)
-    else if (reviewIndex === 2)
-        reviewDate = new Date(item.reviews.second.date)
-    else
-        reviewDate = new Date(item.reviews.third.date)
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
 
-    reviewDate.setHours(0, 0, 0, 0)
+        const diffMs = reviewDate.getTime() - now.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-    const diffMs = reviewDate.getTime() - now.getTime();
-    const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays < 0) {
+            return <Badge variant="destructive">Atrasado</Badge>;
+        } else if (diffDays === 0) {
+            return <Badge variant="default">Hoje</Badge>;
+        } else if (diffDays === 1) {
+            return <div className="text-xs text-muted-foreground">Amanhã</div>;
+        } else {
+            return <div className="text-xs text-muted-foreground">Em {diffDays} dias</div>;
+        }
+    };
 
     const handleConclude = (e: React.MouseEvent) => {
         e.stopPropagation();
+        if (!reviewIndex) return;
 
         startTransition(async () => {
-            await changeReviewStatus(item.id, `review${reviewIndex}`, true);
-            toast.success("Revisão concluída!")
+            try {
+                const reviewKey = reviewIndex === 1 ? "first" : reviewIndex === 2 ? "second" : "third";
+                await changeReviewStatus(item.id, reviewKey, true);
+                toast.success("Revisão concluída!");
+            } catch {
+                toast.error("Erro ao concluir revisão.");
+            }
         });
     };
 
@@ -78,29 +96,26 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                 </span>
                             </div>
                         </div>
-                        {diffHours <= 24 ? (
-                            diffHours > 1 ? (
-                                <div className="text-xs">Em {diffHours} horas</div>
-                            ) : (
-                                <Badge variant={"outline"}>Hoje</Badge>
-                            )
-                        ) : (
-                            <div className="text-xs">Em {diffDays} dias e {diffHours - (diffDays * 24)} horas</div>
+
+                        {!isConcludedSection && (
+                            <>
+                                {getReviewTimeStatus()}
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="shrink-0 ml-2"
+                                    onClick={handleConclude}
+                                    disabled={isPending}
+                                >
+                                    {isPending ? (
+                                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                    ) : (
+                                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                    )}
+                                    {isPending ? "Salvando..." : "Feito"}
+                                </Button>
+                            </>
                         )}
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            className="shrink-0 ml-2"
-                            onClick={handleConclude}
-                            disabled={isPending}
-                        >
-                            {isPending ? (
-                                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                            ) : (
-                                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                            )}
-                            {isPending ? "Salvando..." : "Feito"}
-                        </Button>
                     </div>
                 }
             >
@@ -146,5 +161,46 @@ export function ReviewSection({ title, icon, reviewIndex, topics }: ReviewSectio
                 </div>
             )}
         </div>
+    );
+}
+
+export function ReviewSectionSkeleton() {
+    const sections = [
+        { title: "24 horas", reviewIndex: 1, icon: <Clock size={20} /> },
+        { title: "7 dias", reviewIndex: 2, icon: <Clock size={20} /> },
+        { title: "30 dias", reviewIndex: 3, icon: <Clock size={20} /> },
+        { title: "Concluído", icon: <CheckCircle2 size={20} className="text-green-500" /> },
+    ];
+
+    return (
+        <>
+            {sections.map((sec, index) => (
+                <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden shadow-sm bg-card" key={index}>
+                    <div className="flex gap-2 items-center mb-3 font-semibold text-base-content">
+                        {sec.icon}
+                        <h2 className="text-lg">{sec.title}</h2>
+                        <span className="text-xs bg-base-200 text-base-content/80 px-2.5 py-0.5 rounded-full ml-auto font-medium">
+                            <Spinner />
+                        </span>
+                    </div>
+
+                    <div className="flex flex-col gap-3 w-full">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                            <div
+                                key={index}
+                                className="flex gap-2 p-3 items-center border border-base-content/5 rounded-md"
+                            >
+                                <Skeleton className="h-4 w-4 rounded-full" />
+                                <div className="flex flex-col gap-1 w-full">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-3 w-1/2" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </>
+
     );
 }

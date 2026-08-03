@@ -24,6 +24,7 @@ export async function getTopics(): Promise<Topic[]> {
 
         const res = await fetch(`${baseUrl}/topics`, {
             headers,
+            cache: "force-cache",
             next: { tags: ["topics"] },
         });
 

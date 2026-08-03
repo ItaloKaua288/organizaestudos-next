@@ -22,6 +22,7 @@ export async function getNotes(id: string): Promise<Note[]> {
 
         const res = await fetch(`${baseUrl}/notes/${id}`, {
             headers,
+            cache: "force-cache",
             next: { revalidate: 3600 },
         })
 
