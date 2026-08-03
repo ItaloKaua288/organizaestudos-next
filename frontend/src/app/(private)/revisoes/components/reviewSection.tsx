@@ -38,10 +38,10 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                     item.reviews.third.date;
 
         const reviewDate = new Date(reviewDateStr);
-        reviewDate.setHours(0, 0, 0, 0);
+        reviewDate.setUTCHours(0, 0, 0, 0);
 
         const now = new Date();
-        now.setHours(0, 0, 0, 0);
+        now.setUTCHours(0, 0, 0, 0);
 
         const diffMs = reviewDate.getTime() - now.getTime();
         const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));

@@ -34,7 +34,6 @@ type DayCardProps = {
 export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySubject, subjects, reviews }: DayCardProps) {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
-    const [subjectValue, setSubjectValue] = useState("")
 
     const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
