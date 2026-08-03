@@ -23,7 +23,6 @@ export async function getNotes(id: string): Promise<Note[]> {
         const res = await fetch(`${baseUrl}/notes/${id}`, {
             headers,
             cache: "force-cache",
-            next: { revalidate: 3600 },
         })
 
         if (!res.ok) throw new Error("Falha ao buscar as anotações")
@@ -58,16 +57,15 @@ export async function createNote(title: string, content: string, subject_id: str
             body: JSON.stringify({ title, content, subject_id })
         });
 
+        revalidatePath("/notas")
         if (!res.ok) throw new Error("Falha ao criar anotação")
-
-        revalidatePath(`/notas/${subject_id}`)
     } catch (error) {
         console.error("Falha ao criar anotação", error)
         throw error
     }
 }
 
-export async function deleteNote(noteId: string, subject_id: string) {
+export async function deleteNote(noteId: string) {
     try {
         const baseUrl = getBaseUrl();
         const headers = await getAuthHeaders();
@@ -77,9 +75,8 @@ export async function deleteNote(noteId: string, subject_id: string) {
             headers
         });
 
+        revalidatePath("/notas")
         if (!res.ok) throw new Error("Falha ao criar anotação")
-
-        revalidatePath(`/notas/${subject_id}`)
     } catch (error) {
         console.error("Falha ao criar anotação", error)
         throw error
@@ -97,9 +94,8 @@ export async function updateNote(noteId: string, title: string, content: string,
             body: JSON.stringify({ title, content, subject_id, isPinned })
         });
 
+        revalidatePath("/notas")
         if (!res.ok) throw new Error("Falha ao atualizar anotação")
-
-        revalidatePath(`/notas/${subject_id}`)
     } catch (error) {
         console.error("Falha ao atualizar anotação", error)
         throw error

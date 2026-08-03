@@ -52,11 +52,11 @@ async function RevisaoContent() {
             "first"
         ),
         week: sortReviews(
-            topics.filter(topic => topic.reviews.first.concluded && !topic.reviews.second.concluded),
+            topics.filter(topic => !topic.reviews.second.concluded),
             "second"
         ),
         month: sortReviews(
-            topics.filter(topic => topic.reviews.second.concluded && !topic.reviews.third.concluded),
+            topics.filter(topic => !topic.reviews.third.concluded),
             "third"
         ),
     };

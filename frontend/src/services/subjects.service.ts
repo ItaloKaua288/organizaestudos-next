@@ -2,7 +2,7 @@
 
 import { ApiSubjectResponse } from "@/types/apiResponse";
 import type { Subject } from "@/types/subject";
-import { revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
 const getBaseUrl = () => process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "https://organizaestudos-api.vercel.app/api";
@@ -25,7 +25,6 @@ export async function getSubjects(): Promise<Subject[]> {
         const res = await fetch(`${baseUrl}/subjects`, {
             headers,
             cache: "force-cache",
-            next: { tags: ["subjects"] },
         })
 
         if (!res.ok) throw new Error("Falha ao buscar as matérias")
@@ -54,9 +53,8 @@ export async function createSubject(title: string, color: string) {
             body: JSON.stringify({ title, color })
         });
 
+        revalidatePath("/materias")
         if (!res.ok) throw new Error("Falha ao criar matéria")
-
-        revalidateTag("subjects", "hours");
     } catch (error) {
         console.error("Falha ao criar matéria", error)
         throw error
@@ -74,9 +72,8 @@ export async function updateSubject(title: string, color: string, subject_id: st
             body: JSON.stringify({ title, color })
         });
 
+        revalidatePath("/materias")
         if (!res.ok) throw new Error("Falha ao atualizar a matéria");
-
-        revalidateTag("subjects", "hours");
     } catch (error) {
         console.error("Falha ao atualizar a matéria", error)
         throw error
@@ -93,9 +90,8 @@ export async function deleteSubject(subject_id: string) {
             headers,
         });
 
+        revalidatePath("/materias")
         if (!res.ok) throw new Error("Falha ao deletar a matéria");
-
-        revalidateTag("subjects", "hours");
     } catch (error) {
         console.error("Falha ao deletar a matéria", error)
         throw error

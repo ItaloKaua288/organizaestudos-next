@@ -63,7 +63,7 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
 
         startTransition(async () => {
             try {
-                const reviewKey = reviewIndex === 1 ? "first" : reviewIndex === 2 ? "second" : "third";
+                const reviewKey = `review${reviewIndex}`
                 await changeReviewStatus(item.id, reviewKey, true);
                 toast.success("Revisão concluída!");
             } catch {

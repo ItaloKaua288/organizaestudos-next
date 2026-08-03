@@ -2,6 +2,7 @@
 
 import { addTimelineAction, deleteTimelineAction, updateTimelineAction } from "@/actions/timeline.actions";
 import { DialogDemo } from "@/components/dialog-button";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldGroup } from "@/components/ui/field";
@@ -11,7 +12,8 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Subject } from "@/types/subject";
 import { Timeline } from "@/types/timeline";
 import { Topic } from "@/types/topic";
-import { BookOpen, FileText, Info, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Eye, FileText, Info, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -32,6 +34,7 @@ type DayCardProps = {
 export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySubject, subjects, reviews }: DayCardProps) {
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isPending, setIsPending] = useState(false);
+    const [subjectValue, setSubjectValue] = useState("")
 
     const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,9 +80,12 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                         <FieldGroup>
                             <Field>
                                 <Label>Matéria:</Label>
-                                <Select name="subject" required>
+                                <Select name="subject" required >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Selecione uma matéria" />
+                                        <SelectValue render={(value) => {
+                                            const subject = subjects.find((s) => s.id === value.children);
+                                            return <span>{subject?.title ?? "Selecione uma matéria"}</span>;
+                                        }}/>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -189,13 +195,14 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                     </span>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                     {nextTopic && (
                         <DialogDemo
                             variant="button"
                             title={nextTopic.title}
                             description="Detalhes do tópico atual"
-                            contentBtn={<Info className="h-4 w-4" />}
+                            contentBtn={<Eye className="h-4 w-4" />}
+                            disableBtns={true}
                         >
                             <div className="space-y-4 min-w-0">
                                 <div>
@@ -204,16 +211,18 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                                 </div>
                                 <div>
                                     <span className="text-sm font-semibold flex items-center gap-1 mb-2">
-                                        <Paperclip className="h-4 w-4" /> Anexos:
+                                        <Paperclip className="h-4 w-4" /> Anexos: <Badge variant={"secondary"}>{nextTopic.attachments.length}</Badge>
                                     </span>
                                     {!hasAttachments ? (
                                         <p className="text-sm text-muted-foreground">Sem anexos.</p>
                                     ) : (
                                         <div className="flex flex-col gap-2 min-w-0">
                                             {nextTopic.attachments!.map((attachment) => (
-                                                <div key={attachment.id} className="flex w-full min-w-0 gap-2 items-center text-sm">
-                                                    <FileText className="h-4 w-4 shrink-0" style={{ color: nextTopic.subject.color }} />
-                                                    <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
+                                                <div key={attachment.id} className="w-full min-w-0 text-sm">
+                                                    <Link href={attachment.url || "#"} target="_blank" className="flex gap-2 items-center w-full border hoverComponentsStatic p-0.5 rounded-sm" >
+                                                        <FileText className="h-4 w-4 shrink-0" style={{ color: nextTopic.subject.color }} />
+                                                        <span className="min-w-0 flex-1 truncate">{attachment.name} afsf asfas fasfasfasfasfas fas fas fasf as</span>
+                                                    </Link>
                                                 </div>
                                             ))}
                                         </div>
@@ -230,7 +239,7 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                         description="Modifique os horários deste evento."
                         nameConfirmBtn={isSubmitting ? "Salvando..." : "Salvar"}
                         onSubmit={handleEditSubmit}
-                        variant="label"
+                        classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent hover:bg-transparent hover:text-primary"
                         contentBtn={<PencilIcon className="h-4 w-4" />}
                     >
                         <input type="hidden" name="subject_id" value={item.subject?.id || ""} />
@@ -266,7 +275,7 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                         </FieldGroup>
                     </DialogDemo>
 
-                    <Button variant="ghost" size="icon" className="hover:text-destructive" onClick={handleDelete} title="Deletar">
+                    <Button variant="ghost" size="icon" className="hover:text-destructive hover:bg-transparent dark:hover:bg-transparent" onClick={handleDelete} title="Deletar">
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
