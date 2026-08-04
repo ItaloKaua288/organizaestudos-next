@@ -6,17 +6,17 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowDown, ArrowUp, CheckCircle2, Clock, Eye, FileText, Link, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Clock, Eye, FileText, Link as LinkLucide, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { deleteSubject, updateSubject } from "@/services/subjects.service";
-import { createTopic, deleteTopic } from "@/services/topics.service";
+import { createTopic, deleteTopic, openTopicAttachment } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 import { Button } from "../../../../components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type SubjectBoxProps = {
     subject: Subject;
@@ -160,7 +160,7 @@ export default function SubjectBox({
             <div className="flex flex-col gap-2">
                 {topics.map((topic, index) => (
                     <TopicRow
-                        key={topic.id || `topic-${index}` }
+                        key={topic.id || `topic-${index}`}
                         topic={topic}
                         index={index}
                         isFirst={index === 0}
@@ -198,7 +198,7 @@ function formatDateForInput(dateSource: string | Date | null): string {
             return '';
         }
         return date.toISOString().split('T')[0];
-    } catch (e) {
+    } catch {
         return '';
     }
 }
@@ -258,6 +258,17 @@ function TopicRow({
         }
         setIsEditDialogOpen(open);
     };
+
+    const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
+        try {
+            const blob = await openTopicAttachment(topic.id, attachmentPublicId)
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank");
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     return (
         <>
@@ -329,7 +340,7 @@ function TopicRow({
                                 rel="noopener noreferrer"
                                 className="btn btn-ghost btn-xs p-1 hover:text-primary sm:btn-sm"
                             >
-                                <Link size={15} />
+                                <LinkLucide size={15} />
                             </a>
                         )}
 
@@ -407,14 +418,14 @@ function TopicRow({
                 <div className="flex flex-col gap-1 px-2 py-1">
                     <h3 className="text-sm font-semibold text-muted-foreground">Anexos:</h3>
                     {topic.attachments!.map((attachment, index) => (
-                        <a
+                        <span
                             key={attachment.id || index}
-                            href={attachment.url}
+                            onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
                             className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors"
                         >
                             <FileText size={15} className="mr-2 shrink-0" />
                             {attachment.name}
-                        </a>
+                        </span>
                     ))}
                 </div>
             )}

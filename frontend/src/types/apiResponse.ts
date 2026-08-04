@@ -18,6 +18,7 @@ export type Attachment = {
     name: string;
     url?: string;
     file?: File;
+    public_id?: string;
 };
 
 interface ApiTopic {

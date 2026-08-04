@@ -1,5 +1,5 @@
-import { Subject } from "./subject";
 import { Attachment } from "./apiResponse";
+import { Subject } from "./subject";
 
 
 export type TopicStatus = 'PENDENTE' | 'CONCLUIDO';

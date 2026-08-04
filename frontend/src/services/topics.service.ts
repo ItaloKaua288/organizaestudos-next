@@ -201,3 +201,28 @@ export async function sendAttachPDF(topicId: string, file: File) {
         throw error;
     }
 }
+
+export async function openTopicAttachment(topicId: string, publicId: string): Promise<Blob> {
+    try {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(
+            `${baseUrl}/topics/stream-pdf/${topicId}/${encodeURIComponent(publicId)}`,
+            {
+                headers,
+                cache: "no-store",
+            }
+        );
+
+        if (!res.ok) {
+            throw new Error(await res.text());
+        }
+
+        return await res.blob();
+    } catch (error) {
+        console.error("Falha ao enviar o anexo!", error);
+        throw error;
+    }
+
+}
