@@ -160,7 +160,7 @@ export default function SubjectBox({
             <div className="flex flex-col gap-2">
                 {topics.map((topic, index) => (
                     <TopicRow
-                        key={topic.id}
+                        key={topic.id || `topic-${index}` }
                         topic={topic}
                         index={index}
                         isFirst={index === 0}
@@ -234,6 +234,7 @@ function TopicRow({
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+        console.log(e.target.files)
         if (file && onAttachPDF) {
             onAttachPDF(topic.id, file);
         }
@@ -259,7 +260,7 @@ function TopicRow({
     };
 
     return (
-        <div>
+        <>
             <div className="hoverComponents flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm ">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="flex flex-col">
@@ -335,12 +336,14 @@ function TopicRow({
                         <label
                             className="btn btn-ghost btn-xs cursor-pointer p-1 transition-colors hover:text-primary sm:btn-sm"
                             title="Anexar PDF"
+                            htmlFor={`file-upload-${topic.id}`}
                         >
                             <input
                                 accept=".pdf"
                                 className="hidden"
                                 type="file"
                                 onChange={handleFileChange}
+                                id={`file-upload-${topic.id}`}
                             />
                             <Paperclip size={15} />
                         </label>
@@ -403,9 +406,9 @@ function TopicRow({
             {hasAttachments && (
                 <div className="flex flex-col gap-1 px-2 py-1">
                     <h3 className="text-sm font-semibold text-muted-foreground">Anexos:</h3>
-                    {topic.attachments!.map((attachment) => (
+                    {topic.attachments!.map((attachment, index) => (
                         <a
-                            key={attachment.id}
+                            key={attachment.id || index}
                             href={attachment.url}
                             className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors"
                         >
@@ -415,7 +418,7 @@ function TopicRow({
                     ))}
                 </div>
             )}
-        </div>
+        </>
     );
 }
 

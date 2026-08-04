@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createSubject } from "@/services/subjects.service";
-import { updateTopic, updateTopicStatus } from "@/services/topics.service";
+import { sendAttachPDF, updateTopic, updateTopicStatus } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 import { useRouter } from "next/navigation";
@@ -67,6 +67,17 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
         }
     }
 
+    async function handleAttachPDF(topicId: string, file: File) {
+        try {
+            await sendAttachPDF(topicId, file);
+            toast.success("Anexo enviado!");
+            router.refresh();
+        } catch (error) {
+            toast.error("Falha ao enviar o anexo!");
+            console.error("Erro:", error);
+        }
+    }
+
     return (
         <div className="flex flex-col min-h-screen">
             <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card">Matérias</h1>
@@ -103,6 +114,7 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
                             subject={subject}
                             onStatusChange={handleTopicStatusChange}
                             onEditTopic={handleEditTopic}
+                            onAttachPDF={handleAttachPDF}
                         />
                     ))
                 ) : (

@@ -163,11 +163,41 @@ export async function deleteTopic(topicId: string) {
             const errorData = await res.json();
             throw new Error(errorData.message || "Falha ao deletar o assunto!");
         }
-        
+
         revalidatePath("/materias")
         return await res.json();
     } catch (error) {
         console.error("Falha ao deletar o assunto", error);
+        throw error;
+    }
+}
+
+export async function sendAttachPDF(topicId: string, file: File) {
+    try {
+        const baseUrl = getBaseUrl();
+        const allHeaders = await getAuthHeaders();
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { "Content-Type": _, ...headersUpload } = allHeaders;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch(`${baseUrl}/topics/attachment/${topicId}`, {
+            method: "POST",
+            headers: headersUpload,
+            body: formData
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || "Falha ao enviar o anexo!");
+        }
+
+        revalidatePath("/materias");
+        return await res.json();
+    } catch (error) {
+        console.error("Falha ao enviar o anexo!", error);
         throw error;
     }
 }
