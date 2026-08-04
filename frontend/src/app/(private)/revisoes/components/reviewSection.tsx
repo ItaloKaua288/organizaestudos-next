@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
+import { getTodayBR } from "@/lib/date";
 import { Topic } from "@/types/topic";
 import { CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { useTransition } from "react";
@@ -40,8 +41,7 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
         const reviewDate = new Date(reviewDateStr);
         reviewDate.setUTCHours(0, 0, 0, 0);
 
-        const now = new Date();
-        now.setUTCHours(0, 0, 0, 0);
+        const now = getTodayBR();
 
         const diffMs = reviewDate.getTime() - now.getTime();
         const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));

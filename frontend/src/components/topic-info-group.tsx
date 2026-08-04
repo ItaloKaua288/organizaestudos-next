@@ -1,6 +1,7 @@
 "use client";
 
 import { changeReviewStatus } from "@/actions/review.actions";
+import { isDateOverdue, isToday } from "@/lib/date";
 import { Topic } from "@/types/topic";
 import { FileText, RotateCw } from "lucide-react";
 import { useState } from "react";
@@ -28,46 +29,6 @@ export const formatUtcDateToLocalDisplay = (utcDateString: string | Date | undef
 
     const localDate = new Date(year, month, day);
     return localDate.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
-const getTodayBR = (): Date => {
-    const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-    const today = new Date(brString);
-    today.setHours(0, 0, 0, 0);
-    return today;
-};
-
-const isDateOverdue = (dateString: string | Date | undefined): boolean => {
-    if (!dateString) return false;
-
-    const reviewDateUTC = new Date(dateString);
-    if (isNaN(reviewDateUTC.getTime())) return false;
-
-    const reviewDate = new Date(
-        reviewDateUTC.getUTCFullYear(),
-        reviewDateUTC.getUTCMonth(),
-        reviewDateUTC.getUTCDate()
-    );
-
-    const today = getTodayBR();
-
-    return today.getTime() >= reviewDate.getTime();
-};
-
-const isToday = (date: Date | string): boolean => {
-    if (!date) return false;
-    const targetUTC = new Date(date);
-    if (isNaN(targetUTC.getTime())) return false;
-
-    const target = new Date(
-        targetUTC.getUTCFullYear(),
-        targetUTC.getUTCMonth(),
-        targetUTC.getUTCDate()
-    );
-
-    const today = getTodayBR();
-
-    return today.getTime() === target.getTime();
 };
 
 export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicInfoDialogProps) {
