@@ -70,6 +70,7 @@ organizaestudos-next/
 │   ├── routes/              # Rotas da API
 │   └── utils/               # Utilitários
 ├── frontend/                # Aplicação web em Next.js
+│   ├── src/actions/         # Ações em server components
 │   ├── src/app/             # App Router do Next.js
 │   ├── src/components/      # Componentes reutilizáveis
 │   ├── src/services/        # Serviços de comunicação com API
@@ -180,7 +181,9 @@ npm run lint
 
 ## Deploy
 
-O backend pode ser implantado em qualquer ambiente Node.js compatível, como Render, Railway, Fly.io ou Vercel Serverless.
+Frontend e backend foram ambos implantados na plataforma Vercel.
+
+O backend pode ser implantado em qualquer ambiente Node.js compatível.
 
 O frontend Next.js pode ser implantado em plataformas como:
 
