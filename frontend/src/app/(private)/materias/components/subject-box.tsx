@@ -421,7 +421,7 @@ function TopicRow({
                         <span
                             key={attachment.id || index}
                             onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                            className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors"
+                            className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer"
                         >
                             <FileText size={15} className="mr-2 shrink-0" />
                             {attachment.name}
