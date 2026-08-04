@@ -5,7 +5,7 @@ export function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const pathname = request.nextUrl.pathname;
 
-  const publicRoutes = ["/login"];
+  const publicRoutes = ["/login", "/signup"];
   const privateRoutes = ["/", "/materias", "/notas", "/cronograma", "/revisoes"];
 
   const isPublicRoute = publicRoutes.includes(pathname);
