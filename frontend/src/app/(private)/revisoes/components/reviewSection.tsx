@@ -174,6 +174,9 @@ export function ReviewSectionSkeleton() {
 
     return (
         <>
+            <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
+                Visualize suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
+            </p>
             {sections.map((sec, index) => (
                 <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden shadow-sm bg-card" key={index}>
                     <div className="flex gap-2 items-center mb-3 font-semibold text-base-content">

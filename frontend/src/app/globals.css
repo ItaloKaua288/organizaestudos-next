@@ -160,3 +160,15 @@
 .hoverComponentsStatic {
   @apply  bg-input/20 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm transition-all;
 }
+
+.introduction-Page {
+  @apply animate-in fade-in slide-in-from-top-8 duration-700 ease-out fill-mode-both;
+}
+
+.reverse-introduction-page{
+  @apply animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both;
+}
+
+.introduction-card {
+  @apply animate-in fade-in slide-in-from-bottom-6 duration-500 ease-out fill-mode-both;
+}

@@ -3,6 +3,7 @@ import { Topic } from "@/types/topic";
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { Suspense } from "react";
 import { ReviewSection, ReviewSectionSkeleton } from "./components/reviewSection";
+import { ScrambleText } from "@/components/scramble-text";
 
 async function RevisaoContent() {
     let topics: Topic[] | null = null;
@@ -70,6 +71,9 @@ async function RevisaoContent() {
 
     return (
         <div className="flex flex-col gap-3">
+            <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
+                Visualize suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
+            </p>
             {sections.map((sec, index) => (
                 <ReviewSection
                     key={index}
@@ -85,25 +89,27 @@ async function RevisaoContent() {
 
 export default function RevisaoPage() {
     return (
-        <div className="flex flex-col gap-1 min-h-screen pb-10">
+        <div className="flex flex-col gap-1 min-h-screen pb-10 ">
             <header>
                 <h1 className="px-2 text-xl font-bold shadow-sm bg-card py-4">
-                    Revisões
+                    <ScrambleText text="REVISÕES" />
                 </h1>
-                <p className="p-2 py-4 font-medium text-sm text-muted-foreground">
-                    Visualize suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
-                </p>
             </header>
+            <section className="introduction-Page">
 
-            <Suspense
-                fallback={
-                    <div className="flex flex-col gap-3">
-                        <ReviewSectionSkeleton />
+                <Suspense
+                    fallback={
+                        <div className="flex flex-col gap-3">
+                            <ReviewSectionSkeleton />
+                        </div>
+                    }
+                >
+                    <div className="reverse-introduction-page">
+                        <RevisaoContent />
                     </div>
-                }
-            >
-                <RevisaoContent />
-            </Suspense>
+                </Suspense>
+
+            </section>
         </div>
     );
 }

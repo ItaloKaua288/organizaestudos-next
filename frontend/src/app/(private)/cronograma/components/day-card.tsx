@@ -57,7 +57,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
     }
 
     return (
-        <Card className={`border max-h-150 flex flex-col transition-all ${isToday ? "border-primary/50 shadow-sm shadow-primary/50" : ""}`}>
+        <Card className={`border max-h-150 h-full flex flex-col transition-all ${isToday ? "border-primary/50 shadow-sm shadow-primary/50" : ""}`}>
             <CardHeader>
                 <CardTitle className="truncate">{dayLabel}</CardTitle>
                 <CardDescription>{date}</CardDescription>

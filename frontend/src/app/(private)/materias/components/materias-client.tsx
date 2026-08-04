@@ -15,6 +15,7 @@ import { Topic, TopicStatus } from "@/types/topic";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import toast from "react-hot-toast";
+import { ScrambleText } from "@/components/scramble-text";
 
 type SubjectWithTopics = Subject & { topics: Topic[] };
 
@@ -80,9 +81,8 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card">Matérias</h1>
             <div className="flex items-center gap-3 justify-between">
-                <p className="p-2 py-4 pt-5 font-medium">Gerencie suas matérias e assuntos</p>
+                <p className="p-2 py-4 font-medium text-sm text-muted-foreground">Gerencie suas matérias e assuntos</p>
                 <DialogDemo
                     contentBtn="Nova Matéria"
                     title="Nova Matéria"
@@ -130,10 +130,8 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
 export function MateriasSkeleton() {
     return (
         <div className="flex flex-col min-h-screen">
-            <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card">Matérias</h1>
-            
             <div className="flex items-center gap-3 justify-between">
-                <p className="p-2 py-4 pt-5 font-medium">Gerencie suas matérias e assuntos</p>
+                <p className="p-2 py-4 font-medium text-sm text-muted-foreground">Gerencie suas matérias e assuntos</p>
                 <Button variant={"outline"} className={"mr-2"}>Nova Matéria</Button>
             </div>
 

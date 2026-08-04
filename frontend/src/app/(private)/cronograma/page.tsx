@@ -4,6 +4,7 @@ import { getTopics } from "@/services/topics.service";
 import { Topic } from "@/types/topic";
 import { AlertCircle } from "lucide-react";
 import { DayCard } from "./components/day-card";
+import { ScrambleText } from "@/components/scramble-text";
 
 const WEEK_DAYS = [
     "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
@@ -101,7 +102,7 @@ export default async function CronogramaPage() {
         <main className="space-y-4">
             <header className="space-y-1">
                 <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
-                    Cronograma
+                    <ScrambleText text="CRONOGRAMA" />
                 </h1>
                 <div className="flex justify-between p-2 items-center">
                     <p className="text-sm font-medium text-muted-foreground">
@@ -117,16 +118,19 @@ export default async function CronogramaPage() {
                     const dateFormatted = dayDates[index].formattedDate;
 
                     return (
-                        <DayCard
-                            key={dayLabel}
-                            dayLabel={dayLabel}
-                            date={dateFormatted}
-                            isToday={isToday}
-                            dayEvents={dayEvents}
-                            pendingTopicsBySubject={pendingTopicsBySubject}
-                            subjects={data.subjects}
-                            reviews={timeline_reviews[dayLabel]}
-                        />
+                        <section className="introduction-card "
+                            style={{ animationDelay: `${index * 150}ms` }}>
+                            <DayCard
+                                key={dayLabel}
+                                dayLabel={dayLabel}
+                                date={dateFormatted}
+                                isToday={isToday}
+                                dayEvents={dayEvents}
+                                pendingTopicsBySubject={pendingTopicsBySubject}
+                                subjects={data.subjects}
+                                reviews={timeline_reviews[dayLabel]}
+                            />
+                        </section>
                     )
                 })}
             </section>
