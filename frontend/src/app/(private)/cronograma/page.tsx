@@ -118,10 +118,9 @@ export default async function CronogramaPage() {
                     const dateFormatted = dayDates[index].formattedDate;
 
                     return (
-                        <section className="introduction-card "
+                        <section key={dayLabel} className="introduction-card "
                             style={{ animationDelay: `${index * 150}ms` }}>
                             <DayCard
-                                key={dayLabel}
                                 dayLabel={dayLabel}
                                 date={dateFormatted}
                                 isToday={isToday}
