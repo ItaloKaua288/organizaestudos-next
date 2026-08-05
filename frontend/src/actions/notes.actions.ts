@@ -19,7 +19,8 @@ export async function addNoteAction(formData: FormData) {
 export async function deleteNoteAction(formData: FormData) {
     try {
         const noteId = formData.get("noteId") as string;
-        await deleteNote(noteId);
+        const subjectId = formData.get("subject_id") as string;
+        await deleteNote(noteId, subjectId);
         return { success: true, message: "Anotação deletada com sucesso!" }
     } catch (error) {
         console.error("Erro ao deletar anotação:", error);

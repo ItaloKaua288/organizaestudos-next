@@ -40,7 +40,7 @@ export const getNotes = async (req, res) => {
 
 
     try {
-        const notes = await Note.find({ user_id, subject_id: subjectId }).populate("subject_id");
+        const notes = await Note.find({ user_id, subject_id: subjectId }).populate("subject_id").sort({ createdAt: -1 });
         res.status(200).json({ success: true, notes });
     } catch (error) {
         console.log("error in getNotes ", error);

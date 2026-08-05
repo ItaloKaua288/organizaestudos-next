@@ -66,11 +66,12 @@ export function OptionsNoteCard({ subjectId, note }: OptionsNoteCardProps) {
     const handleUpdateNote = async (e: React.FormEvent) => {
         try {
             e.preventDefault()
+            console.log()
             const formData = new FormData()
             formData.append("noteId", note.id)
             formData.append("content", content)
             formData.append("title", title)
-            formData.append("isPinned", (!note.is_pined).toString())
+            formData.append("isPinned", (note.is_pined).toString())
             formData.append("subject_id", subjectId)
             const res = await updateNoteAction(formData)
 
