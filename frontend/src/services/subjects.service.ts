@@ -73,6 +73,10 @@ export async function updateSubject(title: string, color: string, subject_id: st
         });
 
         revalidatePath("/materias")
+        revalidatePath("/notas")
+        revalidatePath("/")
+        revalidatePath("/cronograma")
+        revalidatePath("/revisoes")
         if (!res.ok) throw new Error("Falha ao atualizar a matéria");
     } catch (error) {
         console.error("Falha ao atualizar a matéria", error)
