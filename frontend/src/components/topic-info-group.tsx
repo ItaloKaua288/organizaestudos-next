@@ -99,10 +99,9 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                 )}
             </Field>
             <Field>
-                <Label>Anexos ({topic.attachments?.length || 0}):</Label>
+                <Label>Anexos:<Badge variant={"outline"}>{topic.attachments?.length || 0}</Badge></Label>
                 {hasAttachments ? (
                     <div className="flex flex-col gap-1 px-2 py-1">
-                    <h3 className="text-sm font-semibold text-muted-foreground">Anexos:</h3>
                     {topic.attachments!.map((attachment, index) => (
                         <span
                             key={attachment.id || index}
