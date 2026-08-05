@@ -184,11 +184,11 @@ export default async function DashboardPage() {
                                             title={topic.title}
                                             description="Informações sobre o tópico da revisão"
                                             contentBtn={
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 truncate">
                                                     <BookOpen style={{ color: topic.subject.color }} />
-                                                    <div className="flex flex-col  items-start gap-1 ">
-                                                        <span>{topic.title}</span>
-                                                        <span className="text-xs text-muted-foreground">{topic.subject.title}</span>
+                                                    <div className="flex flex-col items-start gap-1 truncate">
+                                                        <span className="truncate">{topic.title}</span>
+                                                        <span className="text-xs text-muted-foreground truncate">{topic.subject.title}</span>
                                                     </div>
                                                 </div>
 

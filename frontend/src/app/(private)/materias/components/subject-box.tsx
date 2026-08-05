@@ -342,7 +342,7 @@ function TopicRow({
                                 rel="noopener noreferrer"
                                 className="btn btn-ghost btn-xs p-1 hover:text-primary sm:btn-sm"
                             >
-                                <LinkLucide size={15} />
+                                <LinkLucide color={topic.subject.color} size={15} />
                             </a>
                         )}
 
@@ -426,7 +426,7 @@ function TopicRow({
                             onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
                             className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer"
                         >
-                            <FileText size={15} className="mr-2 shrink-0" />
+                            <FileText color={topic.subject.color} size={15} className="mr-2 shrink-0" />
                             {attachment.name}
                         </span>
                     ))}
