@@ -1,16 +1,17 @@
 "use client";
 
 import { changeReviewStatus } from "@/actions/review.actions";
+import { deleteAttachAction } from "@/actions/topics.actions";
 import { isDateOverdue, isToday } from "@/lib/date";
+import { openTopicAttachment } from "@/services/topics.service";
 import { Topic } from "@/types/topic";
-import { FileText, RotateCw } from "lucide-react";
+import { FileText, RotateCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Field, FieldGroup } from "./ui/field";
 import { Label } from "./ui/label";
-import { openTopicAttachment } from "@/services/topics.service";
 
 type TopicInfoDialogProps = {
     subject: string;
@@ -44,15 +45,30 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
     };
 
     const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
-            try {
-                const blob = await openTopicAttachment(topic.id, attachmentPublicId)
-                const url = URL.createObjectURL(blob);
-                window.open(url, "_blank");
-                setTimeout(() => URL.revokeObjectURL(url), 10000);
-            } catch (error) {
-                console.error(error);
-            }
+        try {
+            const blob = await openTopicAttachment(topic.id, attachmentPublicId)
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank");
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+        } catch (error) {
+            console.error(error);
         }
+    }
+
+    const handleTopicAttachmentDelete = async (public_id: string) => {
+        try {
+            const formData = new FormData();
+            formData.append("topicId", topic.id);
+            formData.append("public_id", public_id)
+            toast.loading("deletando...")
+            await deleteAttachAction(formData)
+            toast.dismissAll()
+            toast.success("Anexo deletado!")
+        } catch (error) {
+            console.error(error);
+            toast.error("Erro ao deletar o anexo!")
+        }
+    }
 
     return (
         <FieldGroup>
@@ -102,17 +118,25 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                 <Label>Anexos:<Badge variant={"outline"}>{topic.attachments?.length || 0}</Badge></Label>
                 {hasAttachments ? (
                     <div className="flex flex-col gap-1 px-2 py-1">
-                    {topic.attachments!.map((attachment, index) => (
-                        <span
-                            key={attachment.id || index}
-                            onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                            className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer"
-                        >
-                            <FileText size={15} className="mr-2 shrink-0" color={topic.subject.color} />
-                            <span className="flex-1 truncate">{attachment.name}</span>
-                        </span>
-                    ))}
-                </div>
+                        {topic.attachments!.map((attachment, index) => (
+                            <div key={attachment.id || index} className="flex gap-1 items-center w-full">
+                                <span
+                                    onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
+                                    className="flex items-center w-full rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer"
+                                >
+                                    <FileText size={15} className="mr-2 shrink-0" color={topic.subject.color} />
+                                    <span className="flex-1 truncate">{attachment.name}</span>
+                                </span>
+                                <Button
+                                    variant={"outline"}
+                                    className={"hover:text-destructive"}
+                                    onClick={() => handleTopicAttachmentDelete(attachment.public_id!)}
+                                >
+                                    <Trash2 />
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
                 ) : (
                     <p className="text-xs text-base-content/50 italic mt-1">Nenhum PDF anexado.</p>
                 )}

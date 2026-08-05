@@ -15,6 +15,7 @@ export interface ApiSubjectResponse {
 
 export type Attachment = {
     id: string;
+    _id: string,
     name: string;
     url?: string;
     file?: File;

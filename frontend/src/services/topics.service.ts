@@ -224,5 +224,28 @@ export async function openTopicAttachment(topicId: string, publicId: string): Pr
         console.error("Falha ao enviar o anexo!", error);
         throw error;
     }
+}
 
+export async function deleteAttachPDF(topicId: string, public_id:string) {
+    try {
+        const baseUrl = getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/topics/attachment/${topicId}`, {
+            method: "DELETE",
+            headers,
+            body: JSON.stringify({ public_id }),
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || "Falha ao deletar o anexo!");
+        }
+
+        revalidatePath("/materias");
+        return await res.json();
+    } catch (error) {
+        console.error("Falha ao deletar o anexo!", error);
+        throw error;
+    }
 }
