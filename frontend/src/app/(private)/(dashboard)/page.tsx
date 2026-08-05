@@ -91,7 +91,7 @@ export default async function DashboardPage() {
             </header>
             <section className=" flex flex-col space-y-4">
 
-                <div className="gap-4 py-2 px-2 grid grid-cols-1 md:grid-cols-3 w-full">
+                <div className="gap-4  px-2 grid grid-cols-1 md:grid-cols-3 w-full">
                     <Card className="introduction-card" style={{ animationDelay: `${1 * 150}ms` }} >
                         <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                             <CardTitle className="text-sm font-medium">Matérias</CardTitle>
