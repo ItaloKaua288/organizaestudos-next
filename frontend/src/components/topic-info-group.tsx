@@ -10,6 +10,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Field, FieldGroup } from "./ui/field";
 import { Label } from "./ui/label";
+import { openTopicAttachment } from "@/services/topics.service";
 
 type TopicInfoDialogProps = {
     subject: string;
@@ -42,6 +43,17 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
         setIsLoading(null);
     };
 
+    const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
+            try {
+                const blob = await openTopicAttachment(topic.id, attachmentPublicId)
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
     return (
         <FieldGroup>
             <Field className="flex flex-row gap-2 items-center">
@@ -65,19 +77,19 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                     <div className="grid grid-cols-2 border rounded-lg p-2 gap-1 text-xs sm:text-sm dark:bg-neutral-800/50">
                         <span className="flex items-center">1° Revisão (24h): </span>
                         <div className="flex gap-1 justify-end items-center">
-                            {topic.reviews.first.concluded ? <Badge variant={"secondary"} className="">Concluído</Badge> : isToday(topic.reviews.first.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""}
+                            {topic.reviews.first.concluded ? <Badge variant={"secondary"} className="text-[10px]">Concluído</Badge> : isToday(topic.reviews.first.date) ? <Badge variant={"secondary"} className="text-[10px]">Hoje</Badge> : ""}
                             <span className={`${topic.reviews.first.concluded ? "text-green-500 line-through" : isToday(topic.reviews.first.date) ? "text-primary" : isDateOverdue(topic.reviews.first.date) ? "text-destructive" : ""} text-right font-mono flex gap-1 `}>{formatUtcDateToLocalDisplay(topic.reviews.first.date)} </span>
                             {topic.reviews.first.concluded ? <Button disabled={!!isLoading} onClick={(e) => handleUndoConclude(e, topic.id, 1)} variant={"secondary"}><RotateCw className={`${isLoading === 1 ? "animate-spin animation-duration-[400ms]" : ""}`} size={15} /></Button> : <span className="opacity-40 w-9.5 h-9 flex items-center justify-center"><RotateCw size={16} /></span>}
                         </div>
                         <span className="flex items-center">2° Revisão (7 dias): </span>
                         <div className="flex gap-1 justify-end items-center">
-                            {topic.reviews.second.concluded ? <Badge variant={"secondary"} className="">Concluído</Badge> : isToday(topic.reviews.second.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""}
+                            {topic.reviews.second.concluded ? <Badge variant={"secondary"} className="text-[10px]">Concluído</Badge> : isToday(topic.reviews.second.date) ? <Badge variant={"secondary"} className="text-[10px]">Hoje</Badge> : ""}
                             <span className={`${topic.reviews.second.concluded ? "text-green-500 line-through" : isToday(topic.reviews.second.date) ? "text-primary" : isDateOverdue(topic.reviews.second.date) ? "text-destructive" : ""} text-right font-mono flex gap-1 `}>{formatUtcDateToLocalDisplay(topic.reviews.second.date)}</span>
                             {topic.reviews.second.concluded ? <Button disabled={!!isLoading} onClick={(e) => handleUndoConclude(e, topic.id, 2)} variant={"secondary"}><RotateCw className={`${isLoading === 2 ? "animate-spin animation-duration-[400ms]" : ""}`} size={15} /></Button> : <span className="opacity-40 w-9.5 h-9 flex items-center justify-center"><RotateCw size={16} /></span>}
                         </div>
                         <span className="flex items-center">3° Revisão (30 dias): </span>
                         <div className="flex gap-1 justify-end items-center">
-                            {topic.reviews.third.concluded ? <Badge variant={"secondary"} className="">Concluído</Badge> : isToday(topic.reviews.third.date) ? <Badge variant={"secondary"} className="">Hoje</Badge> : ""}
+                            {topic.reviews.third.concluded ? <Badge variant={"secondary"} className="text-[10px]">Concluído</Badge> : isToday(topic.reviews.third.date) ? <Badge variant={"secondary"} className="text-[10px]">Hoje</Badge> : ""}
                             <span className={`${topic.reviews.third.concluded ? "text-green-500 line-through" : isToday(topic.reviews.third.date) ? "text-primary" : isDateOverdue(topic.reviews.third.date) ? "text-destructive" : ""} text-right font-mono flex gap-1 `}>{formatUtcDateToLocalDisplay(topic.reviews.third.date)}</span>
                             {topic.reviews.third.concluded ? <Button disabled={!!isLoading} onClick={(e) => handleUndoConclude(e, topic.id, 3)} variant={"secondary"}><RotateCw className={`${isLoading === 3 ? "animate-spin animation-duration-[400ms]" : ""}`} size={15} /></Button> : <span className="opacity-40 w-9.5 h-9 flex items-center justify-center"><RotateCw size={16} /></span>}
                         </div>
@@ -89,20 +101,19 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
             <Field>
                 <Label>Anexos ({topic.attachments?.length || 0}):</Label>
                 {hasAttachments ? (
-                    <div className="flex flex-col gap-2 max-h-50 overflow-auto transition-colors">
-                        {topic.attachments?.map((attachment) => (
-                            <a
-                                key={attachment.id}
-                                href={attachment.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center text-sm border p-1 hover:bg-secondary truncate w-full rounded-sm"
-                            >
-                                <FileText size={15} className="inline-block mr-1" />
-                                {attachment.name}
-                            </a>
-                        ))}
-                    </div>
+                    <div className="flex flex-col gap-1 px-2 py-1">
+                    <h3 className="text-sm font-semibold text-muted-foreground">Anexos:</h3>
+                    {topic.attachments!.map((attachment, index) => (
+                        <span
+                            key={attachment.id || index}
+                            onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
+                            className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer"
+                        >
+                            <FileText size={15} className="mr-2 shrink-0" color={topic.subject.color} />
+                            <span className="flex-1 truncate">{attachment.name}</span>
+                        </span>
+                    ))}
+                </div>
                 ) : (
                     <p className="text-xs text-base-content/50 italic mt-1">Nenhum PDF anexado.</p>
                 )}

@@ -2,6 +2,7 @@
 
 import { addTimelineAction, deleteTimelineAction, updateTimelineAction } from "@/actions/timeline.actions";
 import { DialogDemo } from "@/components/dialog-button";
+import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,7 +85,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                                         <SelectValue render={(value) => {
                                             const subject = subjects.find((s) => s.id === value.children);
                                             return <span>{subject?.title ?? "Selecione uma matéria"}</span>;
-                                        }}/>
+                                        }} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -117,12 +118,22 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                 {reviews && reviews.length > 0 && (
                     <div className="border p-3 rounded-md flex flex-col gap-1 w-full max-h-40">
                         <h3 className="truncate w-full border-b pb-1 font-semibold text-sm">Revisões</h3>
-                        <div className="overflow-y-auto flex flex-col gap-1 pt-1">
+                        <div className="overflow-y-auto flex flex-col gap-1">
+
                             {reviews.map((review) => (
-                                <div key={review.id} className="flex gap-2 text-xs items-center w-full py-1">
-                                    <BookOpen className="h-3.5 w-3.5 shrink-0" color={review.subject.color} />
-                                    <span className="truncate">{review.title}</span>
-                                </div>
+                                <DialogDemo
+                                    title={review.title}
+                                    description="Detalhes do assunto atual"
+                                    contentBtn={<span className="flex gap-1 items-center truncate text-[12px]">
+                                        <BookOpen className="h-3.5 w-3.5 shrink-0" color={review.subject.color} />
+                                        <span className="truncate ">{review.title}</span>
+                                    </span>}
+                                    classNameBtn="truncate flex justify-start rounded-sm dark:bg-card bg-card border-none "
+                                    disableBtns={true}
+                                    key={review.id}
+                                >
+                                    <TopicInfoGroup subject={review.subject.title} topic={review} color={review.subject.color} hasAttachments={review.attachments && review.attachments.length > 0}></TopicInfoGroup>
+                                </DialogDemo>
                             ))}
                         </div>
                     </div>
