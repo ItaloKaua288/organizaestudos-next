@@ -136,11 +136,11 @@ export function Navbar2() {
 
                     {/* Mobile Menu */}
                     <Sheet>
-                        <SheetTrigger >
-                            <Button variant="outline" size="icon" className="lg:hidden">
-                                <Menu className="h-5 w-5" />
-                                <span className="sr-only">Toggle Menu</span>
-                            </Button>
+                        <SheetTrigger render={
+                            <Button variant="outline" size="icon" className="lg:hidden" />
+                        }>
+                            <Menu className="h-5 w-5" />
+                            <span className="sr-only">Toggle Menu</span>
                         </SheetTrigger>
 
                         <SheetContent side="right" className="flex flex-col gap-6 pt-2.5 px-2">
