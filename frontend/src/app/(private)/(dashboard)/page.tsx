@@ -89,10 +89,10 @@ export default async function DashboardPage() {
                     <ScrambleText text="DASHBOARD" />
                 </h1>
             </header>
-            <section className="introduction-Page flex flex-col space-y-4">
+            <section className=" flex flex-col space-y-4">
 
                 <div className="gap-4 py-2 px-2 grid grid-cols-1 md:grid-cols-3 w-full">
-                    <Card >
+                    <Card className="introduction-card" style={{ animationDelay: `${3 * 150}ms` }} >
                         <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                             <CardTitle className="text-sm font-medium">Matérias</CardTitle>
                             <BookOpen className="h-4 w-4 text-muted-foreground" />
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card >
+                    <Card className="introduction-card" style={{ animationDelay: `${3 * 150}ms` }} >
                         <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                             <CardTitle className="text-sm font-medium">Assuntos Pendentes</CardTitle>
                             <ClipboardClock className="h-4 w-4 text-muted-foreground" />
@@ -112,7 +112,7 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="introduction-card" style={{ animationDelay: `${3 * 150}ms` }} >
                         <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                             <CardTitle className="text-sm font-medium">Assuntos Concluídos</CardTitle>
                             <BadgeCheck className="h-4 w-4 text-muted-foreground" />
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
 
                 <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-2">
 
-                    <Card className="flex flex-col justify-start">
+                    <Card className="flex flex-col justify-start introduction-card" style={{ animationDelay: `${4 * 150}ms` }} >
                         <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
                             <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
                             <BadgeCheck className="h-4 w-4 text-muted-foreground" />
@@ -138,7 +138,7 @@ export default async function DashboardPage() {
                             />
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="introduction-card" style={{ animationDelay: `${4 * 150}ms` }} >
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{subjectsToday.length}</Badge></CardTitle>
                             {currentDayName && <Badge variant="outline">{currentDayName}</Badge>}
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                 </section>
 
                 <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-3">
-                    <Card className="md:col-span-2">
+                    <Card className="md:col-span-2 introduction-card" style={{ animationDelay: `${5 * 150}ms` }} >
                         <CardHeader className="flex flex-row items-center justify-between pb-2">
                             <CardTitle className="flex items-center gap-2 text-base font-semibold">
                                 Revisar Hoje
@@ -204,7 +204,7 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="introduction-card" style={{ animationDelay: `${5 * 150}ms` }} >
                         <CardHeader className="pb-2">
                             <CardTitle className="text-base font-semibold">Calendário</CardTitle>
                         </CardHeader>

@@ -30,7 +30,7 @@ export default async function NotasPage() {
                 ) : (
                     <>
                         <p className="p-2 py-4 font-medium text-sm text-muted-foreground pt-0">
-                            Visualize suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
+                            Visualize suas notas.
                         </p>
                         <div className="grid grid-cols-1 gap-2 p-2 pt-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                             {allSubjects.map((subject, index) => (

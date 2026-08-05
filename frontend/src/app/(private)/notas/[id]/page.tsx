@@ -38,8 +38,8 @@ export default async function NotasOverviewPage({ params, searchParams }: { para
     return (
         <main className="space-y-4">
             <header className="flexspace-y-1">
-                <h1 className="bg-card py-2 px-2 text-xl font-bold shadow-sm">
-                    Anotações
+                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
+                    ANOTAÇÕES
                 </h1>
                 <p className="p-2 text-sm font-medium text-muted-foreground">
                     Gerencie suas anotações para esta matéria.
@@ -47,12 +47,12 @@ export default async function NotasOverviewPage({ params, searchParams }: { para
 
                 {/* Barra de ferramentas e navegação */}
                 <nav aria-label="Ações das anotações" className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
-                    <Button variant="outline" >
-                        <Link href="/notas" className="flex items-center gap-2 w-full sm:w-auto">
+                    <Link href="/notas" className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" >
                             <CornerDownLeft className="h-4 w-4" />
                             <span>Voltar</span>
-                        </Link>
-                    </Button>
+                        </Button>
+                    </Link>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <div className="relative flex-1 sm:w-64">
@@ -65,7 +65,7 @@ export default async function NotasOverviewPage({ params, searchParams }: { para
 
             <section aria-label="Listagem de Anotações" className="px-2">
                 {allNotas.length === 0 ? (
-                    <p className="py-12 text-sm text-muted-foreground text-center border rounded-lg bg-muted/20">
+                    <p className="py-12 text-sm text-muted-foreground text-center border rounded-lg bg-muted/20 antiTransparenceBtn">
                         Nenhuma nota encontrada para esta matéria.
                     </p>
                 ) : (
