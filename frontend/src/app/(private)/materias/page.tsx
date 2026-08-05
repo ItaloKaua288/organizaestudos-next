@@ -4,6 +4,7 @@ import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
 import { Suspense } from "react";
 import MateriasClient, { MateriasSkeleton } from "./components/materias-client";
+import { ScrambleText } from "@/components/scramble-text";
 
 async function MateriasContent() {
     let subjectsWithTopics: (Subject & { topics: Topic[] })[] = [];
@@ -37,8 +38,15 @@ async function MateriasContent() {
 
 export default function MateriasPage() {
     return (
-        <Suspense fallback={<MateriasSkeleton />}>
-            <MateriasContent />
-        </Suspense>
+        <>
+            <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card z-9"><ScrambleText text="MATÉRIAS" /></h1>
+            <section className="introduction-Page">
+                <Suspense fallback={<MateriasSkeleton />}>
+                    <div className="reverse-introduction-page">
+                        <MateriasContent />
+                    </div>
+                </Suspense>
+            </section>
+        </>
     );
 }
