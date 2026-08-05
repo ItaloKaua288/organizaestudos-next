@@ -1,10 +1,10 @@
+import { Navbar2 } from "@/components/Navbar2";
+import { ThemeProvider } from "@/components/theme-provider";
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
-import "../globals.css";
-import { cn } from "@/lib/utils";
-import Navbar from "@/components/navbar";
-import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from 'react-hot-toast';
+import "../globals.css";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -36,9 +36,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col mx-auto max-w-[1920px]">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Toaster />
-          <Navbar />
+          <Navbar2 />
           <div className="fixed -z-10 inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[32px_32px]" />
-          <div className="min-h-15.75"></div>
+          {/* <div className="min-h-15.75"></div> */}
           {children}
         </ThemeProvider>
       </body>
