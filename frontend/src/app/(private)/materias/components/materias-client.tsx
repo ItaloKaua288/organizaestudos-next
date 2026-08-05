@@ -33,48 +33,52 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
         event.preventDefault();
 
         try {
+            toast.loading("Criando matéria...", { id: "create-subject" });
             await createSubject(title, color);
-            toast.success("Matéria criada!");
+            toast.success("Matéria criada!", { id: "create-subject" });
             setTitle("");
             setColor("#3b82f6");
             setIsCreateSubjectOpen(false)
 
             router.refresh();
         } catch (error) {
-            toast.error("Erro ao criar matéria");
+            toast.error("Erro ao criar matéria", { id: "create-subject" });
             console.error("Erro ao criar matéria", error)
         }
     }
 
     async function handleTopicStatusChange(topicId: string, newStatus: TopicStatus) {
         try {
+            toast.loading("Atualizando status do assunto...", { id: "update-status-topic" });
             await updateTopicStatus(topicId, newStatus);
-            toast.success("Status do tópico atualizado!");
+            toast.success("Status do assunto atualizado!", { id: "update-status-topic" });
             router.refresh();
         } catch (error) {
-            toast.error("Falha ao atualizar o status.");
+            toast.error("Falha ao atualizar o status.", { id: "update-status-topic" });
             console.error("Erro:", error);
         }
     }
 
     async function handleEditTopic(topicId: string, title: string, link: string, review1: string) {
         try {
+            toast.loading("Editando assunto...", { id: "edit-topic" });
             await updateTopic(topicId, title, link, review1);
-            toast.success("Assunto editado!");
+            toast.success("Assunto editado!", { id: "edit-topic" });
             router.refresh();
         } catch (error) {
-            toast.error("Falha ao editar assunto!");
+            toast.error("Falha ao editar assunto!", { id: "edit-topic" });
             console.error("Erro:", error);
         }
     }
 
     async function handleAttachPDF(topicId: string, file: File) {
         try {
+            toast.loading("Enviando anexo...", { id: "attach-pdf" });
             await sendAttachPDF(topicId, file);
-            toast.success("Anexo enviado!");
+            toast.success("Anexo enviado!", { id: "attach-pdf" });
             router.refresh();
         } catch (error) {
-            toast.error("Falha ao enviar o anexo!");
+            toast.error("Falha ao enviar o anexo!", { id: "attach-pdf" });
             console.error("Erro:", error);
         }
     }

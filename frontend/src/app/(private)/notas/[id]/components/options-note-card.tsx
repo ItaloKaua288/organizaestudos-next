@@ -28,16 +28,17 @@ export function OptionsNoteCard({ subjectId, note }: OptionsNoteCardProps) {
             const formData = new FormData()
             formData.append("noteId", note.id)
             formData.append("subject_id", subjectId)
+            toast.loading("Deletando anotação...", { id: "delete-note" })
             const res = await deleteNoteAction(formData)
 
             if (res.success) {
-                toast.success(res.message)
+                toast.success(res.message, { id: "delete-note" })
             } else {
-                toast.error(res.message)
+                toast.error(res.message, { id: "delete-note" })
             }
         } catch (error) {
             console.error("Erro ao deletar anotação:", error);
-            toast.error("Erro ao deletar anotação.")
+            toast.error("Erro ao deletar anotação.", { id: "delete-note" })
         }
     }
 
@@ -50,16 +51,17 @@ export function OptionsNoteCard({ subjectId, note }: OptionsNoteCardProps) {
             formData.append("title", note.title)
             formData.append("isPinned", (!note.is_pined).toString())
             formData.append("subject_id", subjectId)
+            toast.loading("Fixando anotação...", { id: "pin-note" })
             const res = await pinNoteAction(formData)
 
             if (res.success) {
-                toast.success(res.message)
+                toast.success(res.message, { id: "pin-note" })
             } else {
-                toast.error(res.message)
+                toast.error(res.message, { id: "pin-note" })
             }
         } catch (error) {
             console.error("Erro ao fixar a anotação:", error);
-            toast.error("Erro ao fixar a anotação.")
+            toast.error("Erro ao fixar a anotação.", { id: "pin-note" })
         }
     }
 
@@ -73,17 +75,18 @@ export function OptionsNoteCard({ subjectId, note }: OptionsNoteCardProps) {
             formData.append("title", title)
             formData.append("isPinned", (note.is_pined).toString())
             formData.append("subject_id", subjectId)
+            toast.loading("Editando nota...", { id: "update-note" })
             const res = await updateNoteAction(formData)
 
             if (res.success) {
-                toast.success(res.message)
+                toast.success(res.message, { id: "update-note" })
             } else {
-                toast.error(res.message)
+                toast.error(res.message, { id: "update-note" })
             }
             setIsOpenDialog(false)
         } catch (error) {
             console.error("Erro ao criar nota:", error)
-            toast.error("Erro ao criar nota. Tente novamente.")
+            toast.error("Erro ao criar nota. Tente novamente.", { id: "update-note" })
         }
     }
 

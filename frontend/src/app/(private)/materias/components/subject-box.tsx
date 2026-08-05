@@ -54,12 +54,13 @@ export default function SubjectBox({
         e.preventDefault();
         try {
             setIsPending(true);
+            toast.loading("Atualizando matéria...", { id: "update-subject" });
             await updateSubject(draftTitle, draftColor, subject.id);
-            toast.success("Matéria atualizada");
+            toast.success("Matéria atualizada", { id: "update-subject" });
             setIsEditOpen(false)
         } catch (error) {
             console.error("Falha ao atualizar a matéria", error);
-            toast.error("Falha ao atualizar a matéria");
+            toast.error("Falha ao atualizar a matéria", { id: "update-subject" });
         } finally {
             setIsPending(false);
         }
@@ -69,11 +70,12 @@ export default function SubjectBox({
         e.preventDefault();
         try {
             setIsPending(true);
+            toast.loading("Deletando matéria...", { id: "delete-subject" });
             await deleteSubject(subject.id);
-            toast.success("Matéria deletada");
+            toast.success("Matéria deletada", { id: "delete-subject" });
         } catch (error) {
             console.error("Falha ao deletar a matéria", error);
-            toast.error("Falha ao deletar a matéria");
+            toast.error("Falha ao deletar a matéria", { id: "delete-subject" });
         } finally {
             setIsPending(false);
         }
@@ -97,11 +99,12 @@ export default function SubjectBox({
     const handleTopicDelete = async (topicId: string) => {
         try {
             setIsPending(true);
+            toast.loading("Deletando assunto...", { id: "delete-topic" });
             await deleteTopic(topicId);
-            toast.success("Assunto deletado com sucesso");
+            toast.success("Assunto deletado com sucesso", { id: "delete-topic" });
         } catch (error) {
             console.error("Falha ao deletar o assunto", error);
-            toast.error("Falha ao deletar o assunto");
+            toast.error("Falha ao deletar o assunto", { id: "delete-topic" });
         } finally {
             setIsPending(false);
         }
@@ -263,12 +266,15 @@ function TopicRow({
 
     const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
         try {
+            toast.loading("Abrindo anexo...", { id: "open-attachment" });
             const blob = await openTopicAttachment(topic.id, attachmentPublicId)
             const url = URL.createObjectURL(blob);
             window.open(url, "_blank");
             setTimeout(() => URL.revokeObjectURL(url), 10000);
+            toast.success("Anexo aberto", { id: "open-attachment" });
         } catch (error) {
             console.error(error);
+            toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
         }
     }
 

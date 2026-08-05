@@ -24,12 +24,13 @@ export function CreateNoteDialog({ subjectId }: CreateNoteDialogProps) {
             const formData = new FormData(e.target as HTMLFormElement)
             formData.append("subject_id", subjectId)
             formData.append("content", conteudo)
+            toast.loading("Criando nota...", { id: "create-note" })
             const res = await addNoteAction(formData)
 
             if (res.success) {
-                toast.success(res.message)
+                toast.success(res.message, { id: "create-note" })
             } else {
-                toast.error(res.message)
+                toast.error(res.message, { id: "create-note" })
             }
             setIsOpenDialog(false)
         } catch (error) {

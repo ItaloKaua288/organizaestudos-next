@@ -64,10 +64,11 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
         startTransition(async () => {
             try {
                 const reviewKey = `review${reviewIndex}`
+                toast.loading("Concluindo revisão...", { id: "conclude-review" });
                 await changeReviewStatus(item.id, reviewKey, true);
-                toast.success("Revisão concluída!");
+                toast.success("Revisão concluída!", { id: "conclude-review" });
             } catch {
-                toast.error("Erro ao concluir revisão.");
+                toast.error("Erro ao concluir revisão.", { id: "conclude-review" });
             }
         });
     };

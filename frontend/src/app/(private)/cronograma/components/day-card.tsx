@@ -43,15 +43,16 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
         formData.append("day", dayLabel);
 
         try {
+            toast.loading("Adicionando evento...", { id: "add-timeline" });
             const result = await addTimelineAction(formData);
             if (result.success) {
-                toast.success(result.message);
+                toast.success(result.message, { id: "add-timeline" });
                 setIsAddOpen(false); // Fecha o modal no sucesso
             } else {
                 toast.error(result.message);
             }
         } catch {
-            toast.error("Erro ao adicionar evento.");
+            toast.error("Erro ao adicionar evento.", { id: "add-timeline" });
         } finally {
             setIsPending(false);
         }
