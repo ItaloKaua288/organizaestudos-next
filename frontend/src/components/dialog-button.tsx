@@ -16,6 +16,8 @@ type DialogDemoProps = {
   classNameBtn?: string;
   description?: string;
   nameConfirmBtn?: string;
+  classNameConfirmBtn?: string;
+  variantConfirmBtn?: "link" | "default" | "outline" | "secondary" | "ghost" | "destructive" | null | undefined;
   children?: React.ReactNode;
   variant?: "button" | "label";
   disableBtns?: boolean;
@@ -24,7 +26,7 @@ type DialogDemoProps = {
   onOpenChange?: (open: boolean) => void;
 };
 
-export function DialogDemo({ disableBtns, classNameBtn, contentBtn, title, description, nameConfirmBtn, children, variant = "button", onSubmit, open, onOpenChange }: DialogDemoProps) {
+export function DialogDemo({ disableBtns, classNameBtn, contentBtn, title, description, nameConfirmBtn, classNameConfirmBtn,variantConfirmBtn, children, variant = "button", onSubmit, open, onOpenChange }: DialogDemoProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {variant === "button" ? (
@@ -54,7 +56,7 @@ export function DialogDemo({ disableBtns, classNameBtn, contentBtn, title, descr
             (<DialogFooter>
               <DialogClose render={<Button type="button" variant="outline">Cancelar</Button>}>
               </DialogClose>
-              <Button type="submit">{nameConfirmBtn || "Confirmar"}</Button>
+              <Button variant={variantConfirmBtn} className={classNameConfirmBtn} type="submit">{nameConfirmBtn || "Confirmar"}</Button>
             </DialogFooter>)
             : null
           } 
