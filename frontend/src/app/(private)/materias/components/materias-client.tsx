@@ -7,7 +7,6 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { createSubject } from "@/services/subjects.service";
 import { sendAttachPDF, updateTopic, updateTopicStatus } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
@@ -15,7 +14,6 @@ import { Topic, TopicStatus } from "@/types/topic";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import toast from "react-hot-toast";
-import { ScrambleText } from "@/components/scramble-text";
 
 type SubjectWithTopics = Subject & { topics: Topic[] };
 

@@ -1,5 +1,6 @@
 "use server";
 
+import { fixEncoding } from "@/lib/text";
 import { TopicsApiResponse } from "@/types/apiResponse";
 import type { Topic, TopicStatus } from "@/types/topic";
 import { revalidatePath } from "next/cache";
@@ -47,7 +48,10 @@ export async function getTopics(): Promise<Topic[]> {
                 second: { date: item.review2, concluded: item.review2_concluded },
                 third: { date: item.review3, concluded: item.review3_concluded },
             },
-            attachments: item.attachments,
+            attachments: item.attachments.map(attachment => ({
+                ...attachment,
+                name: fixEncoding(attachment.name),
+            })),
         }))
 
         return formattedTopics.sort((a, b) => a.order - b.order)
@@ -226,7 +230,7 @@ export async function openTopicAttachment(topicId: string, publicId: string): Pr
     }
 }
 
-export async function deleteAttachPDF(topicId: string, public_id:string) {
+export async function deleteAttachPDF(topicId: string, public_id: string) {
     try {
         const baseUrl = getBaseUrl();
         const headers = await getAuthHeaders();
