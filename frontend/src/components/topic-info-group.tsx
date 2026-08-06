@@ -39,19 +39,23 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
     const handleUndoConclude = async (e: React.MouseEvent, topicId: string, reviewIndex: string | number) => {
         e.stopPropagation();
         setIsLoading(reviewIndex as number);
+        toast.loading("Desfazendo revisão...", { id: "undo-review" });
         await changeReviewStatus(topicId, `review${reviewIndex}`, false);
-        toast.success("Revisão desfeita!")
+        toast.success("Revisão desfeita!", { id: "undo-review" })
         setIsLoading(null);
     };
 
     const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
         try {
+            toast.loading("Abrindo anexo...", { id: "open-attachment" })
             const blob = await openTopicAttachment(topic.id, attachmentPublicId)
             const url = URL.createObjectURL(blob);
             window.open(url, "_blank");
             setTimeout(() => URL.revokeObjectURL(url), 10000);
+            toast.success("Anexo aberto!", { id: "open-attachment" })
         } catch (error) {
             console.error(error);
+            toast.error("Erro ao abrir o anexo!", { id: "open-attachment" })
         }
     }
 
@@ -60,13 +64,12 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
             const formData = new FormData();
             formData.append("topicId", topic.id);
             formData.append("public_id", public_id)
-            toast.loading("deletando...")
+            toast.loading("deletando...", { id: "delete-attachment" })
             await deleteAttachAction(formData)
-            toast.dismissAll()
-            toast.success("Anexo deletado!")
+            toast.success("Anexo deletado!", { id: "delete-attachment" })
         } catch (error) {
             console.error(error);
-            toast.error("Erro ao deletar o anexo!")
+            toast.error("Erro ao deletar o anexo!", { id: "delete-attachment" })
         }
     }
 
