@@ -227,7 +227,7 @@ export const concludedReview = async (req, res) => {
 
         //Se a revisão clicada for a de 30 dias (review3)
         if (review === "review3") {
-            const nextReviewDate = isToday();
+            const nextReviewDate = getTodayBR();
             nextReviewDate.setDate(nextReviewDate.getDate() + 30);
 
             topic.review3 = nextReviewDate;
