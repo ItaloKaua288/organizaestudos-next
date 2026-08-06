@@ -2,6 +2,7 @@ import cloudinary from '../utils/cloudinary.js';
 import Topic from "../models/topic.model.js";
 import Subject from "../models/subject.model.js";
 import https from 'https';
+import { getTodayBR, isToday } from '../utils/date.js';
 
 
 export const createTopic = async (req, res) => {
@@ -77,8 +78,7 @@ export const updateTopic = async (req, res) => {
             topic.status = status
 
             if (status === "CONCLUIDO") {
-                const today = new Date();
-                today.setUTCHours(0, 0, 0, 0);
+                const today = getTodayBR()
 
                 topic.review1 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000);
                 topic.review2 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -227,7 +227,7 @@ export const concludedReview = async (req, res) => {
 
         //Se a revisão clicada for a de 30 dias (review3)
         if (review === "review3") {
-            const nextReviewDate = new Date();
+            const nextReviewDate = isToday();
             nextReviewDate.setDate(nextReviewDate.getDate() + 30);
 
             topic.review3 = nextReviewDate;
