@@ -317,11 +317,23 @@ function TopicRow({
                     </span>
 
                     <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+                        {/* Mobile */}
                         <select
                             value={topic.status}
                             onChange={(e) => onStatusChange?.(topic.id, e.target.value as TopicStatus)}
                             aria-label="Status do tópico"
-                            className="select select-bordered select-xs hover:cursor-pointer sm:select-sm"
+                            className="select select-bordered select-xs hover:cursor-pointer md:hidden border rounded-sm p-0.5  max-w-10"
+                        >
+                            <option value="PENDENTE">✖</option>
+                            <option value="CONCLUIDO">✔</option>
+                        </select>
+
+                        {/* Desktop */}
+                        <select
+                            value={topic.status}
+                            onChange={(e) => onStatusChange?.(topic.id, e.target.value as TopicStatus)}
+                            aria-label="Status do tópico"
+                            className="select select-bordered select-sm hover:cursor-pointer max-md:hidden border rounded-sm p-0.5  "
                         >
                             <option value="PENDENTE">PENDENTE</option>
                             <option value="CONCLUIDO">CONCLUÍDO</option>
