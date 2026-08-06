@@ -57,7 +57,7 @@ export function Navbar2() {
     };
 
     return (
-        <header className="bg-muted sticky top-0 z-50 border-b">
+        <header className="bg-muted fixed top-0 left-0 right-0 w-full z-50 border-b">
             <div className="relative mx-auto flex items-center justify-between gap-8 py-5 px-2">
 
                 {/* Logo */}
