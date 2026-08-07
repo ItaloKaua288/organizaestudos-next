@@ -27,7 +27,7 @@ export const createSubject = async (req, res) => {
 
 export const getSubjects = async (req, res) => {
     try {
-        const subjects = await Subject.find({ user_id: req.userId });
+        const subjects = await Subject.find({ user_id: req.userId }).sort({ createdAt: 1 });
         res.status(200).json({ success: true, subjects: subjects });
     } catch (error) {
         console.log("error in getSubjecs ", error);
