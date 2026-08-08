@@ -7,6 +7,7 @@ import { Note } from "@/types/note"
 import { CornerDownLeft } from "lucide-react"
 import Link from "next/link"
 import { SearchNotes } from "./components/search-notes"
+import { CloseRedirectToast } from "./components/CloseRedirectToast"
 
 
 export default async function NotasOverviewPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ q?: string }> }) {
@@ -37,6 +38,7 @@ export default async function NotasOverviewPage({ params, searchParams }: { para
 
     return (
         <main className="space-y-4">
+            <CloseRedirectToast />
             <header className="flexspace-y-1">
                 <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
                     ANOTAÇÕES
