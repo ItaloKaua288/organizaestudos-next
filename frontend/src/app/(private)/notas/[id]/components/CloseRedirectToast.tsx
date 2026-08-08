@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 
 export function CloseRedirectToast() {
     useEffect(() => {
-        toast.dismiss("redirect");
+        toast.success("redirecionado!", {id: "redirect"});
     }, []);
 
     return null;

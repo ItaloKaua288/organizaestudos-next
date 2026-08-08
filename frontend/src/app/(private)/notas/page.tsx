@@ -1,8 +1,6 @@
-import { Button } from "@/components/ui/button"
-import { getSubjects } from "@/services/subjects.service"
-import { Subject } from "@/types/subject"
-import Link from "next/link"
 import { ScrambleText } from "@/components/scramble-text";
+import { getSubjects } from "@/services/subjects.service";
+import { Subject } from "@/types/subject";
 import { RedirectButton } from "./components/button-redirect";
 
 export default async function NotasPage() {
