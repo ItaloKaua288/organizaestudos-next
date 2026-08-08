@@ -79,7 +79,6 @@ export const updateTopic = async (req, res) => {
 
             if (status === "CONCLUIDO") {
                 const today = getTodayBR()
-                const today = getTodayBR()
 
                 topic.review1 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000);
                 topic.review2 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -228,7 +227,6 @@ export const concludedReview = async (req, res) => {
 
         //Se a revisão clicada for a de 30 dias (review3)
         if (review === "review3") {
-            const nextReviewDate = getTodayBR();
             const nextReviewDate = getTodayBR();
             nextReviewDate.setDate(nextReviewDate.getDate() + 30);
 
