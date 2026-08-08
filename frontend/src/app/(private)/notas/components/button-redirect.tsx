@@ -15,6 +15,7 @@ export function RedirectButton({ subject, index }: {  subject: any, index: numbe
             nativeButton={false}
             style={{ animationDelay: `${index * 150}ms` }}
             onClick={() => {
+                sessionStorage.setItem("showRedirectToast", "true");
                 toast.loading("Redirecionando...", {
                     id: "redirect"
                 });           
