@@ -44,7 +44,7 @@ export const addSubjectTimeLine = async (req, res) => {
 
 export const getTimeline = async (req, res) => {
     try {
-        const timeline = await TimeLine.find({ user_id: req.userId }).populate("subject_id");
+        const timeline = await TimeLine.find({ user_id: req.userId }).populate("subject_id").sort({ startTime: 1 });
         res.status(200).json({ success: true, timeline });
     } catch (error) {
         console.log("error in getTimeline ", error);
