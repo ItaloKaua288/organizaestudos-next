@@ -1,9 +1,9 @@
+import { ReviewSection, ReviewSectionSkeleton } from "@/components/reviewSection";
+import { ScrambleText } from "@/components/scramble-text";
 import { getTopics } from "@/services/topics.service";
 import { Topic } from "@/types/topic";
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { Suspense } from "react";
-import { ReviewSection, ReviewSectionSkeleton } from "./components/reviewSection";
-import { ScrambleText } from "@/components/scramble-text";
 
 async function RevisaoContent() {
     let topics: Topic[] | null = null;

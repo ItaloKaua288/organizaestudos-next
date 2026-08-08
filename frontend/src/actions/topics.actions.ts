@@ -1,4 +1,4 @@
-import { deleteAttachPDF } from "@/services/topics.service";
+import { createTopic, deleteAttachPDF } from "@/services/topics.service";
 
 export async function deleteAttachAction(formData: FormData) {
     try {
@@ -12,5 +12,19 @@ export async function deleteAttachAction(formData: FormData) {
     } catch (error) {
         console.error("Erro ao deletar anexo:", error);
         return { success: false, message: "Erro ao deletar anexo." }
+    }
+}
+
+export async function createTopicAction(formData: FormData, subject_id: string) {
+    try {
+        const title = formData.get("title") as string;
+
+        if (!title) throw new Error("Título não fornecido!");
+
+        await createTopic(title, subject_id);
+        return { success: true, message: "Assunto criado!" }
+    } catch (error) {
+        console.error("Erro ao criar assunto:", error);
+        return { success: false, message: "Erro ao criar assunto." }
     }
 }

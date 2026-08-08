@@ -1,3 +1,4 @@
+import { Note } from "./note";
 import { Topic } from "./topic";
 
 export interface Subject {
@@ -5,4 +6,5 @@ export interface Subject {
     title: string;
     color: string;
     topics?: Topic[]
+    notes?: Note[]
 }

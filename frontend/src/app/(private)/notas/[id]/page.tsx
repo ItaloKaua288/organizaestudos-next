@@ -1,11 +1,11 @@
+import { CreateNoteDialog } from "@/components/Create-note-dialog"
+import { OptionsNoteCard } from "@/components/options-note-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getNotes } from "@/services/notes.service"
 import { Note } from "@/types/note"
 import { CornerDownLeft } from "lucide-react"
 import Link from "next/link"
-import { CreateNoteDialog } from "./components/Create-note-dialog"
-import { OptionsNoteCard } from "./components/options-note-card"
 import { SearchNotes } from "./components/search-notes"
 
 

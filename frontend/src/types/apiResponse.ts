@@ -13,9 +13,16 @@ export interface ApiSubjectResponse {
     subjects: ApiSubject[];
 }
 
+export interface ApiDetailSubjectResponse {
+    success: boolean;
+    subject: ApiSubject;
+    topics: ApiTopic[];
+    notes: ApiNote[];
+}
+
 export type Attachment = {
     id: string;
-    _id: string,
+    _id?: string,
     name: string;
     url?: string;
     file?: File;

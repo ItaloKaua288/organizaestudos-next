@@ -1,6 +1,7 @@
-import cloudinary from '../utils/cloudinary.js';
+import Note from "../models/note.model.js";
 import Subject from "../models/subject.model.js";
 import Topic from "../models/topic.model.js";
+import cloudinary from '../utils/cloudinary.js';
 
 export const createSubject = async (req, res) => {
     const { title, color, user_id } = req.body;
@@ -87,5 +88,23 @@ export const updateSubject = async (req, res) => {
 
     } catch (error) {
 
+    }
+}
+
+export const getDetailSubject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const subject = await Subject.findOne({ user_id: req.userId, _id: id });
+
+        if (!subject)
+            return res.status(404).json({ success: false, message: "Subject not found" });
+
+        const topics = await Topic.find({ subject_id: id })
+        const notes = await Note.find({ subject_id: id })
+
+        res.status(200).json({ success: true, subject, topics, notes });
+    } catch (error) {
+        console.log("error in getDetailSubject", error);
+        res.status(500).json({ success: false, message: "Server error" });
     }
 }
