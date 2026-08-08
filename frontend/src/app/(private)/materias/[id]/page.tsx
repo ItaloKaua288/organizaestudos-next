@@ -64,26 +64,29 @@ export default async function DetailMateriaPage({
         });
     };
 
+    const concluedTopics = sortedTopics.filter(topic => topic.status === "CONCLUIDO")
     const topicTimes = {
-        concluded: sortedTopics.filter(
+        concluded: concluedTopics.filter(
             topic =>
                 topic.reviews.first.concluded ||
                 topic.reviews.second.concluded ||
                 topic.reviews.third.concluded
         ),
         day: sortReviews(
-            sortedTopics.filter(topic => !topic.reviews.first.concluded),
+            concluedTopics.filter(topic => !topic.reviews.first.concluded),
             "first"
         ),
         week: sortReviews(
-            sortedTopics.filter(topic => !topic.reviews.second.concluded),
+            concluedTopics.filter(topic => !topic.reviews.second.concluded),
             "second"
         ),
         month: sortReviews(
-            sortedTopics.filter(topic => !topic.reviews.third.concluded),
+            concluedTopics.filter(topic => !topic.reviews.third.concluded),
             "third"
         ),
     };
+
+    console.log(topicTimes)
 
     const sections = [
         { title: "24 horas", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },

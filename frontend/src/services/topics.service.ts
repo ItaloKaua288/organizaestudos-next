@@ -72,7 +72,10 @@ export async function createTopic(title: string, subject_id: string) {
             body: JSON.stringify({ title, subject_id })
         });
 
+        const subjectId = (await res.json()).topic.subject_id
+
         revalidatePath("/materias")
+        revalidatePath(`/materias/${subjectId}`)
         if (!res.ok) throw new Error("Falha ao criar o assunto");
     } catch (error) {
         console.error("Falha ao criar o assunto", error)
@@ -95,9 +98,11 @@ export async function updateTopicStatus(topicId: string, status: TopicStatus) {
             const errorData = await res.json();
             throw new Error(errorData.message || "Falha ao atualizar o status do tópico!");
         }
+        
+        const subjectId = (await res.json()).topic.subject_id
 
         revalidatePath("/materias")
-        return await res.json();
+        revalidatePath(`/materias/${subjectId}`)
     } catch (error) {
         console.error("Falha ao atualizar o status do tópico", error);
         throw error;
@@ -119,9 +124,12 @@ export async function updateTopicReviewStatus(topicId: string, review: string, i
             throw new Error(errorData.message || "Falha ao atualizar o status da revisão!");
         }
 
+        const subjectId = (await res.json()).topic.subject_id
+
         revalidatePath("/")
         revalidatePath("/revisoes")
         revalidatePath("/materias")
+        revalidatePath(`/materias/${subjectId}`)
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o status da revisão", error);
@@ -145,7 +153,10 @@ export async function updateTopic(topicId: string, title: string, link: string, 
             throw new Error(errorData.message || "Falha ao atualizar o assunto!");
         }
 
+        const subjectId = (await res.json()).topic.subject_id
+
         revalidatePath("/materias")
+        revalidatePath(`/materias/${subjectId}`)
         return await res.json();
     } catch (error) {
         console.error("Falha ao atualizar o assunto", error);
@@ -168,7 +179,10 @@ export async function deleteTopic(topicId: string) {
             throw new Error(errorData.message || "Falha ao deletar o assunto!");
         }
 
+        const subjectId = (await res.json()).topic.subject_id
+
         revalidatePath("/materias")
+        revalidatePath(`/materias/${subjectId}`)
         return await res.json();
     } catch (error) {
         console.error("Falha ao deletar o assunto", error);
@@ -198,7 +212,10 @@ export async function sendAttachPDF(topicId: string, file: File) {
             throw new Error(errorData.message || "Falha ao enviar o anexo!");
         }
 
-        revalidatePath("/materias");
+        const subjectId = (await res.json()).topic.subject_id
+
+        revalidatePath("/materias")
+        revalidatePath(`/materias/${subjectId}`)
         return await res.json();
     } catch (error) {
         console.error("Falha ao enviar o anexo!", error);
@@ -246,7 +263,10 @@ export async function deleteAttachPDF(topicId: string, public_id: string) {
             throw new Error(errorData.message || "Falha ao deletar o anexo!");
         }
 
-        revalidatePath("/materias");
+        const subjectId = (await res.json()).topic.subject_id
+
+        revalidatePath("/materias")
+        revalidatePath(`/materias/${subjectId}`)
         return await res.json();
     } catch (error) {
         console.error("Falha ao deletar o anexo!", error);

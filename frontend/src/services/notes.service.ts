@@ -57,6 +57,7 @@ export async function createNote(title: string, content: string, subject_id: str
             body: JSON.stringify({ title, content, subject_id })
         });
 
+        revalidatePath(`/materias/${subject_id}`)
         revalidatePath(`/notas/${subject_id}`)
         if (!res.ok) throw new Error("Falha ao criar anotação")
     } catch (error) {
@@ -75,6 +76,7 @@ export async function deleteNote(noteId: string, subject_id: string) {
             headers
         });
 
+        revalidatePath(`/materias/${subject_id}`)
         revalidatePath(`/notas/${subject_id}`)
         if (!res.ok) throw new Error("Falha ao criar anotação")
     } catch (error) {
@@ -94,6 +96,7 @@ export async function updateNote(noteId: string, title: string, content: string,
             body: JSON.stringify({ title, content, subject_id, isPinned })
         });
 
+        revalidatePath(`/materias/${subject_id}`)
         revalidatePath(`/notas/${subject_id}`)
         if (!res.ok) throw new Error("Falha ao atualizar anotação")
     } catch (error) {
