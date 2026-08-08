@@ -148,7 +148,7 @@
   }
 }
 
-/* isso é usado para tirar a transparencia do botão tipo autline*/
+/* isso é usado para tirar a transparencia do botão tipo outline*/
 .antiTransparenceBtn {
   @apply bg-card transition-all hover:shadow-sm dark:shadow-sm  hover:-translate-y-0.5 hover:brightness-75 dark:hover:brightness-125;
 }
@@ -171,4 +171,18 @@
 
 .introduction-card {
   @apply animate-in fade-in slide-in-from-bottom-6 duration-500 ease-out fill-mode-both;
+}
+
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  50% {
+    transform: translateX(200%);
+  }
+
+  100% {
+    transform: translateX(400%);
+  }
 }
