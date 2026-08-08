@@ -30,6 +30,13 @@ export default async function DetailMateriaPage({
         return <div className="p-8 text-white">Matéria não encontrada.</div>;
     }
 
+    const sortedNotes = subject.notes?.sort((a, b) => {
+        const aPinned = a.is_pined ? 1 : 0;
+        const bPinned = b.is_pined ? 1 : 0;
+
+        return bPinned - aPinned;
+    })
+
     const totalTopics = subject.topics?.length || 0;
     const completedTopics = subject.topics?.filter(t => t.status === 'CONCLUIDO').length || 0;
     const progressPercentage = totalTopics === 0 ? 0 : Math.round((completedTopics / totalTopics) * 100);
@@ -86,14 +93,13 @@ export default async function DetailMateriaPage({
         ),
     };
 
-    console.log(topicTimes)
-
     const sections = [
         { title: "24 horas", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
         { title: "7 dias", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
         { title: "30 dias", reviewIndex: 3, icon: <Clock size={20} />, topics: topicTimes.month },
         { title: "Concluído", icon: <CheckCircle2 size={20} className="text-green-500" />, topics: topicTimes.concluded },
     ];
+
     return (
         <main>
             <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card z-9 mb-8">
@@ -142,8 +148,8 @@ export default async function DetailMateriaPage({
                             <CreateNoteDialog subjectId={id} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {subject.notes && subject.notes.length > 0 ? (
-                                subject.notes.map(note => (
+                            {sortedNotes && sortedNotes.length > 0 ? (
+                                sortedNotes.map(note => (
                                     <Card key={note.id} className="flex flex-col justify-between">
                                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
                                             <CardTitle className="truncate text-base font-semibold" title={note.title}>

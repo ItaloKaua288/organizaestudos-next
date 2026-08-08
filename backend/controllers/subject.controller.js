@@ -99,8 +99,8 @@ export const getDetailSubject = async (req, res) => {
         if (!subject)
             return res.status(404).json({ success: false, message: "Subject not found" });
 
-        const topics = await Topic.find({ subject_id: id })
-        const notes = await Note.find({ subject_id: id })
+        const topics = await Topic.find({ subject_id: id }).sort({ order: -1 });
+        const notes = await Note.find({ subject_id: id }).sort({ createdAt: -1 });
 
         res.status(200).json({ success: true, subject, topics, notes });
     } catch (error) {
