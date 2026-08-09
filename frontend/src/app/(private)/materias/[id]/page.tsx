@@ -53,7 +53,7 @@ export default async function DetailMateriaPage({
         }
     });
 
-    const activeTabStyle = "pb-3 border-b-2 border-blue-500 text-blue-500 font-medium text-sm transition";
+    const activeTabStyle = "pb-3 border-b-2 border-primary text-primary font-medium text-sm transition";
     const inactiveTabStyle = "pb-3 border-b-2 border-transparent hover:border-zinc-600 text-zinc-500 hover:text-zinc-300 font-medium text-sm transition";
 
     const now = getTodayBR();
