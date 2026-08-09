@@ -44,12 +44,12 @@ export default async function DetailMateriaPage({
     const progressPercentage = totalTopics === 0 ? 0 : Math.round((completedTopics / totalTopics) * 100);
     const sortedTopics = subject.topics ? [...subject.topics].sort((a, b) => a.order - b.order) : [];
 
-    const allReviews: { topicTitle: string; reviewType: string; date: string; concluded: boolean }[] = [];
+    const allReviews: { topicTitle: string; reviewType: string; date: string; concluded: boolean; status: boolean }[] = [];
     subject.topics?.forEach(topic => {
         if (topic.reviews) {
-            allReviews.push({ topicTitle: topic.title, reviewType: 'R1', date: topic.reviews.first.date, concluded: topic.reviews.first.concluded });
-            allReviews.push({ topicTitle: topic.title, reviewType: 'R2', date: topic.reviews.second.date, concluded: topic.reviews.second.concluded });
-            allReviews.push({ topicTitle: topic.title, reviewType: 'R3', date: topic.reviews.third.date, concluded: topic.reviews.third.concluded });
+            allReviews.push({ topicTitle: topic.title, reviewType: 'R1', date: topic.reviews.first.date, concluded: topic.reviews.first.concluded, status: topic.status === "CONCLUIDO" });
+            allReviews.push({ topicTitle: topic.title, reviewType: 'R2', date: topic.reviews.second.date, concluded: topic.reviews.second.concluded, status: topic.status === "CONCLUIDO" });
+            allReviews.push({ topicTitle: topic.title, reviewType: 'R3', date: topic.reviews.third.date, concluded: topic.reviews.third.concluded, status: topic.status === "CONCLUIDO" });
         }
     });
 
@@ -134,7 +134,7 @@ export default async function DetailMateriaPage({
                         Notas <Badge className="px-1 py-2.5" variant="secondary">{subject.notes?.length}</Badge>
                     </Link>
                     <Link href="?tab=revisoes" className={tab === 'revisoes' ? activeTabStyle : inactiveTabStyle}>
-                        Revisões <Badge className="px-1 py-2.5" variant="secondary">{allReviews.filter(r => !r.concluded).length}</Badge>
+                        Revisões <Badge className="px-1 py-2.5" variant="secondary">{allReviews.filter(r => !r.concluded && r.status).length}</Badge>
                     </Link>
                 </div>
 

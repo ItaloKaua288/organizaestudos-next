@@ -68,7 +68,6 @@ export function OptionsNoteCard({ subjectId, note }: OptionsNoteCardProps) {
     const handleUpdateNote = async (e: React.FormEvent) => {
         try {
             e.preventDefault()
-            console.log()
             const formData = new FormData()
             formData.append("noteId", note.id)
             formData.append("content", content)
