@@ -15,7 +15,7 @@ export function TopicList({ sortedTopics, subject }: TopicListProps) {
     const handleTopicDelete = async (topicId: string) => {
         try {
             toast.loading("Deletando assunto...", { id: "delete-topic" });
-            await deleteTopic(topicId);
+            await deleteTopic(topicId, subject.id);
             toast.success("Assunto deletado com sucesso", { id: "delete-topic" });
         } catch (error) {
             console.error("Falha ao deletar o assunto", error);

@@ -164,7 +164,7 @@ export async function updateTopic(topicId: string, title: string, link: string, 
     }
 }
 
-export async function deleteTopic(topicId: string) {
+export async function deleteTopic(topicId: string, subject_id: string) {
     try {
         const baseUrl = getBaseUrl();
         const headers = await getAuthHeaders();
@@ -179,10 +179,8 @@ export async function deleteTopic(topicId: string) {
             throw new Error(errorData.message || "Falha ao deletar o assunto!");
         }
 
-        const subjectId = (await res.json()).topic.subject_id
-
         revalidatePath("/materias")
-        revalidatePath(`/materias/${subjectId}`)
+        revalidatePath(`/materias/${subject_id}`)
         return await res.json();
     } catch (error) {
         console.error("Falha ao deletar o assunto", error);
