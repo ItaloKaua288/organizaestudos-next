@@ -106,9 +106,15 @@ export async function getDetailSubject(subject_id: string) {
                 title: note.title,
                 content: note.content,
                 is_pined: note.isPinned,
-
                 subject: subjectInfo,
             })),
+            timelines: data.timelines.map((timeline) => ({
+                id: timeline._id,
+                day: timeline.day,
+                start_time: timeline.startTime,
+                end_time: timeline.endTime,
+                subject: subjectInfo,
+            }))
         };
 
         return formattedData

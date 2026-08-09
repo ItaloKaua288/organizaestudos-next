@@ -1,5 +1,6 @@
 import Note from "../models/note.model.js";
 import Subject from "../models/subject.model.js";
+import TimeLine from "../models/timeLine.model.js";
 import Topic from "../models/topic.model.js";
 import cloudinary from '../utils/cloudinary.js';
 
@@ -101,8 +102,9 @@ export const getDetailSubject = async (req, res) => {
 
         const topics = await Topic.find({ subject_id: id }).sort({ order: -1 });
         const notes = await Note.find({ subject_id: id }).sort({ createdAt: -1 });
+        const timelines = await TimeLine.find({ subject_id: id }).sort({ createdAt: -1 });
 
-        res.status(200).json({ success: true, subject, topics, notes });
+        res.status(200).json({ success: true, subject, topics, notes, timelines });
     } catch (error) {
         console.log("error in getDetailSubject", error);
         res.status(500).json({ success: false, message: "Server error" });

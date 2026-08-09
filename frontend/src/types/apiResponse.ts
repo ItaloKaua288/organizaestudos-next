@@ -18,6 +18,7 @@ export interface ApiDetailSubjectResponse {
     subject: ApiSubject;
     topics: ApiTopic[];
     notes: ApiNote[];
+    timelines: ApiTimeline[];
 }
 
 export type Attachment = {

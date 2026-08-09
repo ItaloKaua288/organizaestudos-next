@@ -95,6 +95,8 @@ export default async function DetailMateriaPage({
         ),
     };
 
+    const timelineDays = subject.timelines?.map((timeline) => timeline.day)
+
     const sections = [
         { title: "24 horas", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
         { title: "7 dias", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
@@ -132,7 +134,7 @@ export default async function DetailMateriaPage({
                         Notas <Badge className="px-1 py-2.5" variant="secondary">{subject.notes?.length}</Badge>
                     </Link>
                     <Link href="?tab=revisoes" className={tab === 'revisoes' ? activeTabStyle : inactiveTabStyle}>
-                        Revisões <Badge className="px-1 py-2.5" variant="secondary">{allReviews.filter(r => !r.concluded).length}</Badge> 
+                        Revisões <Badge className="px-1 py-2.5" variant="secondary">{allReviews.filter(r => !r.concluded).length}</Badge>
                     </Link>
                 </div>
 
@@ -194,10 +196,17 @@ export default async function DetailMateriaPage({
                                 <CardTitle className="text-base font-semibold flex items-center justify-between gap-2">Cronograma <CalendarClock /></CardTitle>
                                 <span className="text-xs text-input">Dias da semana em que a matéria está vinculada no cronograma</span>
                             </CardHeader>
-                            <CardContent className="flex gap-4 justify-center pt-0">
-                                <Badge className="p-3.5" variant={"secondary"}>Segunda-feira</Badge>
-                                <Badge className="p-3.5" variant={"secondary"}>Quarta-feira</Badge>
-                                <Badge className="p-3.5" variant={"secondary"}>Sexta-feira</Badge>
+                            <CardContent className="flex gap-2 justify-center pt-0 flex-wrap">
+                                {timelineDays ? (
+                                    <>
+                                        {timelineDays.map((day) => (
+                                            <Badge key={day} className="p-3.5" variant={"secondary"}>{day}</Badge>
+                                        ))}
+                                    </>
+
+                                ) : (
+                                    <p>Sem dias vinculados.</p>
+                                )}
                             </CardContent>
                         </Card>
                         <Card className="introduction-card w-full" style={{ animationDelay: `${2 * 150}ms` }} >
