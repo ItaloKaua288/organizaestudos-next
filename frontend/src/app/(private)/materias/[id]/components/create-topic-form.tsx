@@ -5,20 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Loader2, Plus } from "lucide-react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import toast from "react-hot-toast"
 
 export function CreateTopicForm({ subjectId }: { subjectId: string }) {
     const [isPending, setIsPending] = useState(false)
+    const formRef = useRef<HTMLFormElement>(null)
 
     async function handleAction(formData: FormData) {
         setIsPending(true)
-        toast.loading("Criando assunto...", { id: "topic-create" })
 
         try {
             toast.loading("Criando...", { id: "topic-create" })
             await createTopicAction(formData, subjectId)
             toast.success("Assunto criado com sucesso!", { id: "topic-create" })
+            formRef.current?.reset()
         } catch {
             toast.error("Falha ao criar o assunto.", { id: "topic-create" })
         } finally {
@@ -27,7 +28,7 @@ export function CreateTopicForm({ subjectId }: { subjectId: string }) {
     }
 
     return (
-        <form action={handleAction}>
+        <form action={handleAction} ref={formRef}>
             <Field className="flex flex-row gap-2 mt-4">
                 <Input
                     name="title"

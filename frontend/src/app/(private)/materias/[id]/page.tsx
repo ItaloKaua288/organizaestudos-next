@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayBR } from "@/lib/date";
 import { getDetailSubject } from "@/services/subjects.service";
 import { Topic } from "@/types/topic";
+import DOMPurify from "isomorphic-dompurify";
 import { CalendarClock, CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import { CreateTopicForm } from "./components/create-topic-form";
@@ -73,24 +74,24 @@ export default async function DetailMateriaPage({
         });
     };
 
-    const concluedTopics = sortedTopics.filter(topic => topic.status === "CONCLUIDO")
+    const concludedTopics = sortedTopics.filter(topic => topic.status === "CONCLUIDO")
     const topicTimes = {
-        concluded: concluedTopics.filter(
+        concluded: concludedTopics.filter(
             topic =>
                 topic.reviews.first.concluded ||
                 topic.reviews.second.concluded ||
                 topic.reviews.third.concluded
         ),
         day: sortReviews(
-            concluedTopics.filter(topic => !topic.reviews.first.concluded),
+            concludedTopics.filter(topic => !topic.reviews.first.concluded),
             "first"
         ),
         week: sortReviews(
-            concluedTopics.filter(topic => !topic.reviews.second.concluded),
+            concludedTopics.filter(topic => !topic.reviews.second.concluded),
             "second"
         ),
         month: sortReviews(
-            concluedTopics.filter(topic => !topic.reviews.third.concluded),
+            concludedTopics.filter(topic => !topic.reviews.third.concluded),
             "third"
         ),
     };
@@ -153,21 +154,25 @@ export default async function DetailMateriaPage({
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
                                 {sortedNotes && sortedNotes.length > 0 ? (
-                                    sortedNotes.map(note => (
-                                        <Card key={note.id} className="flex flex-col justify-between">
-                                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-3">
-                                                <CardTitle className="truncate text-base font-semibold" title={note.title}>
-                                                    {note.title}
-                                                </CardTitle>
-                                                <OptionsNoteCard key={note.id} subjectId={subject.id} note={note}></OptionsNoteCard>
-                                            </CardHeader>
+                                    sortedNotes.map(note => {
+                                        const cleanHTML = DOMPurify.sanitize(note.content);
 
-                                            <CardContent
-                                                className="prose prose-sm dark:prose-invert max-w-none pt-2 max-h-150 overflow-y-auto"
-                                                dangerouslySetInnerHTML={{ __html: note.content }}
-                                            />
-                                        </Card>
-                                    ))
+                                        return (
+                                            <Card key={note.id} className="flex flex-col justify-between">
+                                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-3">
+                                                    <CardTitle className="truncate text-base font-semibold" title={note.title}>
+                                                        {note.title}
+                                                    </CardTitle>
+                                                    <OptionsNoteCard key={note.id} subjectId={subject.id} note={note}></OptionsNoteCard>
+                                                </CardHeader>
+
+                                                <CardContent
+                                                    className="prose prose-sm dark:prose-invert max-w-none pt-2 max-h-150 overflow-y-auto"
+                                                    dangerouslySetInnerHTML={{ __html: cleanHTML }}
+                                                />
+                                            </Card>
+                                        )
+                                    })
                                 ) : (
                                     <p className="text-sm text-zinc-500 col-span-1 md:col-span-3">Nenhuma nota encontrada para esta matéria.</p>
                                 )}

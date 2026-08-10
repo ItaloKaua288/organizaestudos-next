@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getNotes } from "@/services/notes.service"
 import { Note } from "@/types/note"
+import DOMPurify from "isomorphic-dompurify"
 import { CornerDownLeft } from "lucide-react"
 import Link from "next/link"
-import { SearchNotes } from "./components/search-notes"
 import { CloseRedirectToast } from "./components/CloseRedirectToast"
+import { SearchNotes } from "./components/search-notes"
 
 
 export default async function NotasOverviewPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ q?: string }> }) {
@@ -72,22 +73,26 @@ export default async function NotasOverviewPage({ params, searchParams }: { para
                     </p>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {filteredNotas.map((note) => (
-                            <Card key={note.id} className="flex flex-col justify-between">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
-                                    <CardTitle className="truncate text-base font-semibold" title={note.title}>
-                                        {note.title}
-                                    </CardTitle>
+                        {filteredNotas.map((note) => {
+                            const cleanHTML = DOMPurify.sanitize(note.content)
 
-                                    <OptionsNoteCard subjectId={id} note={note} />
-                                </CardHeader>
+                            return (
+                                <Card key={note.id} className="flex flex-col justify-between">
+                                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-2">
+                                        <CardTitle className="truncate text-base font-semibold" title={note.title}>
+                                            {note.title}
+                                        </CardTitle>
 
-                                <CardContent
-                                    className="prose prose-sm dark:prose-invert max-w-none pt-2 max-h-150 overflow-y-auto"
-                                    dangerouslySetInnerHTML={{ __html: note.content }}
-                                />
-                            </Card>
-                        ))}
+                                        <OptionsNoteCard subjectId={id} note={note} />
+                                    </CardHeader>
+
+                                    <CardContent
+                                        className="prose prose-sm dark:prose-invert max-w-none pt-2 max-h-150 overflow-y-auto"
+                                        dangerouslySetInnerHTML={{ __html: cleanHTML }}
+                                    />
+                                </Card>
+                            )
+                        })}
                     </div>
                 )}
             </section>
