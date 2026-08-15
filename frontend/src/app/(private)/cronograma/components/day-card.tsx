@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Subject } from "@/types/subject";
 import { Timeline } from "@/types/timeline";
 import { Topic } from "@/types/topic";
-import { BookOpen, Eye, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
+import { BookOpen, ExternalLink, Eye, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -209,6 +209,9 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                    <Link href={`/materias/${item.subject?.id}`}>
+                        <ExternalLink className="h-4 w-4 hover:text-primary" />
+                    </Link>
                     {nextTopic && (
                         <DialogDemo
                             variant="button"
