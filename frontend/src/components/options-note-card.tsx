@@ -1,6 +1,6 @@
 "use client"
 
-import { deleteNoteAction, pinNoteAction, updateNoteAction } from "@/actions/notes.actions";
+import { deleteNoteAction, updateNoteAction } from "@/actions/notes.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export function OptionsNoteCard({ subjectId, note }: OptionsNoteCardProps) {
             formData.append("isPinned", (!note.is_pined).toString())
             formData.append("subject_id", subjectId)
             toast.loading("Fixando anotação...", { id: "pin-note" })
-            const res = await pinNoteAction(formData)
+            const res = await updateNoteAction(formData)
 
             if (res.success) {
                 toast.success(res.message, { id: "pin-note" })

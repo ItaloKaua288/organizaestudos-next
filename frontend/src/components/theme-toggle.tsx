@@ -1,26 +1,22 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
-import * as React from "react";
-
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-// import dynamic from "next/dynamic";
+import * as React from "react";
+import { useSyncExternalStore } from "react";
 
 type ThemeToggleVariant = "default" | "outline" | "ghost";
 type ThemeToggleSize = "default" | "icon";
-
-// const ThemeToggle = dynamic(
-//     () => import("@/components/theme-toggle").then((m) => m.ThemeToggle),
-//     { ssr: false }
-// );
 
 export interface ThemeToggleProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ThemeToggleVariant;
   size?: ThemeToggleSize;
 }
+
+const emptySubscribe = () => () => { };
 
 export const ThemeToggle = ({
   variant = "outline",
@@ -29,6 +25,24 @@ export const ThemeToggle = ({
   ...props
 }: ThemeToggleProps) => {
   const { theme, setTheme } = useTheme()
+
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
+  if (!mounted) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="Alterar tema"
+        disabled
+      />
+    );
+  }
 
   const isDark = theme === "dark";
 

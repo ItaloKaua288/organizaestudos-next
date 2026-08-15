@@ -3,7 +3,7 @@
 import { changeReviewStatus } from "@/actions/review.actions";
 import { deleteAttachAction } from "@/actions/topics.actions";
 import { isDateOverdue, isToday } from "@/lib/date";
-import { openTopicAttachment } from "@/services/topics.service";
+import { openTopicAttachmentAction } from "@/actions/topics.actions";
 import { Topic } from "@/types/topic";
 import { FileText, RotateCw, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -48,11 +48,19 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
     const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
         try {
             toast.loading("Abrindo anexo...", { id: "open-attachment" })
-            const blob = await openTopicAttachment(topic.id, attachmentPublicId)
-            const url = URL.createObjectURL(blob);
-            window.open(url, "_blank");
-            setTimeout(() => URL.revokeObjectURL(url), 10000);
-            toast.success("Anexo aberto!", { id: "open-attachment" })
+            const formData = new FormData();
+            formData.append("topicId", topic.id)
+            formData.append("public_id", attachmentPublicId)
+            const blob = (await openTopicAttachmentAction(formData)).blob
+
+            if (blob) {
+                const url = URL.createObjectURL(blob);
+                window.open(url, "_blank");
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                toast.success("Anexo aberto", { id: "open-attachment" });
+            } else {
+                toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
+            }
         } catch (error) {
             console.error(error);
             toast.error("Erro ao abrir o anexo!", { id: "open-attachment" })
@@ -64,6 +72,7 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
             const formData = new FormData();
             formData.append("topicId", topic.id);
             formData.append("public_id", public_id)
+            formData.append("subject_id", topic.subject.id)
             toast.loading("deletando...", { id: "delete-attachment" })
             await deleteAttachAction(formData)
             toast.success("Anexo deletado!", { id: "delete-attachment" })

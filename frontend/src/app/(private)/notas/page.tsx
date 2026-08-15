@@ -1,16 +1,9 @@
+import { getSubjectsAction } from "@/actions/subjects.actions";
 import { ScrambleText } from "@/components/scramble-text";
-import { getSubjects } from "@/services/subjects.service";
-import { Subject } from "@/types/subject";
 import { RedirectButton } from "./components/button-redirect";
 
 export default async function NotasPage() {
-    let allSubjects: Subject[] = []
-
-    try {
-        allSubjects = await getSubjects()
-    } catch (error) {
-        console.error("Erro ao carregar anotações:", error)
-    }
+    const allSubjects = await getSubjectsAction()
 
     return (
         <div className="space-y-4">

@@ -1,37 +1,32 @@
-import { getSubjects } from "@/services/subjects.service";
-import { getTopics } from "@/services/topics.service";
+import { getSubjectsAction } from "@/actions/subjects.actions";
+import { getTopicsAction } from "@/actions/topics.actions";
+import { ScrambleText } from "@/components/scramble-text";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
 import { Suspense } from "react";
 import MateriasClient, { MateriasSkeleton } from "./components/materias-client";
-import { ScrambleText } from "@/components/scramble-text";
 
 async function MateriasContent() {
     let subjectsWithTopics: (Subject & { topics: Topic[] })[] = [];
 
-    try {
-        const [allSubjects, allTopics] = await Promise.all([
-            getSubjects(),
-            getTopics()
-        ]);
+    const [allSubjects, allTopics] = await Promise.all([
+        getSubjectsAction(),
+        getTopicsAction()
+    ]);
 
-        const topicsMap = new Map();
-        allTopics.forEach((topic: Topic) => {
-            const subjectId = topic.subject?.id;
-            if (!topicsMap.has(subjectId)) {
-                topicsMap.set(subjectId, []);
-            }
-            topicsMap.get(subjectId).push(topic);
-        });
+    const topicsMap = new Map();
+    allTopics.forEach((topic: Topic) => {
+        const subjectId = topic.subject?.id;
+        if (!topicsMap.has(subjectId)) {
+            topicsMap.set(subjectId, []);
+        }
+        topicsMap.get(subjectId).push(topic);
+    });
 
-        subjectsWithTopics = allSubjects.map((subject: Subject) => ({
-            ...subject,
-            topics: topicsMap.get(subject.id) ?? []
-        }));
-
-    } catch (error) {
-        console.error("Erro ao carregar dados no servidor:", error);
-    }
+    subjectsWithTopics = allSubjects.map((subject: Subject) => ({
+        ...subject,
+        topics: topicsMap.get(subject.id) ?? []
+    }));
 
     return <MateriasClient subjects={subjectsWithTopics} />;
 }

@@ -37,7 +37,7 @@ export const getTopics = async (req, res) => {
     const { subject_id } = req.params;
 
     try {
-        const topics = await Topic.find({ subject_id });
+        const topics = await Topic.find({ subject_id }).sort({ order: -1 });
         res.status(200).json({ success: true, topics });
     } catch (error) {
         console.log("error in getTopics ", error);

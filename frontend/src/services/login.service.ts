@@ -34,7 +34,7 @@ export async function signup({ username, email, password }: SignupCredentials) {
         {
             method: "POST",
             headers: { "Content-Type": "application/json", },
-            body: JSON.stringify({ email, password, name:username }),
+            body: JSON.stringify({ email, password, name: username }),
         }
     );
     if (!res.ok) {
@@ -43,11 +43,16 @@ export async function signup({ username, email, password }: SignupCredentials) {
         else
             throw new Error((await res.json()).message)
     }
-    
-    await login({email, password})
+
+    await login({ email, password })
 }
 
-export async function checkAuth() {
+type AuthResponse = {
+    success: boolean;
+    user?: { id: string; name: string; email: string };
+};
+
+export async function checkAuth(): Promise<AuthResponse> {
     const res = await fetch(`/api/auth/check-auth`);
     if (!res.ok) {
         throw new Error("Usuário não logado");
@@ -61,6 +66,6 @@ export async function logout() {
     if (!res.ok) {
         throw new Error("Erro ao tentar sair!");
     }
-    
+
     return await res.json();
 }

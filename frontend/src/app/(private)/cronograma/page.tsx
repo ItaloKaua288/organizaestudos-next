@@ -1,10 +1,9 @@
-import { getSubjects } from "@/services/subjects.service";
-import { getTimeline } from "@/services/timeline.service";
-import { getTopics } from "@/services/topics.service";
-import { Topic } from "@/types/topic";
-import { AlertCircle } from "lucide-react";
-import { DayCard } from "./components/day-card";
+import { getSubjectsAction } from "@/actions/subjects.actions";
+import { getTimelinesAction } from "@/actions/timeline.actions";
+import { getTopicsAction } from "@/actions/topics.actions";
 import { ScrambleText } from "@/components/scramble-text";
+import { Topic } from "@/types/topic";
+import { DayCard } from "./components/day-card";
 
 const WEEK_DAYS = [
     "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
@@ -13,27 +12,13 @@ const WEEK_DAYS = [
 export default async function CronogramaPage() {
     const currentDayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: "America/Sao_Paulo" }).format(new Date());
 
-    let data = null;
+    const [allTimelines, allTopics, allSubjects] = await Promise.all([
+        getTimelinesAction(),
+        getTopicsAction(),
+        getSubjectsAction()
+    ]);
 
-    try {
-        const [allTimelines, allTopics, allSubjects] = await Promise.all([
-            getTimeline(),
-            getTopics(),
-            getSubjects()
-        ]);
-        data = { timelines: allTimelines, topics: allTopics, subjects: allSubjects };
-    } catch (error) {
-        console.error("Falha ao carregar os dados do cronograma:", error);
-        return (
-            <main className="flex min-h-screen items-center justify-center p-4">
-                <div className="flex flex-col items-center gap-2 text-destructive">
-                    <AlertCircle size={40} />
-                    <h2 className="text-xl font-bold">Erro ao carregar dados</h2>
-                    <p className="text-muted-foreground text-sm">Não foi possível conectar ao servidor.</p>
-                </div>
-            </main>
-        );
-    }
+    const data = { timelines: allTimelines, topics: allTopics, subjects: allSubjects };
 
     const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
     const currentDate = new Date(brString);

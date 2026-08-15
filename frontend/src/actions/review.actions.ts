@@ -1,10 +1,14 @@
 "use server";
 
-import { updateTopicReviewStatus } from "@/services/topics.service";
+import { updateTopicReviewStatusAction } from "./topics.actions";
 
 export async function changeReviewStatus(topicId: string, review: string, isCompleted: boolean) {
     try {
-        await updateTopicReviewStatus(topicId, review, isCompleted);
+        const formData = new FormData()
+        formData.append("topicId", topicId)
+        formData.append("review", review)
+        formData.append("isCompleted", `${isCompleted}`)
+        await updateTopicReviewStatusAction(formData);
 
         return { success: true };
     } catch (error) {

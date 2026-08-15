@@ -1,11 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Subject } from "@/types/subject";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
 
-export function RedirectButton({ subject, index }: {  subject: any, index: number }) {
+export function RedirectButton({ subject, index }: {  subject: Subject, index: number }) {
     
     return (
         <Button

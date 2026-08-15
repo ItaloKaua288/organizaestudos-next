@@ -1,46 +1,46 @@
 "use client"
 
-import { ArrowRight, Loader2, LockKeyhole, Mail } from "lucide-react"
+import { ArrowRight, LockKeyhole, Mail } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { type FormEvent, useEffect, useState } from "react"
+import { type FormEvent, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import login, { checkAuth as checkAuthApi } from "@/services/login.service"
+import login from "@/services/login.service"
 
 export function LoginForm() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState("")
     const router = useRouter()
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+    // const [isCheckingAuth, setIsCheckingAuth] = useState(true)
 
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const res = await checkAuthApi();
-                if (res.success) {
-                    router.push("/")
-                } else {
-                    setIsCheckingAuth(false)
-                }
-            } catch {
-                setIsCheckingAuth(false)
-            }
-        };
+    // useEffect(() => {
+    //     const checkAuth = async () => {
+    //         try {
+    //             const res = await checkAuthApi();
+    //             if (res.success) {
+    //                 router.push("/")
+    //             } else {
+    //                 setIsCheckingAuth(false)
+    //             }
+    //         } catch {
+    //             setIsCheckingAuth(false)
+    //         }
+    //     };
 
-        checkAuth();
-    }, [router]);
+    //     checkAuth();
+    // }, [router]);
 
-    if (isCheckingAuth) {
-        return (
-            <div className="flex w-full items-center justify-center">
-                <Loader2 className="size-8 animate-spin text-muted-foreground" />
-            </div>
-        )
-    }
+    // if (isCheckingAuth) {
+    //     return (
+    //         <div className="flex w-full items-center justify-center">
+    //             <Loader2 className="size-8 animate-spin text-muted-foreground" />
+    //         </div>
+    //     )
+    // }
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()

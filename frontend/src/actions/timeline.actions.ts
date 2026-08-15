@@ -1,55 +1,165 @@
-"use server"
+"use server";
 
-import { createTimeline, deleteTimeline, updateTimeline } from "@/services/timeline.service";
+import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
+import { TimelineApiResponse } from "@/types/apiResponse";
+import { Timeline } from "@/types/timeline";
+import { revalidatePath } from "next/cache";
+import z from "zod";
 
-export async function addTimelineAction(formData: FormData) {
+export async function getTimelinesAction(): Promise<Timeline[]> {
     try {
-        const day = formData.get("day") as string;
-        const subject = formData.get("subject") as string;
-        const startTime = formData.get("startTime") as string;
-        const endTime = formData.get("endTime") as string;
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
 
-        await createTimeline({ day, subject_id: subject, startTime: startTime, endTime: endTime });
+        const res = await fetch(`${baseUrl}/timelines`, {
+            headers,
+            cache: "force-cache",
+        })
 
-        return { success: true, message: "Cronograma adicionado com sucesso!" }
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.message || "Falha ao buscar a timeline na API.");
+        }
+
+        const data: TimelineApiResponse = await res.json()
+        
+        return data.timeline.map((item) => ({
+            id: item._id,
+            day: item.day,
+            start_time: item.startTime,
+            end_time: item.endTime,
+            subject: {
+                id: item.subject_id._id,
+                title: item.subject_id.title,
+                color: item.subject_id.color,
+            },
+        }))
     } catch (error) {
-        console.error("Erro ao adicionar cronograma:", error);
-        return { success: false, message: "Erro ao adicionar cronograma." }
+        console.error("Erro interno ao buscar a timeline:", error);
+        throw new Error("Não foi possível carregar a timeline. Tente novamente mais tarde.");
     }
 }
 
-export async function deleteTimelineAction(timelineId: string) {
-    try {
-        await deleteTimeline(timelineId);
+const createTimelineSchema = z.object({
+    day: z.string().min(1, "Dia da semana é obrigatório!"),
+    subject_id: z.string().min(1, "O ID da matéria é obrigatório!"),
+    startTime: z.string().min(1, "O horário de ínicio é obrigatório!"),
+    endTime: z.string().min(1, "O horário de termino é obrigatório!"),
+})
 
-        return { success: true, message: "Cronograma excluído com sucesso!" }
+export async function createTimelineAction(formData: FormData) {
+    try {
+        const rawData = Object.fromEntries(formData.entries());
+        const validatedData = createTimelineSchema.safeParse(rawData);
+
+        if (!validatedData.success) {
+            console.error("Erro de validação:", z.flattenError(validatedData.error));
+            return { success: false, message: "Dados inválidos enviados no formulário.", };
+        }
+
+        const { day, subject_id, startTime, endTime } = validatedData.data;
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/timelines`, {
+            headers,
+            method: "POST",
+            body: JSON.stringify({ day, subject_id, startTime, endTime })
+        })
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, message: errorData.message || "Falha da API ao criar timeline.", };
+        }
+
+        revalidatePath("/cronograma");
+
+        return { success: true, message: "Timeline criada com sucesso!", };
     } catch (error) {
-        console.error("Erro ao excluir cronograma:", error);
-        return { success: false, message: "Erro ao excluir cronograma." }
+        console.error("Erro interno ao criar timeline:", error);
+        return { success: false, message: "Ocorreu um erro inesperado.", };
     }
 }
+
+const deleteTimelineSchema = z.object({
+    timeline_id: z.string().min(1, "O ID da timeline é obrigatório!"),
+})
+
+export async function deleteTimelineAction(formData: FormData) {
+    try {
+        const rawData = Object.fromEntries(formData.entries());
+        const validatedData = deleteTimelineSchema.safeParse(rawData);
+
+        if (!validatedData.success) {
+            console.error("Erro de validação:", z.flattenError(validatedData.error));
+            return { success: false, message: "Dados inválidos enviados no formulário.", };
+        }
+
+        const { timeline_id } = validatedData.data;
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/timelines/${timeline_id}`, {
+            method: "DELETE",
+            headers
+        })
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, message: errorData.message || "Falha da API ao deletar timeline.", };
+        }
+
+        revalidatePath("/cronograma")
+
+        return { success: true, message: "Timeline deletada com sucesso!", };
+    } catch (error) {
+        console.error("Erro interno ao deletar timeline:", error);
+        return { success: false, message: "Ocorreu um erro inesperado.", };
+    }
+}
+
+const updateTimelineSchema = z.object({
+    day: z.string().min(1, "Dia da semana é obrigatório!"),
+    subject_id: z.string().min(1, "O ID da matéria é obrigatório!"),
+    startTime: z.string().min(1, "O horário de ínicio é obrigatório!"),
+    endTime: z.string().min(1, "O horário de termino é obrigatório!"),
+    timeline_id: z.string().min(1, "O ID da timeline é obrigatório!"),
+})
 
 export async function updateTimelineAction(formData: FormData) {
     try {
-        const subject_id = formData.get("subject_id") as string;
-        const startTime = formData.get("startTime") as string;
-        const endTime = formData.get("endTime") as string;
-        const day = formData.get("day") as string;
-        const timeline_id = formData.get("timeline_id") as string;
+        const rawData = Object.fromEntries(formData.entries());
+        const validatedData = updateTimelineSchema.safeParse(rawData);
 
+        if (!validatedData.success) {
+            console.error("Erro de validação:", z.flattenError(validatedData.error));
 
-        await updateTimeline({ timeline_id, subject_id, startTime, endTime, day });
+            return { success: false, message: "Dados inválidos enviados no formulário.", };
+        }
 
-        return {
-            success: true,
-            message: "Timeline atualizada com sucesso!",
-        };
+        const { subject_id, day, endTime, startTime, timeline_id } = validatedData.data;
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/timelines/${timeline_id}`, {
+            headers,
+            method: "PUT",
+            body: JSON.stringify({ day, subject_id, startTime, endTime })
+        })
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, message: errorData.message || "Falha da API ao atualizar a timeline.", };
+        }
+
+        revalidatePath("/cronograma")
+
+        return { success: true, message: "Timeline atualizada com sucesso!", };
     } catch (error) {
-        console.error("Erro ao atualizar timeline:", error);
-
-        return {
-            success: false,
-            message: "Erro ao atualizar timeline.",
-        };
+        console.error("Erro interno ao atualizar timeline:", error);
+        return { success: false, message: "Ocorreu um erro inesperado.", };
     }
 }

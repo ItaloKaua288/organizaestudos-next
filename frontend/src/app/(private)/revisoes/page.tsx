@@ -1,21 +1,14 @@
+import { getTopicsAction } from "@/actions/topics.actions";
 import { ReviewSection, ReviewSectionSkeleton } from "@/components/reviewSection";
 import { ScrambleText } from "@/components/scramble-text";
-import { getTopics } from "@/services/topics.service";
 import { Topic } from "@/types/topic";
 import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
 import { Suspense } from "react";
 
 async function RevisaoContent() {
-    let topics: Topic[] | null = null;
+    const topics = (await getTopicsAction()).filter(topic => topic.status === "CONCLUIDO");
 
-    try {
-        const rawTopics = await getTopics();
-        topics = rawTopics.filter(topic => topic.status === "CONCLUIDO");
-    } catch (error) {
-        console.error("Erro ao carregar revisões:", error);
-    }
-
-    if (!topics) {
+    if (topics.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-destructive gap-2">
                 <AlertCircle size={32} />

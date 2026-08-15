@@ -7,56 +7,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, PencilLine, Plus, Trash2 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 
+import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.actions";
+import { createTopicAction } from "@/actions/topics.actions";
 import { TopicRow } from "@/components/topic-row";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { deleteSubject, updateSubject } from "@/services/subjects.service";
-import { createTopic, deleteTopic } from "@/services/topics.service";
 import { Subject } from "@/types/subject";
-import { TopicStatus } from "@/types/topic";
 import Link from "next/link";
 
 type SubjectBoxProps = {
     subject: Subject;
-    onStatusChange?: (topicId: string, newStatus: TopicStatus) => void;
-    onMoveUp?: (index: number) => void;
-    onMoveDown?: (index: number) => void;
-    onAttachPDF?: (topicId: string, file: File) => void;
-    onEditTopic?: (topicId: string, title: string, link: string, review1: string) => void;
     onUpdate?: () => void;
 };
 
 export default function SubjectBox({
     subject,
-    onStatusChange,
-    onMoveUp,
-    onMoveDown,
-    onAttachPDF,
-    onEditTopic,
 }: SubjectBoxProps) {
-    const [draftTitle, setDraftTitle] = useState(subject.title);
     const [draftColor, setDraftColor] = useState(subject.color);
     const [topicTitle, setTopicTitle] = useState("")
     const [isPending, setIsPending] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false)
-
-    useEffect(() => {
-        const fetchData = async () => {
-            setDraftTitle(subject.title);
-            setDraftColor(subject.color);
-        }
-        fetchData()
-    }, [subject.title, subject.color]);
 
     const handleSubjectFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             setIsPending(true);
             toast.loading("Atualizando matéria...", { id: "update-subject" });
-            await updateSubject(draftTitle, draftColor, subject.id);
+
+            const formData = new FormData(e.currentTarget as HTMLFormElement);
+            formData.append("color", draftColor)
+            formData.append("subject_id", subject.id);
+
+            await updateSubjectAction(formData);
             toast.success("Matéria atualizada", { id: "update-subject" });
             setIsEditOpen(false)
         } catch (error) {
@@ -72,7 +57,9 @@ export default function SubjectBox({
         try {
             setIsPending(true);
             toast.loading("Deletando matéria...", { id: "delete-subject" });
-            await deleteSubject(subject.id);
+            const formData = new FormData();
+            formData.append("subject_id", subject.id)
+            await deleteSubjectAction(formData);
             toast.success("Matéria deletada", { id: "delete-subject" });
         } catch (error) {
             console.error("Falha ao deletar a matéria", error);
@@ -86,7 +73,10 @@ export default function SubjectBox({
         e.preventDefault();
         try {
             setIsPending(true);
-            await createTopic(topicTitle, subject.id);
+            const formData = new FormData()
+            formData.append("subject_id", subject.id)
+            formData.append("title", topicTitle)
+            await createTopicAction(formData);
             toast.success("Assunto criado");
             setTopicTitle("");
         } catch (error) {
@@ -96,20 +86,6 @@ export default function SubjectBox({
             setIsPending(false);
         }
     }
-
-    const handleTopicDelete = async (topicId: string) => {
-        try {
-            setIsPending(true);
-            toast.loading("Deletando assunto...", { id: "delete-topic" });
-            await deleteTopic(topicId, subject.id);
-            toast.success("Assunto deletado com sucesso", { id: "delete-topic" });
-        } catch (error) {
-            console.error("Falha ao deletar o assunto", error);
-            toast.error("Falha ao deletar o assunto", { id: "delete-topic" });
-        } finally {
-            setIsPending(false);
-        }
-    };
 
     const topics = subject.topics || [];
 
@@ -140,8 +116,8 @@ export default function SubjectBox({
                             <Field>
                                 <Label>Nome:</Label>
                                 <Input
-                                    value={draftTitle}
-                                    onChange={(e) => setDraftTitle(e.target.value)}
+                                    name="title"
+                                    defaultValue={subject.title}
                                     disabled={isPending}
                                 />
                             </Field>
@@ -173,12 +149,6 @@ export default function SubjectBox({
                         isFirst={index === 0}
                         isLast={index === topics.length - 1}
                         subject={subject}
-                        onMoveUp={onMoveUp}
-                        onMoveDown={onMoveDown}
-                        onStatusChange={onStatusChange}
-                        onAttachPDF={onAttachPDF}
-                        onEditTopic={onEditTopic}
-                        onDeleteTopic={handleTopicDelete}
                     />
                 ))}
                 {topics.length === 0 && (

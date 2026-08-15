@@ -10,7 +10,7 @@ import { ArrowDown, ArrowUp, CheckCircle2, Clock, Eye, FileText, Link as LinkLuc
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-import { openTopicAttachment } from "@/services/topics.service";
+import { deleteTopicAction, openTopicAttachmentAction, sendattachmentPDFAction, updateTopicAction } from "@/actions/topics.actions";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 
@@ -31,10 +31,7 @@ function formatDateForInput(dateSource: string | Date | null): string {
 
 type SubjectBoxProps = {
     subject: Subject;
-    onStatusChange?: (topicId: string, newStatus: TopicStatus) => void;
-    onMoveUp?: (index: number) => void;
-    onMoveDown?: (index: number) => void;
-    onAttachPDF?: (topicId: string, file: File) => void;
+    onStatusChange?: (topic: Topic, newStatus: TopicStatus) => void;
     onEditTopic?: (topicId: string, title: string, link: string, review1: string) => void;
     onUpdate?: () => void;
 };
@@ -45,7 +42,6 @@ type TopicRowProps = {
     isFirst: boolean;
     isLast: boolean;
     subject: Subject;
-    onDeleteTopic: (topicId: string) => void;
 } & Omit<SubjectBoxProps, "subject">;
 
 export function TopicRow({
@@ -54,12 +50,6 @@ export function TopicRow({
     isFirst,
     isLast,
     subject,
-    onMoveUp,
-    onMoveDown,
-    onStatusChange,
-    onAttachPDF,
-    onEditTopic,
-    onDeleteTopic,
 }: TopicRowProps) {
     const hasAttachments = topic.attachments && topic.attachments.length > 0;
     const [editedTitle, setEditedTitle] = useState(topic.title);
@@ -68,20 +58,42 @@ export function TopicRow({
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
 
-        if (file && onAttachPDF) {
-            onAttachPDF(topic.id, file);
+        try {
+            toast.loading("Enviando anexo...", { id: "attach-pdf" });
+            const formData = new FormData()
+            formData.append("topicId", topic.id)
+            formData.append("file", file as File)
+            await sendattachmentPDFAction(formData);
+            toast.success("Anexo enviado!", { id: "attach-pdf" });
+        } catch (error) {
+            toast.error("Falha ao enviar o anexo!", { id: "attach-pdf" });
+            console.error("Erro:", error);
+        } finally {
+            e.target.value = "";
         }
-        e.target.value = "";
     };
 
-    const handleEditSubmit = (e: React.FormEvent) => {
+    const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (onEditTopic) {
-            onEditTopic(topic.id, editedTitle, editedLink, editedFirstReviewDate);
-            setIsEditDialogOpen(false);
+
+        try {
+            toast.loading("Editando assunto...", { id: "edit-topic" });
+            const formData = new FormData()
+            formData.append("topicId", topic.id)
+            formData.append("title", editedTitle)
+            formData.append("link", editedLink)
+            formData.append("review1", editedFirstReviewDate)
+            formData.append("status", "null")
+            await updateTopicAction(formData);
+            toast.success("Assunto editado!", { id: "edit-topic" });
+        } catch (error) {
+            toast.error("Falha ao editar assunto!", { id: "edit-topic" });
+            console.error("Erro:", error);
+        } finally {
+            setIsEditDialogOpen(false)
         }
     };
 
@@ -96,16 +108,65 @@ export function TopicRow({
     };
 
     const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
+        const newTab = window.open("about:blank", "_blank");
+
         try {
             toast.loading("Abrindo anexo...", { id: "open-attachment" });
-            const blob = await openTopicAttachment(topic.id, attachmentPublicId)
-            const url = URL.createObjectURL(blob);
-            window.open(url, "_blank");
-            setTimeout(() => URL.revokeObjectURL(url), 10000);
-            toast.success("Anexo aberto", { id: "open-attachment" });
-        } catch (error) {
-            console.error(error);
+            const formData = new FormData();
+            formData.append("topicId", topic.id)
+            formData.append("public_id", attachmentPublicId)
+
+            const blob = (await openTopicAttachmentAction(formData)).blob
+
+            if (blob && newTab) {
+                const url = URL.createObjectURL(blob);
+
+                newTab.location.href = url;
+                toast.success("Anexo aberto", { id: "open-attachment" });
+
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            } else {
+                if (newTab) newTab.close();
+                toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
+            }
+        } catch {
+            if (newTab) newTab.close();
             toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
+        }
+    }
+
+    const handleTopicDelete = async (topicId: string) => {
+        try {
+            toast.loading("Deletando assunto...", { id: "delete-topic" });
+            const formData = new FormData()
+            formData.append("topicId", topicId)
+            formData.append("subject_id", subject.id)
+            await deleteTopicAction(formData);
+            toast.success("Assunto deletado com sucesso", { id: "delete-topic" });
+        } catch (error) {
+            console.error("Falha ao deletar o assunto", error);
+            toast.error("Falha ao deletar o assunto", { id: "delete-topic" });
+        }
+    };
+
+    const handleMoveUp = async () => { }
+
+    const handleMoveDown = async () => { }
+
+    async function handleTopicStatusChange(topic: Topic, newStatus: TopicStatus) {
+        try {
+            toast.loading("Atualizando status do assunto...", { id: "update-status-topic" });
+            const formData = new FormData()
+            formData.append("topicId", topic.id)
+            formData.append("title", topic.title)
+            formData.append("link", topic.link || "")
+            formData.append("review1", topic.reviews.first.date)
+            formData.append("status", newStatus)
+            await updateTopicAction(formData);
+            toast.success("Status do assunto atualizado!", { id: "update-status-topic" });
+        } catch (error) {
+            toast.error("Falha ao atualizar o status.", { id: "update-status-topic" });
+            console.error("Erro:", error);
         }
     }
 
@@ -116,7 +177,7 @@ export function TopicRow({
                     <div className="flex flex-col">
                         <button
                             type="button"
-                            onClick={() => onMoveUp?.(index)}
+                            onClick={handleMoveUp}
                             disabled={isFirst}
                             aria-label="Mover para cima"
                             className="btn btn-ghost btn-xs h-5 w-5 cursor-pointer p-0 hover:text-primary disabled:bg-transparent disabled:text-base-content/20"
@@ -125,7 +186,7 @@ export function TopicRow({
                         </button>
                         <button
                             type="button"
-                            onClick={() => onMoveDown?.(index)}
+                            onClick={handleMoveDown}
                             disabled={isLast}
                             aria-label="Mover para baixo"
                             className="btn btn-ghost btn-xs h-4 w-4 min-h-0 cursor-pointer p-0 hover:text-primary disabled:bg-transparent disabled:text-base-content/10"
@@ -151,7 +212,7 @@ export function TopicRow({
                         {/* Mobile */}
                         <select
                             value={topic.status}
-                            onChange={(e) => onStatusChange?.(topic.id, e.target.value as TopicStatus)}
+                            onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
                             aria-label="Status do tópico"
                             className="select select-bordered select-xs hover:cursor-pointer md:hidden border rounded-sm p-0.5  max-w-10"
                         >
@@ -162,7 +223,7 @@ export function TopicRow({
                         {/* Desktop */}
                         <select
                             value={topic.status}
-                            onChange={(e) => onStatusChange?.(topic.id, e.target.value as TopicStatus)}
+                            onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
                             aria-label="Status do tópico"
                             className="select select-bordered select-sm hover:cursor-pointer max-md:hidden border rounded-sm p-0.5  "
                         >
@@ -259,7 +320,7 @@ export function TopicRow({
                             classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-destructive"
                             nameConfirmBtn="Excluir"
                             variantConfirmBtn={"destructive"}
-                            onSubmit={(e) => { e.preventDefault(); onDeleteTopic(topic.id); }}
+                            onSubmit={(e) => { e.preventDefault(); handleTopicDelete(topic.id); }}
                         >
                         </DialogDemo>
                     </div>

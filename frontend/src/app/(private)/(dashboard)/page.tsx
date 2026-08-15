@@ -1,14 +1,14 @@
+import { getSubjectsAction } from "@/actions/subjects.actions";
+import { getTimelinesAction } from "@/actions/timeline.actions";
+import { getTopicsAction } from "@/actions/topics.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import ProgressLabelDemo from "@/components/progress-label";
+import { ScrambleText } from "@/components/scramble-text";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getSubjects } from "@/services/subjects.service";
-import { getTimeline } from "@/services/timeline.service";
-import { getTopics } from "@/services/topics.service";
 import { AlertCircle, BadgeCheck, BookOpen, ClipboardClock } from "lucide-react";
-import { ScrambleText } from "@/components/scramble-text";
 
 
 function isReviewScheduledForToday(reviewDateString?: string | Date) {
@@ -36,27 +36,13 @@ export default async function DashboardPage() {
         timeZone: 'America/Sao_Paulo'
     }).format(new Date());
 
-    let data = null;
+    const [subjectsRes, topicsRes, timelineRes] = await Promise.all([
+        getSubjectsAction(),
+        getTopicsAction(),
+        getTimelinesAction()
+    ]);
 
-    try {
-        const [subjectsRes, topicsRes, timelineRes] = await Promise.all([
-            getSubjects(),
-            getTopics(),
-            getTimeline()
-        ]);
-        data = { subjects: subjectsRes, topics: topicsRes, timeline: timelineRes };
-    } catch (error) {
-        console.error("Falha ao carregar os dados do dashboard:", error);
-        return (
-            <main className="flex min-h-screen items-center justify-center p-4">
-                <div className="flex flex-col items-center gap-2 text-destructive">
-                    <AlertCircle size={40} />
-                    <h2 className="text-xl font-bold">Erro ao carregar dados</h2>
-                    <p className="text-muted-foreground text-sm">Não foi possível conectar ao servidor.</p>
-                </div>
-            </main>
-        );
-    }
+    const data = { subjects: subjectsRes, topics: topicsRes, timeline: timelineRes };
 
     const pendingTopics = data.topics.filter((t) => t.status === "PENDENTE");
     const concludedTopics = data.topics.filter((t) => t.status === "CONCLUIDO");

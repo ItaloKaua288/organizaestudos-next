@@ -1,9 +1,8 @@
+import { getNotes } from "@/actions/notes.actions"
 import { CreateNoteDialog } from "@/components/Create-note-dialog"
 import { OptionsNoteCard } from "@/components/options-note-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getNotes } from "@/services/notes.service"
-import { Note } from "@/types/note"
 import DOMPurify from "isomorphic-dompurify"
 import { CornerDownLeft } from "lucide-react"
 import Link from "next/link"
@@ -14,13 +13,8 @@ import { SearchNotes } from "./components/search-notes"
 export default async function NotasOverviewPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ q?: string }> }) {
     const { id } = await params
     const { q } = await searchParams
-    let allNotas: Note[] = []
 
-    try {
-        allNotas = await getNotes(id)
-    } catch (error) {
-        console.error("Erro ao carregar anotações:", error)
-    }
+    const allNotas = await getNotes(id)
 
     const query = q?.toLowerCase() || ""
     const filteredNotas = allNotas.filter((note) => {

@@ -121,6 +121,7 @@ interface RichTextEditorProps {
 
 export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
   const editor = useEditor({
+    immediatelyRender: true,
     extensions: [
       StarterKit.configure({
         bulletList: {
@@ -138,7 +139,6 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           },
         },
       }),
-      Underline,
     ],
     content: value,
     editorProps: {

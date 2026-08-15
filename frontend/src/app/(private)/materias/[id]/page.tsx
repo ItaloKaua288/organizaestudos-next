@@ -1,3 +1,4 @@
+import { getDetailSubjectAction } from "@/actions/subjects.actions";
 import { CreateNoteDialog } from "@/components/Create-note-dialog";
 import { OptionsNoteCard } from "@/components/options-note-card";
 import ProgressLabelDemo from "@/components/progress-label";
@@ -7,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayBR } from "@/lib/date";
-import { getDetailSubject } from "@/services/subjects.service";
 import { Topic } from "@/types/topic";
 import DOMPurify from "isomorphic-dompurify";
 import { CalendarClock, CheckCircle2, Clock } from "lucide-react";
@@ -27,7 +27,7 @@ export default async function DetailMateriaPage({
     const resolvedSearchParams = await searchParams;
     const tab = resolvedSearchParams.tab || "assuntos";
 
-    const subject = await getDetailSubject(id);
+    const subject = await getDetailSubjectAction(id);
 
     if (!subject) {
         return <div className="p-8 text-white">Matéria não encontrada.</div>;

@@ -5,30 +5,35 @@ import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Loader2, Plus } from "lucide-react"
-import { useRef, useState } from "react"
+import { useActionState, useRef } from "react"
 import toast from "react-hot-toast"
 
 export function CreateTopicForm({ subjectId }: { subjectId: string }) {
-    const [isPending, setIsPending] = useState(false)
     const formRef = useRef<HTMLFormElement>(null)
 
-    async function handleAction(formData: FormData) {
-        setIsPending(true)
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+    const [state, formAction, isPending] = useActionState(async (prevState: any, formData: FormData) => {
         try {
             toast.loading("Criando...", { id: "topic-create" })
-            await createTopicAction(formData, subjectId)
-            toast.success("Assunto criado com sucesso!", { id: "topic-create" })
-            formRef.current?.reset()
+            formData.append("subject_id", subjectId)
+
+            const result = await createTopicAction(formData)
+
+            if (result?.success) {
+                toast.success("Assunto criado com sucesso!", { id: "topic-create" })
+                formRef.current?.reset()
+            } else {
+                toast.error(result?.message || "Falha ao criar o assunto.", { id: "topic-create" })
+            }
+            return result;
         } catch {
-            toast.error("Falha ao criar o assunto.", { id: "topic-create" })
-        } finally {
-            setIsPending(false)
+            toast.error("Erro crítico ao criar assunto.", { id: "topic-create" })
+            return { success: false }
         }
-    }
+    }, null);
 
     return (
-        <form action={handleAction} ref={formRef}>
+        <form action={formAction} ref={formRef}>
             <Field className="flex flex-row gap-2 mt-4">
                 <Input
                     name="title"

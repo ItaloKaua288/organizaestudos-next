@@ -1,6 +1,6 @@
 "use client"
 
-import { addTimelineAction, deleteTimelineAction, updateTimelineAction } from "@/actions/timeline.actions";
+import { createTimelineAction, deleteTimelineAction, updateTimelineAction } from "@/actions/timeline.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Subject } from "@/types/subject";
 import { Timeline } from "@/types/timeline";
 import { Topic } from "@/types/topic";
-import { BookOpen, Eye, FileText, Info, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Eye, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -44,10 +44,10 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
 
         try {
             toast.loading("Adicionando evento...", { id: "add-timeline" });
-            const result = await addTimelineAction(formData);
+            const result = await createTimelineAction(formData);
             if (result.success) {
                 toast.success(result.message, { id: "add-timeline" });
-                setIsAddOpen(false); // Fecha o modal no sucesso
+                setIsAddOpen(false);
             } else {
                 toast.error(result.message);
             }
@@ -81,7 +81,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                         <FieldGroup>
                             <Field>
                                 <Label>Matéria:</Label>
-                                <Select name="subject" required >
+                                <Select name="subject_id" required >
                                     <SelectTrigger>
                                         <SelectValue render={(value) => {
                                             const subject = subjects.find((s) => s.id === value.children);
@@ -179,7 +179,9 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
 
     const handleDelete = async () => {
         try {
-            const result = await deleteTimelineAction(item.id);
+            const formData = new FormData();
+            formData.append("timeline_id", item.id)
+            const result = await deleteTimelineAction(formData);
             if (result.success) toast.success(result.message);
             else toast.error(result.message);
         } catch {
