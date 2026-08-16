@@ -9,18 +9,23 @@ export const createTopic = async (req, res) => {
     const { title, subject_id } = req.body;
 
     try {
-        if (!title || !subject_id) {
+        const cleanTitle = title?.trim();
+
+        if (!cleanTitle || !subject_id) {
             return res.status(400).json({ success: false, message: "All fields are required" });
         }
 
-        // NOVO: Procura o último assunto desta matéria para saber qual é a última posição (order)
+        const subject = await Subject.findOne({ _id: subject_id, user_id: req.userId });
+
+        if (!subject) return res.status(404).json({ success: false, message: "Subject not found" });
+
         const lastTopic = await Topic.findOne({ subject_id }).sort("-order");
         const newOrder = lastTopic ? lastTopic.order + 1 : 0;
 
         const topic = new Topic({
-            title,
+            title: cleanTitle,
             subject_id,
-            order: newOrder // Adiciona o novo assunto no final da fila!
+            order: newOrder
         });
 
         await topic.save();
@@ -37,7 +42,12 @@ export const getTopics = async (req, res) => {
     const { subject_id } = req.params;
 
     try {
-        const topics = await Topic.find({ subject_id }).sort({ order: -1 });
+        const subject = await Subject.findOne({ _id: subject_id, user_id: req.userId });
+
+        if (!subject) return res.status(404).json({ success: false, message: "Subject not found" });
+
+        const topics = await Topic.find({ subject_id: subject._id }).sort({ order: -1 }).lean();
+
         res.status(200).json({ success: true, topics });
     } catch (error) {
         console.log("error in getTopics ", error);
@@ -51,7 +61,7 @@ export const getAllTopics = async (req, res) => {
         const subjects = await Subject.find({ user_id: req.userId });
         const subjectIds = subjects.map(subject => subject._id);
 
-        const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id');
+        const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id').lean();
         res.status(200).json({ success: true, topics });
     } catch (error) {
         console.log("error in getAllTopics ", error);
@@ -65,13 +75,20 @@ export const updateTopic = async (req, res) => {
     const { title, status, review1, review2, review3, link } = req.body;
 
     try {
-        const topic = await Topic.findById(id);
+        const topic = await Topic.findById(id).populate("subject_id");
 
         if (!topic) {
             return res.status(404).json({ success: false, message: "Topic not found" });
         }
 
-        if (title) topic.title = title;
+        if (topic.subject_id.user_id.toString() !== req.userId.toString())
+            return res.status(403).json({ success: false, message: "Forbidden" });
+
+        if (title !== undefined) {
+            const cleanTitle = title.trim();
+            if (!cleanTitle) return res.status(400).json({ success: false, message: "Title cannot be empty" });
+            topic.title = cleanTitle;
+        }
         if (link !== undefined) topic.link = link;
 
         if (status) {
@@ -115,12 +132,28 @@ export const reorderTopics = async (req, res) => {
     try {
         const { updates } = req.body; // Array de { _id, order }
 
-        // Atualiza todos os assuntos em paralelo
-        const promises = updates.map(update =>
-            Topic.findByIdAndUpdate(update._id, { order: update.order })
-        );
+        if (!Array.isArray(updates))
+            return res.status(400).json({ success: false, message: "Invalid updates" });
 
-        await Promise.all(promises);
+        const topicIds = updates.map(u => u._id);
+
+        const topics = await Topic.find({ _id: { $in: topicIds } }).populate("subject_id");
+
+        if (topics.length !== updates.length)
+            return res.status(404).json({ success: false, message: "Um ou mais tópicos não encontrados" });
+
+        for (const topic of topics)
+            if (topic.subject_id.user_id.toString() !== req.userId.toString())
+                return res.status(403).json({ success: false, message: "Forbidden" });
+
+        const bulkOps = updates.map(update => ({
+            updateOne: {
+                filter: { _id: update._id },
+                update: { $set: { order: update.order } }
+            }
+        }));
+
+        await Topic.bulkWrite(bulkOps);
 
         res.status(200).json({ success: true, message: "Ordem atualizada" });
     } catch (error) {
@@ -128,24 +161,25 @@ export const reorderTopics = async (req, res) => {
     }
 };
 
-
 export const deleteTopic = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const topic = await Topic.findById(id);
+        const topic = await Topic.findById(id).populate("subject_id");
 
         if (!topic) {
             return res.status(404).json({ success: false, message: "Topic not found" });
         }
 
-        // Deleta os arquivos do Cloudinary associados a este assunto antes de excluir o registro
+        if (topic.subject_id.user_id.toString() !== req.userId.toString())
+            return res.status(403).json({ success: false, message: "Forbidden" });
+
         if (topic.attachments && topic.attachments.length > 0) {
             const deletePromises = topic.attachments.map(file => cloudinary.uploader.destroy(file.public_id));
             await Promise.all(deletePromises);
         }
 
-        await Topic.findByIdAndDelete(id);
+        await topic.deleteOne();
 
         res.status(200).json({ success: true, message: "Topic deleted successfully" });
     } catch (error) {
@@ -159,23 +193,24 @@ export const uploadAttachment = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const topic = await Topic.findById(id);
+        const topic = await Topic.findById(id).populate("subject_id");
 
         if (!topic) return res.status(404).json({ success: false, message: "Topic not found" });
+
+        if (topic.subject_id.user_id.toString() !== req.userId.toString())
+            return res.status(403).json({ success: false, message: "Forbidden" });
+
         if (topic.attachments.length >= 3) return res.status(400).json({ success: false, message: "Limite de 3 arquivos atingido." });
         if (!req.file) return res.status(400).json({ success: false, message: "Nenhum arquivo enviado." });
 
-        // Converte o buffer do Multer para Base64 para enviar ao Cloudinary
         const b64 = Buffer.from(req.file.buffer).toString("base64");
         let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
 
-        // Faz o upload para o Cloudinary
         const result = await cloudinary.uploader.upload(dataURI, {
-            resource_type: "auto", // Importante para aceitar PDFs
+            resource_type: "auto", 
             folder: "topics_pdfs"
         });
 
-        // Salva a referência no MongoDB
         topic.attachments.push({
             name: req.file.originalname,
             url: result.secure_url,
@@ -191,19 +226,25 @@ export const uploadAttachment = async (req, res) => {
     }
 }
 
-
 export const removeAttachment = async (req, res) => {
     const { id } = req.params;
-    const { public_id } = req.body; // Enviamos pelo body para evitar problemas com barras na URL
+    const { public_id } = req.body;
 
     try {
-        const topic = await Topic.findById(id);
+        const topic = await Topic.findById(id).populate("subject_id");
+
         if (!topic) return res.status(404).json({ success: false, message: "Topic not found" });
 
-        // Deleta o arquivo do Cloudinary
-        await cloudinary.uploader.destroy(public_id);
+        if (topic.subject_id.user_id.toString() !== req.userId.toString())
+            return res.status(403).json({ success: false, message: "Forbidden" });
 
-        // Remove do array no MongoDB
+        const attachment = topic.attachments.find(att => att.public_id === public_id);
+
+        if (!attachment)
+            return res.status(404).json({ success: false, message: "Attachment not found" });
+
+        await cloudinary.uploader.destroy(attachment.public_id);
+
         topic.attachments = topic.attachments.filter(att => att.public_id !== public_id);
         await topic.save();
 
@@ -214,18 +255,24 @@ export const removeAttachment = async (req, res) => {
     }
 }
 
+const allowedReviews = ["review1", "review2", "review3"];
 
 export const concludedReview = async (req, res) => {
     const { id, review } = req.params;
 
     try {
-        const topic = await Topic.findById(id);
+        if (!allowedReviews.includes(review))
+            return res.status(400).json({ success: false, message: "Invalid review" });
+
+        const topic = await Topic.findById(id).populate("subject_id");
 
         if (!topic) {
             return res.status(404).json({ success: false, message: "Assunto não encontrado." });
         }
 
-        //Se a revisão clicada for a de 30 dias (review3)
+        if (topic.subject_id.user_id.toString() !== req.userId.toString())
+            return res.status(403).json({ success: false, message: "Forbidden" });
+
         if (review === "review3") {
             const nextReviewDate = getTodayBR();
             nextReviewDate.setDate(nextReviewDate.getDate() + 30);
@@ -248,21 +295,24 @@ export const UndoCompletedReview = async (req, res) => {
     const { id, review } = req.params;
 
     try {
-        const topic = await Topic.findById(id);
+        if (!allowedReviews.includes(review))
+            return res.status(400).json({ success: false, message: "Invalid review" });
 
-        if (!topic) {
+        const topic = await Topic.findById(id).populate("subject_id");
+
+        if (!topic)
             return res.status(404).json({ success: false, message: "Assunto não encontrado." });
-        }
+
+        if (topic.subject_id.user_id.toString() !== req.userId.toString())
+            return res.status(403).json({ success: false, message: "Forbidden" });
 
         if (review === "review3") {
-            // Volta 30 dias no tempo se ele quiser desfazer o pulo da review3
             const prevReviewDate = new Date(topic.review3);
             prevReviewDate.setDate(prevReviewDate.getDate() - 30);
 
             topic.review3 = prevReviewDate;
             topic.review3_concluded = false;
         } else {
-            // Desmarca a review1 ou review2
             topic[`${review}_concluded`] = false;
         }
 
@@ -273,7 +323,6 @@ export const UndoCompletedReview = async (req, res) => {
         res.status(500).json({ success: false, message: "Erro ao desmarcar revisão" });
     }
 }
-
 
 export const streamPdf = async (req, res) => {
     try {
@@ -286,23 +335,18 @@ export const streamPdf = async (req, res) => {
             return res.status(404).json({ success: false, message: "Assunto não encontrado" });
         }
 
-        //Verifica se o usuário que fez a requisição é o dono da matéria
-        if (topic.subject_id.user_id.toString() !== req.userId) {
+        if (topic.subject_id.user_id.toString() !== req.userId.toString()) {
             return res.status(403).json({ success: false, message: "Acesso negado. Você não é o dono deste arquivo." });
         }
 
-        //Verifica se o arquivo existe dentro do assunto
         const attachment = topic.attachments.find(att => att.public_id === decodedPublicId);
-        if (!attachment) {
+        if (!attachment)
             return res.status(404).json({ success: false, message: "Arquivo não encontrado no banco de dados." });
-        }
 
-        // Faz o download do Cloudinary e repassa (Pipe) para o Frontend
         https.get(attachment.url, (stream) => {
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.name)}"`);
 
-            // O pipe conecta o download do Cloudinary direto na resposta pro Frontend
             stream.pipe(res);
         }).on('error', (e) => {
             console.log("Erro no stream do Cloudinary: ", e);

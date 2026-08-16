@@ -3,7 +3,6 @@ import Subject from '../models/subject.model.js';
 import Topic from '../models/topic.model.js';
 import cloudinary from '../utils/cloudinary.js';
 
-// FUNÇÔES DE USUÁRIO
 export const updateUser = async (req, res) => {
     const { name, quickLinks } = req.body;
 
@@ -26,7 +25,6 @@ export const updateUser = async (req, res) => {
     }
 }
 
-// FUNÇOES DE TEMPO DE ESTUDO
 export const addStudyTime = async (req, res) => {
     const { minutes } = req.body;
 
@@ -36,7 +34,6 @@ export const addStudyTime = async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        // Soma os minutos novos aos minutos que já existiam
         user.totalStudyTime = (user.totalStudyTime || 0) + minutes;
         await user.save();
 
@@ -63,16 +60,13 @@ export const getStudyTime = async (req, res) => {
 // FUNÇOES ADMIN
 export const getAllUsersAdmin = async (req, res) => {
     try {
-        // 1. Verifica se quem está pedindo é realmente um Admin
         const requester = await User.findById(req.userId);
         if (!requester || !requester.isAdmin) {
             return res.status(403).json({ success: false, message: "Acesso negado. Apenas administradores." });
         }
 
-        // 2. Busca todos os usuários
         const users = await User.find().select("-password").sort({ createdAt: -1 });
 
-        // 3. Agrega dados de matérias e assuntos para cada usuário
         const usersWithStats = await Promise.all(users.map(async (user) => {
             const subjects = await Subject.find({ user_id: user._id });
             const subjectIds = subjects.map(m => m._id);
@@ -95,19 +89,16 @@ export const updateUserAdmin = async (req, res) => {
     const { name, email, isAdmin, isVerified } = req.body;
 
     try {
-        // 1. Verifica se quem está a pedir é realmente um Admin
         const requester = await User.findById(req.userId);
         if (!requester || !requester.isAdmin) {
             return res.status(403).json({ success: false, message: "Acesso negado. Apenas administradores." });
         }
 
-        // 2. Encontra o utilizador a ser atualizado
         const userToUpdate = await User.findById(id);
         if (!userToUpdate) {
             return res.status(404).json({ success: false, message: "Utilizador não encontrado." });
         }
 
-        // 3. Atualiza apenas os campos enviados
         if (name) userToUpdate.name = name;
         if (email) userToUpdate.email = email;
         if (isAdmin !== undefined) userToUpdate.isAdmin = isAdmin;
@@ -115,7 +106,6 @@ export const updateUserAdmin = async (req, res) => {
 
         await userToUpdate.save();
 
-        // Remove a password antes de enviar a resposta para o frontend
         const userResponse = userToUpdate.toObject();
         delete userResponse.password;
 
@@ -130,26 +120,21 @@ export const deleteUserAdmin = async (req, res) => {
     const { id } = req.params;
 
     try {
-        // 1. Verifica se quem está pedindo é realmente um Admin
         const requester = await User.findById(req.userId);
         if (!requester || !requester.isAdmin) {
             return res.status(403).json({ success: false, message: "Acesso negado. Apenas administradores." });
         }
 
-        // 2. Encontra o usuário a ser deletado
         const userToDelete = await User.findById(id);
         if (!userToDelete) {
             return res.status(404).json({ success: false, message: "Usuário não encontrado." });
         }
 
-        // 3. Buscar todas as matérias do usuário
         const subjects = await Subject.find({ user_id: id });
         const subjectIds = subjects.map(m => m._id);
 
-        // 4. Buscar todos os assuntos dessas matérias
         const topics = await Topic.find({ subject_id: { $in: subjectIds } });
 
-        // 5. Deletar arquivos do Cloudinary de todos os assuntos encontrados
         for (const topic of topics) {
             if (topic.attachments && topic.attachments.length > 0) {
                 const deletePromises = topic.attachments.map(file => cloudinary.uploader.destroy(file.public_id));
@@ -157,7 +142,6 @@ export const deleteUserAdmin = async (req, res) => {
             }
         }
 
-        // 6. Deletar registros do banco de dados em cascata
         await Topic.deleteMany({ subject_id: { $in: subjectIds } });
         await Subject.deleteMany({ user_id: id });
         await User.findByIdAndDelete(id);
