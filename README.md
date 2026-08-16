@@ -139,7 +139,7 @@ npm install
 Crie um arquivo `.env.local` com base no exemplo disponível em `frontend/.env.example`.
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api
+API_BASE_URL=http://localhost:5000/api
 ```
 
 ### 7. Inicie o frontend
@@ -200,6 +200,6 @@ Este projeto está licenciado sob a licença MIT.
 
 ## Observações
 
-- O frontend usa a variável `NEXT_PUBLIC_API_BASE_URL` para apontar para a API.
+- O frontend usa a variável `API_BASE_URL` para apontar para a API.
 - Em desenvolvimento, a aplicação depende da disponibilidade do backend em `http://localhost:5000`.
 - Não commite arquivos com credenciais reais de produção.
