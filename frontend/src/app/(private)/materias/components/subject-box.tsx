@@ -5,7 +5,7 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, PencilLine, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -102,12 +102,19 @@ export default function SubjectBox({
                 </div>
 
                 <div className="flex items-center">
-                    <Link href={`/materias/${subject.id}`}><Button variant={"outline"}><Eye /></Button></Link>
+                    <Link
+                        className="p-2 rounded-lg"
+                        href={`/materias/${subject?.id}`}
+                        style={{ '--subject-color': subject.color } as React.CSSProperties}
+                    >
+                        <ExternalLink className="h-4 w-4 hover:text-(--subject-color)" />
+                    </Link>
+
                     <DialogDemo
                         title="Editar a matéria"
                         description="Modifique os detalhes desta matéria."
                         contentBtn={<PencilLine size={15} />}
-                        classNameBtn="border-none dark:bg-transparent bg-transparent"
+                        classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"
                         onSubmit={handleSubjectFormSubmit}
                         open={isEditOpen}
                         onOpenChange={setIsEditOpen}
@@ -132,7 +139,7 @@ export default function SubjectBox({
                         title="Deletar matéria"
                         description="Tem certeza que deseja deletar a matéria? Esta ação é irreversível."
                         contentBtn={<Trash2 size={15} className="text-destructive" />}
-                        classNameBtn="border-none dark:bg-transparent bg-transparent"
+                        classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"
                         nameConfirmBtn="Excluir"
                         variantConfirmBtn={"destructive"}
                         onSubmit={handleSubjectFormDelete}

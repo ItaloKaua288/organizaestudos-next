@@ -8,7 +8,8 @@ import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, BadgeCheck, BookOpen, ClipboardClock } from "lucide-react";
+import { AlertCircle, BadgeCheck, BookOpen, ClipboardClock, ExternalLink } from "lucide-react";
+import Link from "next/link";
 
 
 function isReviewScheduledForToday(reviewDateString?: string | Date) {
@@ -136,12 +137,20 @@ export default async function DashboardPage() {
                                 ) : (
                                     <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto">
                                         {subjectsToday.map((subject) => (
-                                            <div key={subject.id} className="flex gap-1 items-center p-2 rounded-sm hoverComponentsStatic">
-                                                <span
-                                                    className="mr-2 h-2 w-2 shrink-0 rounded-full"
-                                                    style={{ backgroundColor: subject.color }}
-                                                />
-                                                <span className="truncate">{subject.title}</span>
+                                            <div key={subject.id} className="flex gap-1 items-center p-2 rounded-sm justify-between hoverComponentsStatic">
+                                                <div className="flex  items-center">
+                                                    <span
+                                                        className="mr-2 h-2 w-2 shrink-0 rounded-full"
+                                                        style={{ backgroundColor: subject.color }}
+                                                    />
+                                                    <span className="truncate">{subject.title}</span>
+                                                </div>
+                                                <Link
+                                                    href={`/materias/${subject?.id}`}
+                                                    style={{ '--subject-color': subject.color } as React.CSSProperties}
+                                                >
+                                                    <ExternalLink className="h-4 w-4 hover:text-(--subject-color)" />
+                                                </Link>
                                             </div>
                                         ))}
                                     </div>
