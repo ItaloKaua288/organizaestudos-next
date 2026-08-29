@@ -10,10 +10,9 @@ export const createNote = async (req, res) => {
             return res.status(400).json({ success: false, message: "All fields are required" });
         }
 
-        if (title !== undefined) {
-            title = title.trim();
-            if (!title) return res.status(400).json({ success: false, message: "Title cannot be empty" });
-        }
+        const trimmedTitle = title.trim();
+
+        if (!trimmedTitle) return res.status(400).json({ success: false, message: "Title cannot be empty" });
 
         const subject = await Subject.findOne({ _id: subject_id, user_id: req.userId });
 
@@ -21,7 +20,7 @@ export const createNote = async (req, res) => {
             return res.status(404).json({ success: false, message: "Subject not found" });
 
         const note = new Note({
-            title: title.trim(),
+            title: trimmedTitle,
             content,
             user_id: req.userId,
             subject_id: subject._id
