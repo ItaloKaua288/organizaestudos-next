@@ -61,7 +61,7 @@ export const getAllTopics = async (req, res) => {
         const subjects = await Subject.find({ user_id: req.userId });
         const subjectIds = subjects.map(subject => subject._id);
 
-        const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id').sort({ order: -1 }).lean();
+        const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id').sort({ order: 1 }).lean();
         res.status(200).json({ success: true, topics });
     } catch (error) {
         console.log("error in getAllTopics ", error);
