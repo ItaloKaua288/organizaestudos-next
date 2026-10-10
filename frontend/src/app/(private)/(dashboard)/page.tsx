@@ -43,7 +43,12 @@ export default async function DashboardPage() {
         getTimelinesAction()
     ]);
 
-    const data = { subjects: subjectsRes, topics: topicsRes, timeline: timelineRes };
+    // Matérias desativadas não contam no dashboard (tópicos e cronograma já vêm filtrados pela API).
+    const data = {
+        subjects: subjectsRes.filter((subject) => subject.active !== false),
+        topics: topicsRes,
+        timeline: timelineRes,
+    };
 
     const pendingTopics = data.topics.filter((t) => t.status === "PENDENTE");
     const concludedTopics = data.topics.filter((t) => t.status === "CONCLUIDO");

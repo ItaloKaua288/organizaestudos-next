@@ -12,7 +12,9 @@ import toast from "react-hot-toast";
 
 import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.actions";
 import { createTopicAction } from "@/actions/topics.actions";
+import { SubjectActiveToggle } from "../../../../components/subject-active-toggle";
 import { TopicRow } from "@/components/topic-row";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Subject } from "@/types/subject";
@@ -88,6 +90,42 @@ export default function SubjectBox({
     }
 
     const topics = subject.topics || [];
+    const isActive = subject.active !== false;
+
+    if (!isActive) {
+        return (
+            <div className="rounded-lg border border-dashed p-4 shadow-sm bg-card">
+                <header className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 opacity-60">
+                        <span
+                            className="h-4 w-4 shrink-0 rounded-full"
+                            style={{ backgroundColor: subject.color }}
+                            aria-hidden="true"
+                        />
+                        <h2 className="text-md font-bold truncate">{subject.title}</h2>
+                        <Badge variant="secondary">Desativada</Badge>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                        <SubjectActiveToggle subjectId={subject.id} active={false} />
+
+                        <DialogDemo
+                            title="Deletar matéria"
+                            description="Tem certeza que deseja deletar a matéria? Esta ação é irreversível."
+                            contentBtn={<Trash2 size={15} className="text-destructive" />}
+                            classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"
+                            nameConfirmBtn="Excluir"
+                            variantConfirmBtn={"destructive"}
+                            onSubmit={handleSubjectFormDelete}
+                        />
+                    </div>
+                </header>
+                <p className="mt-2 text-sm text-muted-foreground">
+                    Matéria desativada: ela não aparece nas revisões, no cronograma, no dashboard nem nas anotações. Reative para voltar a usá-la.
+                </p>
+            </div>
+        );
+    }
 
     return (
         <div className="rounded-lg border p-4 shadow-sm bg-card">
@@ -134,6 +172,8 @@ export default function SubjectBox({
                             </Field>
                         </FieldGroup>
                     </DialogDemo>
+
+                    <SubjectActiveToggle subjectId={subject.id} active={true} />
 
                     <DialogDemo
                         title="Deletar matéria"

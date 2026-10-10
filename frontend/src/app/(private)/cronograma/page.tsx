@@ -18,7 +18,12 @@ export default async function CronogramaPage() {
         getSubjectsAction()
     ]);
 
-    const data = { timelines: allTimelines, topics: allTopics, subjects: allSubjects };
+    // Só matérias ativas podem ser adicionadas ao cronograma (timelines e tópicos já vêm filtrados pela API).
+    const data = {
+        timelines: allTimelines,
+        topics: allTopics,
+        subjects: allSubjects.filter((subject) => subject.active !== false),
+    };
 
     const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
     const currentDate = new Date(brString);

@@ -115,6 +115,34 @@ export const updateSubject = async (req, res) => {
     }
 }
 
+export const toggleSubjectActive = async (req, res) => {
+    const { id } = req.params;
+    const { active } = req.body;
+
+    try {
+        if (typeof active !== "boolean")
+            return res.status(400).json({ success: false, message: "Active must be a boolean" });
+
+        const subject = await Subject.findOneAndUpdate(
+            { _id: id, user_id: req.userId },
+            { active },
+            { returnDocument: "after" }
+        );
+
+        if (!subject)
+            return res.status(404).json({ success: false, message: "Subject not found" });
+
+        res.status(200).json({
+            success: true,
+            message: active ? "Subject activated successfully" : "Subject deactivated successfully",
+            subject
+        });
+    } catch (error) {
+        console.log("error in toggleSubjectActive ", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+}
+
 export const getDetailSubject = async (req, res) => {
     try {
         const { id } = req.params;
@@ -122,6 +150,9 @@ export const getDetailSubject = async (req, res) => {
 
         if (!subject)
             return res.status(404).json({ success: false, message: "Subject not found" });
+
+        if (subject.active === false)
+            return res.status(200).json({ success: true, subject, topics: [], notes: [], timelines: [] });
 
         const [topics, notes, timelines] = await Promise.all([
             Topic.find({ subject_id: id }).sort({ order: -1 }).lean(),

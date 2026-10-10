@@ -1,5 +1,5 @@
 import express from 'express';
-import { createSubject, deleteSubject, getDetailSubject, getSubjects, updateSubject } from '../controllers/subject.controller.js';
+import { createSubject, deleteSubject, getDetailSubject, getSubjects, toggleSubjectActive, updateSubject } from '../controllers/subject.controller.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 
 
@@ -10,5 +10,6 @@ router.get("/", verifyToken, getSubjects);
 router.get("/:id", verifyToken, getDetailSubject)
 router.delete("/:id", verifyToken, deleteSubject);
 router.put("/:id", verifyToken, updateSubject);
+router.patch("/:id/active", verifyToken, toggleSubjectActive);
 
 export default router;

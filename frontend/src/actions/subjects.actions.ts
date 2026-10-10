@@ -30,6 +30,7 @@ export async function getSubjectsAction(): Promise<Subject[]> {
             id: item._id,
             title: item.title,
             color: item.color,
+            active: item.active !== false,
         }))
     } catch (error) {
         console.error("Erro interno ao buscar as matérias:", error);
@@ -60,6 +61,7 @@ export async function getDetailSubjectAction(subject_id: string) {
             id: data.subject._id,
             title: data.subject.title,
             color: data.subject.color,
+            active: data.subject.active !== false,
         };
 
         return {
@@ -202,6 +204,53 @@ export async function updateSubjectAction(formData: FormData) {
         return { success: true, message: "Matéria atualizada com sucesso!", };
     } catch (error) {
         console.error("Erro interno ao atualizar matéria:", error);
+        return { success: false, message: "Ocorreu um erro inesperado.", };
+    }
+}
+
+const toggleSubjectActiveSchema = z.object({
+    subject_id: z.string().min(1, "O ID da matéria é obrigatório!"),
+    active: z.enum(["true", "false"]),
+});
+
+export async function toggleSubjectActiveAction(formData: FormData) {
+    try {
+        const rawData = Object.fromEntries(formData.entries());
+        const validatedData = toggleSubjectActiveSchema.safeParse(rawData);
+
+        if (!validatedData.success) {
+            console.error("Erro de validação:", z.flattenError(validatedData.error));
+            return { success: false, message: "Dados inválidos enviados no formulário.", };
+        }
+
+        const { subject_id } = validatedData.data;
+        const active = validatedData.data.active === "true";
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/subjects/${subject_id}/active`, {
+            method: "PATCH",
+            headers,
+            body: JSON.stringify({ active }),
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, message: errorData.message || "Falha da API ao alterar o estado da matéria.", };
+        }
+
+        revalidatePath("/materias");
+        revalidatePath(`/materias/${subject_id}`);
+        revalidatePath("/notas");
+        revalidatePath(`/notas/${subject_id}`);
+        revalidatePath("/");
+        revalidatePath("/cronograma");
+        revalidatePath("/revisoes");
+
+        return { success: true, message: active ? "Matéria ativada!" : "Matéria desativada!", };
+    } catch (error) {
+        console.error("Erro interno ao alterar o estado da matéria:", error);
         return { success: false, message: "Ocorreu um erro inesperado.", };
     }
 }

@@ -3,6 +3,7 @@ export interface ApiSubject {
     title: string;
     user_id: string;
     color: string;
+    active?: boolean;
     createdAt: string;
     updatedAt: string;
     __v: number;

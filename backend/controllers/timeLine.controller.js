@@ -19,6 +19,9 @@ export const addSubjectTimeLine = async (req, res) => {
         if (!subject)
             return res.status(404).json({ success: false, message: "Subject not found" });
 
+        if (subject.active === false)
+            return res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para adicioná-la ao cronograma." });
+
         const conflict = await TimeLine.findOne({
             user_id: req.userId,
             day,
@@ -50,8 +53,13 @@ export const addSubjectTimeLine = async (req, res) => {
 
 export const getTimeline = async (req, res) => {
     try {
-        const timeline = await TimeLine.find({ user_id: req.userId }).populate("subject_id").sort({ startTime: 1 }).lean();
-        res.status(200).json({ success: true, timeline });
+        // Matérias desativadas saem do cronograma (os horários continuam salvos e voltam ao reativar).
+        const timeline = await TimeLine.find({ user_id: req.userId })
+            .populate({ path: "subject_id", match: { active: { $ne: false } } })
+            .sort({ startTime: 1 })
+            .lean();
+
+        res.status(200).json({ success: true, timeline: timeline.filter(item => item.subject_id) });
     } catch (error) {
         console.log("error in getTimeline ", error);
         res.status(500).json({ success: false, message: "Server error" });
@@ -81,6 +89,14 @@ export const updateTimeLine = async (req, res) => {
     try {
         if (!allowedDays.includes(day)) return res.status(400).json({ success: false, message: "Invalid day" });
 
+        const subject = await Subject.findOne({ _id: subject_id, user_id: req.userId });
+
+        if (!subject)
+            return res.status(404).json({ success: false, message: "Subject not found" });
+
+        if (subject.active === false)
+            return res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para editar o cronograma." });
+
         const conflict = await TimeLine.findOne({
             user_id: req.userId,
             day,
@@ -93,7 +109,10 @@ export const updateTimeLine = async (req, res) => {
             return res.status(400).json({ success: false, message: "Conflito de horário! Já existe uma matéria neste período." });
         }
 
-        const timeLine = await TimeLine.findByIdAndUpdate({ _id: id, user_id: req.userId }, { day, startTime, endTime, subject_id: subject.id }, { returnDocument: "after" }).populate("subject_id");
+        const timeLine = await TimeLine.findOneAndUpdate({ _id: id, user_id: req.userId }, { day, startTime, endTime, subject_id: subject._id }, { returnDocument: "after" }).populate("subject_id");
+
+        if (!timeLine)
+            return res.status(404).json({ success: false, message: "Timeline item not found" });
 
         res.status(200).json({ success: true, message: "Timeline updated successfully", timeLine });
 

@@ -1,4 +1,5 @@
 import { getNotes } from "@/actions/notes.actions"
+import { getSubjectsAction } from "@/actions/subjects.actions"
 import { CreateNoteDialog } from "@/components/Create-note-dialog"
 import { OptionsNoteCard } from "@/components/options-note-card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,29 @@ import { SearchNotes } from "./components/search-notes"
 export default async function NotasOverviewPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ q?: string }> }) {
     const { id } = await params
     const { q } = await searchParams
+
+    const subjects = await getSubjectsAction()
+    const subject = subjects.find((item) => item.id === id)
+
+    if (!subject || subject.active === false) {
+        return (
+            <main className="space-y-4">
+                <CloseRedirectToast />
+                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">ANOTAÇÕES</h1>
+                <div className="flex flex-col items-start gap-3 px-2">
+                    <p className="text-sm text-muted-foreground">
+                        {subject ? "Esta matéria está desativada. Reative-a em Matérias para ver e criar anotações." : "Matéria não encontrada."}
+                    </p>
+                    <Link href="/notas">
+                        <Button variant="outline">
+                            <CornerDownLeft className="h-4 w-4" />
+                            <span>Voltar</span>
+                        </Button>
+                    </Link>
+                </div>
+            </main>
+        )
+    }
 
     const allNotas = await getNotes(id)
 

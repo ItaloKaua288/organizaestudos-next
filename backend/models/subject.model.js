@@ -14,6 +14,12 @@ const subjectSchema = new mongoose.Schema({
         type: String,
         required: true,
         default: "#000000"
+    },
+    // Matéria desativada some de revisões, cronograma, dashboard e anotações,
+    // mas nenhum dado é apagado. Documentos antigos sem o campo contam como ativos.
+    active: {
+        type: Boolean,
+        default: true
     }
 
 }, { timestamps: true })

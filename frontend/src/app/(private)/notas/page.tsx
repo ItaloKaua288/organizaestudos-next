@@ -3,7 +3,7 @@ import { ScrambleText } from "@/components/scramble-text";
 import { RedirectButton } from "./components/button-redirect";
 
 export default async function NotasPage() {
-    const allSubjects = await getSubjectsAction()
+    const allSubjects = (await getSubjectsAction()).filter((subject) => subject.active !== false)
 
     return (
         <div className="space-y-4">

@@ -19,6 +19,9 @@ export const createNote = async (req, res) => {
         if (!subject)
             return res.status(404).json({ success: false, message: "Subject not found" });
 
+        if (subject.active === false)
+            return res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para criar anotações." });
+
         const note = new Note({
             title: trimmedTitle,
             content,
@@ -69,6 +72,9 @@ export const updateNote = async (req, res) => {
             const subject = await Subject.findOne({ _id: subject_id, user_id });
             if (!subject)
                 return res.status(404).json({ success: false, message: "Subject not found" });
+
+            if (subject.active === false)
+                return res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para editar anotações." });
         }
 
         const note = await Note.findOneAndUpdate(

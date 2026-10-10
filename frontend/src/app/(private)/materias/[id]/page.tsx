@@ -4,6 +4,7 @@ import { OptionsNoteCard } from "@/components/options-note-card";
 import ProgressLabelDemo from "@/components/progress-label";
 import { ReviewSection } from "@/components/reviewSection";
 import ScrambleText from "@/components/scramble-text";
+import { SubjectActiveToggle } from "../../../../components/subject-active-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,38 @@ export default async function DetailMateriaPage({
 
     if (!subject) {
         return <div className="p-8 text-white">Matéria não encontrada.</div>;
+    }
+
+    if (subject.active === false) {
+        return (
+            <main>
+                <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card z-9 mb-8">
+                    <ScrambleText text="Detalhes da matéria" />
+                </h1>
+                <section className="flex flex-col p-2 gap-6">
+                    <Card className="border-dashed">
+                        <CardHeader className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 opacity-60">
+                                <span
+                                    className="h-7 w-7 shrink-0 rounded-full"
+                                    style={{ backgroundColor: subject.color || "#ccc" }}
+                                    aria-hidden="true"
+                                />
+                                <CardTitle className="text-2xl">{subject.title}</CardTitle>
+                                <Badge variant="secondary">Desativada</Badge>
+                            </div>
+                            <SubjectActiveToggle subjectId={subject.id} active={false} />
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground">
+                                Esta matéria está desativada: assuntos, notas, revisões e cronograma ficam ocultos e não podem ser alterados. Nada foi apagado, ao reativar tudo volta como estava.
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Link href="/materias" className="text-sm underline">Voltar para matérias</Link>
+                </section>
+            </main>
+        );
     }
 
     const sortedNotes = subject.notes?.sort((a, b) => {

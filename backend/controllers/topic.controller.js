@@ -4,6 +4,10 @@ import Topic from "../models/topic.model.js";
 import cloudinary from '../utils/cloudinary.js';
 import { getTodayBR } from '../utils/date.js';
 
+// Documentos antigos não têm o campo "active": só conta como inativa quando é explicitamente false.
+const isInactive = (subject) => subject?.active === false;
+const inactiveResponse = (res) =>
+    res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para continuar." });
 
 export const createTopic = async (req, res) => {
     const { title, subject_id } = req.body;
@@ -18,6 +22,8 @@ export const createTopic = async (req, res) => {
         const subject = await Subject.findOne({ _id: subject_id, user_id: req.userId });
 
         if (!subject) return res.status(404).json({ success: false, message: "Subject not found" });
+
+        if (isInactive(subject)) return inactiveResponse(res);
 
         const lastTopic = await Topic.findOne({ subject_id }).sort("-order");
         const newOrder = lastTopic ? lastTopic.order + 1 : 0;
@@ -58,7 +64,7 @@ export const getTopics = async (req, res) => {
 
 export const getAllTopics = async (req, res) => {
     try {
-        const subjects = await Subject.find({ user_id: req.userId });
+        const subjects = await Subject.find({ user_id: req.userId, active: { $ne: false } });
         const subjectIds = subjects.map(subject => subject._id);
 
         const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id').sort({ order: 1 }).lean();
@@ -83,6 +89,8 @@ export const updateTopic = async (req, res) => {
 
         if (topic.subject_id.user_id.toString() !== req.userId.toString())
             return res.status(403).json({ success: false, message: "Forbidden" });
+
+        if (isInactive(topic.subject_id)) return inactiveResponse(res);
 
         if (title !== undefined) {
             const cleanTitle = title.trim();
@@ -200,6 +208,8 @@ export const uploadAttachment = async (req, res) => {
         if (topic.subject_id.user_id.toString() !== req.userId.toString())
             return res.status(403).json({ success: false, message: "Forbidden" });
 
+        if (isInactive(topic.subject_id)) return inactiveResponse(res);
+
         if (topic.attachments.length >= 3) return res.status(400).json({ success: false, message: "Limite de 3 arquivos atingido." });
         if (!req.file) return res.status(400).json({ success: false, message: "Nenhum arquivo enviado." });
 
@@ -273,6 +283,8 @@ export const concludedReview = async (req, res) => {
         if (topic.subject_id.user_id.toString() !== req.userId.toString())
             return res.status(403).json({ success: false, message: "Forbidden" });
 
+        if (isInactive(topic.subject_id)) return inactiveResponse(res);
+
         if (review === "review3") {
             const nextReviewDate = getTodayBR();
             nextReviewDate.setDate(nextReviewDate.getDate() + 30);
@@ -305,6 +317,8 @@ export const UndoCompletedReview = async (req, res) => {
 
         if (topic.subject_id.user_id.toString() !== req.userId.toString())
             return res.status(403).json({ success: false, message: "Forbidden" });
+
+        if (isInactive(topic.subject_id)) return inactiveResponse(res);
 
         if (review === "review3") {
             const prevReviewDate = new Date(topic.review3);
