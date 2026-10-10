@@ -10,7 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { getTodayBR } from "@/lib/date";
 import { Topic } from "@/types/topic";
 import { CalendarRange, CheckCircle2, Clock, Loader2 } from "lucide-react";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import toast from "react-hot-toast";
 
 interface ReviewSectionProps {
@@ -132,80 +132,54 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
 }
 
 function OrganizeMonthButton() {
-    const [isPending, startTransition] = useTransition();
+    const [isPending, setIsPending] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
-    const organize = () => {
-        startTransition(async () => {
-            toast.loading("Organizando revisões...", { id: "organize-reviews" });
+    const handleOrganize = async () => {
+        const toastId = "organize-reviews";
+
+        try {
+            setIsPending(true);
+            toast.loading("Organizando revisões...", { id: toastId });
+
             const result = await redistributeMonthlyReviewsAction();
 
             if (result.success) {
                 toast.success(
                     result.updated > 0 ? `${result.updated} revisões organizadas!` : result.message,
-                    { id: "organize-reviews" }
+                    { id: toastId }
                 );
+                setIsOpen(false);
             } else {
-                toast.error(result.message, { id: "organize-reviews" });
+                toast.error(result.message, { id: toastId });
             }
-        });
-    };
-
-    const handleOrganize = () => {
-        toast.custom(
-            (t) => (
-                <div
-                    style={{
-                        background: "#fff",
-                        color: "#363636",
-                        borderRadius: "8px",
-                        boxShadow: "0 3px 10px rgba(0, 0, 0, 0.1), 0 3px 3px rgba(0, 0, 0, 0.05)",
-                        padding: "10px 12px",
-                        maxWidth: "350px",
-                        fontSize: "14px",
-                        opacity: t.visible ? 1 : 0,
-                        transition: "opacity 200ms ease",
-                    }}
-                >
-                    <p style={{ fontWeight: 600 }}>Organizar as revisões de 30 dias?</p>
-                    <p style={{ marginTop: "4px", fontSize: "13px", color: "#6b7280" }}>
-                        Elas serão distribuídas de hoje até daqui a 30 dias, com o menor número possível de
-                        revisões por dia, mantendo a ordem atual.
-                    </p>
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "10px" }}>
-                        <Button variant="ghost" size="sm" onClick={() => toast.dismiss(t.id)}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            size="sm"
-                            onClick={() => {
-                                toast.dismiss(t.id);
-                                organize();
-                            }}
-                        >
-                            Organizar
-                        </Button>
-                    </div>
-                </div>
-            ),
-            { id: "confirm-organize-reviews", duration: Infinity, position:"top-center" }
-        );
+        } catch (error) {
+            console.error("Falha ao organizar revisões", error);
+            toast.error("Falha ao organizar as revisões", { id: toastId });
+        } finally {
+            setIsPending(false);
+        }
     };
 
     return (
-        <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleOrganize}
-            disabled={isPending}
-            className="h-7 text-xs"
-        >
-            {isPending ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-            ) : (
-                <CalendarRange className="w-3.5 h-3.5 mr-1" />
-            )}
-            {isPending ? "Organizando..." : "Organizar"}
-        </Button>
+        <DialogDemo
+            title="Organizar revisões de 30 dias"
+            description="As revisões de 30 dias serão distribuídas de hoje até daqui a 30 dias, com o menor número possível de revisões por dia, mantendo a ordem atual."
+            contentBtn={
+                <>
+                    <CalendarRange className="w-3.5 h-3.5 mr-1" />
+                    Organizar
+                </>
+            }
+            classNameBtn="h-7 text-xs"
+            nameConfirmBtn={isPending ? "Organizando..." : "Organizar"}
+            open={isOpen}
+            onOpenChange={setIsOpen}
+            onSubmit={(e) => {
+                e.preventDefault();
+                handleOrganize();
+            }}
+        />
     );
 }
 
