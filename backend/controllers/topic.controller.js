@@ -372,3 +372,49 @@ export const streamPdf = async (req, res) => {
         res.status(500).json({ success: false, message: "Erro interno no servidor" });
     }
 }
+
+// Redistribui as revisões de 30 dias (review3) de forma uniforme entre hoje e hoje + 30 dias,
+// mantendo a ordem atual (a revisão mais próxima continua sendo a mais próxima).
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MONTH_SPAN_DAYS = 31; // hoje + 30 dias (ex.: 10/10 até 09/11)
+
+export const redistributeMonthlyReviews = async (req, res) => {
+    try {
+        const subjects = await Subject.find({ user_id: req.userId, active: { $ne: false } }).select("_id");
+        const subjectIds = subjects.map(subject => subject._id);
+
+        const topics = await Topic.find({
+            subject_id: { $in: subjectIds },
+            status: "CONCLUIDO",
+            review3: { $ne: null },
+            review3_concluded: { $ne: true }
+        }).sort({ review3: 1, order: 1, _id: 1 }).select("_id");
+
+        const total = topics.length;
+
+        if (total === 0)
+            return res.status(200).json({ success: true, message: "Nenhuma revisão de 30 dias para organizar.", updated: 0 });
+
+        const today = getTodayBR();
+
+        // Índice i (0..total-1) -> dia floor(i * 31 / total): espalha por todos os dias
+        // e nenhum dia fica com mais de 1 revisão a mais que outro.
+        const bulkOps = topics.map((topic, index) => {
+            const dayOffset = Math.floor((index * MONTH_SPAN_DAYS) / total);
+
+            return {
+                updateOne: {
+                    filter: { _id: topic._id },
+                    update: { $set: { review3: new Date(today.getTime() + dayOffset * DAY_MS) } }
+                }
+            };
+        });
+
+        await Topic.bulkWrite(bulkOps);
+
+        res.status(200).json({ success: true, message: "Revisões organizadas com sucesso.", updated: total });
+    } catch (error) {
+        console.log("error in redistributeMonthlyReviews ", error);
+        res.status(500).json({ success: false, message: "Erro ao organizar revisões" });
+    }
+};

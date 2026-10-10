@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { createTopic, deleteTopic, getTopics, getAllTopics, reorderTopics, updateTopic, uploadAttachment, removeAttachment, concludedReview, streamPdf, UndoCompletedReview } from '../controllers/topic.controller.js';
+import { createTopic, deleteTopic, getTopics, getAllTopics, reorderTopics, updateTopic, uploadAttachment, removeAttachment, concludedReview, streamPdf, UndoCompletedReview, redistributeMonthlyReviews } from '../controllers/topic.controller.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 
 const router = express.Router();
@@ -11,6 +11,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.post("/", verifyToken, createTopic);
 router.get("/", verifyToken, getAllTopics);
 router.get("/:subject_id", verifyToken, getTopics);
+// Rotas fixas PUT precisam vir ANTES de "/:id", senão o Express casa "/:id" primeiro
+router.put("/redistribute-reviews", verifyToken, redistributeMonthlyReviews);
 router.put("/:id", verifyToken, updateTopic);
 router.delete("/:id", verifyToken, deleteTopic);
 router.put('/reorder-topics', verifyToken, reorderTopics);
