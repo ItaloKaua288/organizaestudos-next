@@ -125,14 +125,14 @@ function QuestionLogForm({
     };
 
     return (
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-xl">
             <form onSubmit={handleSubmit} className="min-w-0">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
 
-                <div className="py-4 flex flex-col gap-3 max-h-[55vh] overflow-y-auto pr-1">
+                <div className="py-4 flex flex-col gap-3 max-h-[50dvh] overflow-y-auto overscroll-contain pr-1">
                     {allTopics.length === 0 && (
                         <p className="text-sm text-muted-foreground">
                             Esta matéria ainda não tem assuntos cadastrados. Cadastre um assunto para registrar questões.
@@ -148,24 +148,30 @@ function QuestionLogForm({
                             total > 0 && correct >= 0 && correct <= total;
 
                         return (
-                            <div key={row.key} className="flex flex-col gap-2 rounded-md border p-2 sm:flex-row sm:items-center">
+                            <div key={row.key} className="flex min-w-0 flex-col gap-2 rounded-md border p-2 sm:flex-row sm:items-center">
                                 <Select
                                     value={row.topic_id || null}
                                     onValueChange={(value) => updateRow(row.key, { topic_id: value ?? "" })}
                                     disabled={isBusy || allTopics.length === 0}
                                 >
-                                    <SelectTrigger className="w-full min-w-0 sm:flex-1" aria-label="Assunto">
+                                    <SelectTrigger className="h-10 w-full min-w-0 sm:h-8 sm:flex-1" aria-label="Assunto">
                                         <SelectValue render={(value) => {
                                             const topic = allTopics.find((t) => t.id === value.children);
-                                            return <span className="truncate">{topic?.title ?? "Selecione o assunto"}</span>;
+                                            return <span className="min-w-0 flex-1 truncate">{topic?.title ?? "Selecione o assunto"}</span>;
                                         }} />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    {/* alignItemWithTrigger={false}: a lista abre logo abaixo do campo.
+                                        O modo "alinhado ao item" quebra no celular (diálogo com rolagem + teclado). */}
+                                    <SelectContent alignItemWithTrigger={false} align="start" className="max-h-[50dvh]">
                                         {groups.filter((group) => group.topics.length > 0).map((group) => (
                                             <SelectGroup key={group.id}>
                                                 {groups.length > 1 && <SelectLabel>{group.title}</SelectLabel>}
                                                 {group.topics.map((topic) => (
-                                                    <SelectItem key={topic.id} value={topic.id}>
+                                                    <SelectItem
+                                                        key={topic.id}
+                                                        value={topic.id}
+                                                        className="min-h-9 items-start py-2 [&>div]:whitespace-normal [&>div]:break-words"
+                                                    >
                                                         {topic.title}
                                                     </SelectItem>
                                                 ))}
@@ -174,8 +180,8 @@ function QuestionLogForm({
                                     </SelectContent>
                                 </Select>
 
-                                <div className="flex items-center gap-2">
-                                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center">
                                         Feitas
                                         <Input
                                             type="number"
@@ -184,11 +190,11 @@ function QuestionLogForm({
                                             max={MAX_QUESTIONS}
                                             value={row.total}
                                             onChange={(e) => updateRow(row.key, { total: e.target.value })}
-                                            className="w-20 text-center text-foreground"
+                                            className="h-10 w-full text-center text-base text-foreground sm:h-8 sm:w-20 sm:text-sm"
                                             disabled={isBusy}
                                         />
                                     </label>
-                                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center">
                                         Acertos
                                         <Input
                                             type="number"
@@ -197,16 +203,18 @@ function QuestionLogForm({
                                             max={MAX_QUESTIONS}
                                             value={row.correct}
                                             onChange={(e) => updateRow(row.key, { correct: e.target.value })}
-                                            className="w-20 text-center text-foreground"
+                                            className="h-10 w-full text-center text-base text-foreground sm:h-8 sm:w-20 sm:text-sm"
                                             disabled={isBusy}
                                         />
                                     </label>
-                                    <span className="w-12 shrink-0 text-right text-xs font-semibold tabular-nums">
-                                        {showPercent ? `${Math.round((correct / total) * 100)}%` : ""}
-                                    </span>
-                                    <Button type="button" variant="ghost" size="icon-sm" onClick={() => removeRow(row.key)} disabled={isBusy} aria-label="Remover linha">
-                                        <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
+                                    <div className="col-span-2 flex items-center justify-between sm:contents">
+                                        <span className="shrink-0 text-xs font-semibold tabular-nums sm:w-12 sm:text-right">
+                                            {showPercent ? `${Math.round((correct / total) * 100)}%` : ""}
+                                        </span>
+                                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => removeRow(row.key)} disabled={isBusy} aria-label="Remover linha">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -219,7 +227,7 @@ function QuestionLogForm({
                     </div>
                 </div>
 
-                <DialogFooter className="items-center sm:justify-end">
+                <DialogFooter className="sm:items-center sm:justify-end">
                     <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>Cancelar</Button>
                     {skipLabel && (
                         <Button type="button" variant="ghost" onClick={onSkip} disabled={isBusy}>{skipLabel}</Button>
