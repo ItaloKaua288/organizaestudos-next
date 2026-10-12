@@ -1,6 +1,6 @@
 "use client"
 
-import { TopicRow } from "@/components/topic-row";
+import { TopicDragGhost, TopicRow } from "@/components/topic-row";
 import { useTopicReorder } from "@/hooks/use-topic-reorder";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
@@ -11,7 +11,7 @@ interface TopicListProps {
 }
 
 export function TopicList({ sortedTopics, subject }: TopicListProps) {
-    const { topics, moveTopic, isReordering, draggedId, overId, getDragProps } = useTopicReorder(subject.id, sortedTopics);
+    const { topics, moveTopic, isReordering, draggedId, overId, ghost, ghostRef, getDragProps } = useTopicReorder(subject.id, sortedTopics);
 
     return (
         <div className="flex flex-col gap-2">
@@ -31,6 +31,7 @@ export function TopicList({ sortedTopics, subject }: TopicListProps) {
                     onMoveDown={() => moveTopic(topic.id, "down")}
                 />
             ))}
+            <TopicDragGhost ghost={ghost} elementRef={ghostRef} />
         </div>
     )
 }

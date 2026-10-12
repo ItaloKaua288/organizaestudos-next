@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, GripVertical, Link as LinkLucide, Paperclip, PencilLine, Trash2 } from "lucide-react";
 
-import { useState } from "react";
+import { RefObject, useState } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 
 import { deleteTopicAction, openTopicAttachmentAction, sendattachmentPDFAction, updateTopicAction } from "@/actions/topics.actions";
-import { TopicDragProps } from "@/hooks/use-topic-reorder";
+import { TopicDragGhostData, TopicDragProps } from "@/hooks/use-topic-reorder";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 
@@ -28,6 +29,45 @@ function formatDateForInput(dateSource: string | Date | null): string {
     } catch {
         return '';
     }
+}
+
+/** Cópia flutuante do assunto que aparece "na mão" enquanto ele é arrastado. */
+export function TopicDragGhost({
+    ghost,
+    elementRef,
+}: {
+    ghost: TopicDragGhostData | null;
+    elementRef: RefObject<HTMLDivElement | null>;
+}) {
+    if (!ghost) return null;
+
+    const { topic, width, left, top } = ghost;
+
+    // Portal no <body>: evita que um pai com transform/animação quebre o position: fixed.
+    return createPortal(
+        <div
+            ref={elementRef}
+            style={{
+                position: "fixed",
+                left: 0,
+                top: 0,
+                width,
+                zIndex: 9999,
+                pointerEvents: "none",
+                transform: `translate3d(${left}px, ${top}px, 0) scale(1.02)`,
+            }}
+            className="flex cursor-grabbing items-center gap-3 rounded-lg border border-primary bg-card px-3 py-2 text-sm shadow-2xl"
+        >
+            <GripVertical size={16} className="shrink-0 text-primary" />
+            {topic.status === "CONCLUIDO" ? (
+                <CheckCircle2 size={15} className="shrink-0 text-green-500" />
+            ) : (
+                <Clock size={15} className="shrink-0 text-destructive" />
+            )}
+            <span className="truncate font-medium">{topic.title}</span>
+        </div>,
+        document.body
+    );
 }
 
 type SubjectBoxProps = {
@@ -70,9 +110,6 @@ export function TopicRow({
     const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(true);
-    // A linha só vira "arrastável" enquanto o mouse está no ícone de arrastar,
-    // assim não atrapalha selecionar texto nem clicar nos botões da linha.
-    const [canDrag, setCanDrag] = useState(false);
 
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,19 +223,16 @@ export function TopicRow({
     return (
         <>
             <div
-                {...dragProps}
-                draggable={!!dragProps && canDrag && !isReordering}
+                {...dragProps?.rowProps}
                 className={`hoverComponents flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-opacity ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
             >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                     {dragProps && (
                         <span
-                            onMouseDown={() => setCanDrag(true)}
-                            onMouseUp={() => setCanDrag(false)}
-                            onDragEnd={() => setCanDrag(false)}
+                            {...dragProps.handleProps}
                             title="Arraste para mudar a ordem"
                             aria-label="Arrastar para reordenar"
-                            className={`flex shrink-0 touch-none items-center text-muted-foreground transition-colors hover:text-primary ${isReordering ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"}`}
+                            className={`flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary ${isReordering ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"}`}
                         >
                             <GripVertical size={16} />
                         </span>

@@ -13,7 +13,7 @@ import toast from "react-hot-toast";
 import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.actions";
 import { createTopicAction } from "@/actions/topics.actions";
 import { SubjectActiveToggle } from "../../../../components/subject-active-toggle";
-import { TopicRow } from "@/components/topic-row";
+import { TopicDragGhost, TopicRow } from "@/components/topic-row";
 import { useTopicReorder } from "@/hooks/use-topic-reorder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,7 +95,7 @@ export default function SubjectBox({
         }
     }
 
-    const { topics, moveTopic, isReordering, draggedId, overId, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
+    const { topics, moveTopic, isReordering, draggedId, overId, ghost, ghostRef, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
     const isActive = subject.active !== false;
 
     if (!isActive) {
@@ -222,6 +222,7 @@ export default function SubjectBox({
                         onMoveDown={() => moveTopic(topic.id, "down")}
                     />
                 ))}
+                <TopicDragGhost ghost={ghost} elementRef={ghostRef} />
                 {topics.length === 0 && (
                     <p className="text-sm text-muted-foreground p-2 text-center">
                         Nenhum assunto cadastrado.
