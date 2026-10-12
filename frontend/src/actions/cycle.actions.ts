@@ -2,6 +2,8 @@
 
 import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
 import { Cycle, CycleActionResult, CycleSessionInput } from "@/types/cycle";
+import { QuestionEntryInput } from "@/types/question";
+import { revalidatePath } from "next/cache";
 
 async function cycleRequest(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) {
     const baseUrl = await getBaseUrl();
@@ -69,8 +71,18 @@ export async function startCycleSessionAction(sessionId: string, lap: number) {
     return runCycleAction("POST", "/sessions/start", { sessionId, lap }, "Falha ao iniciar a sessão.");
 }
 
-export async function completeCycleSessionAction(sessionId: string, lap: number) {
-    return runCycleAction("POST", "/sessions/complete", { sessionId, lap }, "Falha ao concluir a sessão.");
+/** `questions` é opcional: questões feitas/acertadas por assunto, para o % de acerto. */
+export async function completeCycleSessionAction(sessionId: string, lap: number, questions?: QuestionEntryInput[]) {
+    const result = await runCycleAction(
+        "POST",
+        "/sessions/complete",
+        { sessionId, lap, ...(questions && questions.length > 0 ? { questions } : {}) },
+        "Falha ao concluir a sessão.",
+    );
+
+    if (result.success) revalidatePath("/desempenho");
+
+    return result;
 }
 
 export async function skipCycleSessionAction(sessionId: string, lap: number) {

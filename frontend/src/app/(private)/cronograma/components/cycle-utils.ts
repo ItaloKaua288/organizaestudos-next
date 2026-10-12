@@ -1,4 +1,5 @@
 import { getDueReview } from "@/lib/review-due";
+import { QuestionTopicOption } from "@/types/question";
 import { Topic } from "@/types/topic";
 
 export function formatMinutes(total: number) {
@@ -16,6 +17,16 @@ export function getPendingTopicsBySubject(topics: Topic[]) {
         if (topic.status !== "CONCLUIDO" && topic.subject?.id && !acc[topic.subject.id]) {
             acc[topic.subject.id] = topic;
         }
+        return acc;
+    }, {});
+}
+
+/** Todos os assuntos de cada matéria, na ordem cadastrada (para registrar questões por assunto). */
+export function getTopicsBySubject(topics: Topic[]) {
+    return topics.reduce((acc: Record<string, QuestionTopicOption[]>, topic) => {
+        const subjectId = topic.subject?.id;
+        if (!subjectId) return acc;
+        (acc[subjectId] ??= []).push({ id: topic.id, title: topic.title });
         return acc;
     }, {});
 }

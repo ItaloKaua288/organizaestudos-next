@@ -12,6 +12,7 @@ import topicRoutes from './routes/topic.route.js';
 import timeLineRoutes from './routes/timeLine.route.js';
 import noteRoutes from './routes/note.route.js';
 import cycleRoutes from './routes/cycle.route.js';
+import questionLogRoutes from './routes/questionLog.route.js';
 
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use("/api/topics", topicRoutes)
 app.use("/api/timelines", timeLineRoutes)
 app.use("/api/notes", noteRoutes)
 app.use("/api/cycle", cycleRoutes)
+app.use("/api/questions", questionLogRoutes)
 
 if (process.env.VERCEL) {
     await connectDB();

@@ -6,7 +6,7 @@ import { ScrambleText } from "@/components/scramble-text";
 import { Topic } from "@/types/topic";
 import { CycleView } from "./components/cycle-view";
 import { getDueReview } from "@/lib/review-due";
-import { getPendingTopicsBySubject, getTodayReviews } from "./components/cycle-utils";
+import { getPendingTopicsBySubject, getTodayReviews, getTopicsBySubject } from "./components/cycle-utils";
 import { DayCard } from "./components/day-card";
 import { ViewToggle } from "./components/view-toggle";
 
@@ -38,6 +38,7 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
                     initialCycle={cycle}
                     subjects={allSubjects.filter((subject) => subject.active !== false)}
                     pendingTopicsBySubject={getPendingTopicsBySubject(allTopics)}
+                    topicsBySubject={getTopicsBySubject(allTopics)}
                     todayReviews={getTodayReviews(allTopics)}
                 />
             </main>

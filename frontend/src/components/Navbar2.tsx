@@ -7,7 +7,7 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, LayoutDashboard, Menu, NotepadText, RotateCw } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, LayoutDashboard, Menu, NotepadText, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -105,6 +105,14 @@ export function Navbar2() {
                     >
                         Cronograma
                     </Link>
+                    <Link
+                        href="/desempenho"
+                        className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/desempenho" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
+                    >
+                        Desempenho
+                    </Link>
+
+                    
                 </nav>
 
                 {/* Actions & Mobile Menu */}
@@ -186,6 +194,12 @@ export function Navbar2() {
                                     className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/cronograma" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
                                 >
                                     <CalendarClock /> Cronograma
+                                </Link>
+                                <Link
+                                    href="/desempenho"
+                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/desempenho" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
+                                >
+                                    <ChartColumn /> Desempenho
                                 </Link>
                             </nav>
                             <div className="flex items-center gap-2 sm:gap-3">

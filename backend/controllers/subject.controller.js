@@ -1,4 +1,5 @@
 import Note from "../models/note.model.js";
+import QuestionLog from "../models/questionLog.model.js";
 import Subject from "../models/subject.model.js";
 import TimeLine from "../models/timeLine.model.js";
 import Topic from "../models/topic.model.js";
@@ -67,6 +68,7 @@ export const deleteSubject = async (req, res) => {
 
         await Note.deleteMany({ subject_id: id });
         await TimeLine.deleteMany({ subject_id: id });
+        await QuestionLog.deleteMany({ subject_id: id });
         await Topic.deleteMany({ subject_id: id });
         await subject.deleteOne();
 

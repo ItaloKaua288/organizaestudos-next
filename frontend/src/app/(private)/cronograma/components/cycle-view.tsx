@@ -10,6 +10,7 @@ import {
     startCycleSessionAction,
 } from "@/actions/cycle.actions";
 import { DialogDemo } from "@/components/dialog-button";
+import { QuestionLogDialog } from "@/components/question-log-dialog";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Cycle, CycleActionResult, CycleSession } from "@/types/cycle";
+import { QuestionEntryInput, QuestionTopicOption } from "@/types/question";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
 import { BookOpen, Check, ChevronDown, ChevronUp, GripVertical, History, Pencil, Play, Plus, RotateCcw, RotateCw, SkipForward, Trash2, X } from "lucide-react";
@@ -33,6 +35,8 @@ type CycleViewProps = {
     subjects: Subject[];
     /** Primeiro assunto pendente de cada matéria (chave = id da matéria). */
     pendingTopicsBySubject: Record<string, Topic>;
+    /** Todos os assuntos de cada matéria (chave = id da matéria), usados no registro de questões. */
+    topicsBySubject: Record<string, QuestionTopicOption[]>;
     /** Revisões que vencem hoje. */
     todayReviews: TodayReview[];
 };
@@ -46,18 +50,19 @@ const STATUS_LABEL: Record<CycleSession["status"], string> = {
 
 const UPCOMING_LIMIT = 4;
 
-export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, todayReviews }: CycleViewProps) {
+export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topicsBySubject, todayReviews }: CycleViewProps) {
     const [cycle, setCycle] = useState<Cycle | null>(initialCycle);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [showUpcoming, setShowUpcoming] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
+    const [isQuestionsOpen, setIsQuestionsOpen] = useState(false);
     const [detailSubject, setDetailSubject] = useState<CycleSession["subject"] | null>(null);
     // Trava síncrona: setState é assíncrono, então dois cliques rápidos passariam sem isto.
     const lockRef = useRef(false);
 
-    const run = async (action: () => Promise<CycleActionResult>, loadingMessage: string, onDone?: () => void) => {
-        if (lockRef.current) return;
+    const run = async (action: () => Promise<CycleActionResult>, loadingMessage: string, onDone?: () => void): Promise<CycleActionResult | null> => {
+        if (lockRef.current) return null;
         lockRef.current = true;
         setIsBusy(true);
         const toastId = "cycle-action";
@@ -75,8 +80,11 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
             } else {
                 toast.error(result.message, { id: toastId });
             }
+
+            return result;
         } catch {
             toast.error("Erro ao atualizar o ciclo.", { id: toastId });
+            return null;
         } finally {
             lockRef.current = false;
             setIsBusy(false);
@@ -203,6 +211,14 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
 
     const currentTopic = current ? pendingTopicsBySubject[current.subject.id] : undefined;
 
+    // Conclui a sessão atual; com `questions`, também grava as questões feitas por assunto.
+    const completeCurrent = async (questions?: QuestionEntryInput[]) => {
+        if (!current) return;
+        const result = await run(() => completeCycleSessionAction(current.id, cycle.lap, questions), "Concluindo sessão...");
+        // Mantém o diálogo aberto só quando houve erro de validação, para o estudante corrigir os números.
+        if (result && (result.success || result.stale)) setIsQuestionsOpen(false);
+    };
+
     const confirmAndRun = (message: string, action: () => Promise<CycleActionResult>, loading: string) => {
         if (window.confirm(message)) void run(action, loading);
     };
@@ -289,7 +305,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
                                             <Play className="h-4 w-4" /> Iniciar
                                         </Button>
                                     )}
-                                    <Button disabled={isBusy} onClick={() => run(() => completeCycleSessionAction(current.id, cycle.lap), "Concluindo sessão...")}>
+                                    <Button disabled={isBusy} onClick={() => setIsQuestionsOpen(true)}>
                                         <Check className="h-4 w-4" /> Concluir sessão
                                     </Button>
                                     {current.status === "EM_ANDAMENTO" && (
@@ -482,6 +498,22 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
             </Card>
 
             <CycleDragGhost ghost={ghost} elementRef={ghostRef} />
+
+            {current && (
+                <QuestionLogDialog
+                    open={isQuestionsOpen}
+                    onOpenChange={setIsQuestionsOpen}
+                    title="Concluir sessão"
+                    description={`Quantas questões você fez e acertou em ${current.subject.title}? Isso gera seu % de acerto por assunto e por matéria. Se não fez questões, conclua sem registrar.`}
+                    groups={[{ id: current.subject.id, title: current.subject.title, color: current.subject.color, topics: topicsBySubject[current.subject.id] ?? [] }]}
+                    defaultTopicId={currentTopic?.id}
+                    submitLabel="Concluir e registrar"
+                    skipLabel="Concluir sem questões"
+                    isBusy={isBusy}
+                    onSubmit={(entries) => completeCurrent(entries)}
+                    onSkip={() => completeCurrent()}
+                />
+            )}
 
             <TopicDetailDialog
                 open={detailSubject !== null}

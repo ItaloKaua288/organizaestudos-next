@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import StudyCycle from "../models/studyCycle.model.js";
 import CycleHistory from "../models/cycleHistory.model.js";
 import Subject from "../models/subject.model.js";
+import QuestionLog from "../models/questionLog.model.js";
+import { parseQuestionEntries } from "./questionLog.controller.js";
 
 /*
  * REGRAS DO CICLO DE ESTUDOS
@@ -17,6 +19,9 @@ import Subject from "../models/subject.model.js";
  *   Trocar a matéria de uma sessão em andamento a cancela.
  * - Reiniciar volta: lap + 1, tudo PENDENTE, volta para a primeira sessão (histórico preservado).
  * - Matérias desativadas/removidas: suas sessões ficam fora do percentual e são ignoradas ao avançar.
+ * - Questões: ao concluir, o corpo pode trazer `questions: [{ topic_id, total, correct }]` (assuntos da
+ *   matéria da sessão). Elas viram registros de QuestionLog, base do % de acerto por assunto/matéria.
+ *   Tudo é validado ANTES de avançar o ciclo, e só é gravado se a sessão foi contabilizada agora.
  * - Idempotência: concluir/pular exigem { sessionId, lap } da sessão atual. Um clique duplicado
  *   encontra outra sessão como atual e vira no-op (409 com o estado atual). Além disso há
  *   optimisticConcurrency no ciclo e índice único no histórico (ciclo + volta + sessão).
@@ -328,6 +333,15 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
         const finishedAt = new Date();
         const startedAt = session.startedAt; // capturado antes: uma nova volta zera startedAt
 
+        // Questões feitas na sessão (opcional, só ao concluir). Validadas antes de mexer no ciclo.
+        let questionEntries = [];
+        const rawQuestions = req.body?.questions;
+        if (status === "CONCLUIDA" && Array.isArray(rawQuestions) && rawQuestions.length > 0) {
+            const parsed = await parseQuestionEntries(rawQuestions, req.userId, session.subject_id);
+            if (parsed.error) return res.status(400).json({ success: false, message: parsed.error });
+            questionEntries = parsed.entries;
+        }
+
         session.status = status;
         if (status === "CONCLUIDA") cycle.totalCompleted += 1;
 
@@ -350,8 +364,22 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
                 startedAt,
                 finishedAt,
             });
+
+            if (questionEntries.length > 0) {
+                await QuestionLog.insertMany(questionEntries.map((entry) => ({
+                    user_id: req.userId,
+                    subject_id: entry.subject_id,
+                    topic_id: entry.topic_id,
+                    total: entry.total,
+                    correct: entry.correct,
+                    cycle_id: cycle._id,
+                    session_id: session._id,
+                    lap,
+                    answeredAt: finishedAt,
+                })));
+            }
         } catch (e) {
-            if (e?.code !== 11000) throw e; // já registrada nesta volta
+            if (e?.code !== 11000) throw e; // já registrada nesta volta (as questões não são gravadas de novo)
         }
 
         return await respond(res, 200, cycle, subjectMap, { message: successMessage });
