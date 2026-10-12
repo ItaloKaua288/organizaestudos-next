@@ -1,6 +1,7 @@
 "use client"
 
 import { createTimelineAction, deleteTimelineAction, updateTimelineAction } from "@/actions/timeline.actions";
+import { openTopicAttachmentAction } from "@/actions/topics.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
@@ -157,6 +158,35 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const hasAttachments = nextTopic?.attachments && nextTopic.attachments.length > 0;
 
+    const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
+        if (!nextTopic) return;
+        const newTab = window.open("about:blank", "_blank");
+
+        try {
+            toast.loading("Abrindo anexo...", { id: "open-attachment" });
+            const formData = new FormData();
+            formData.append("topicId", nextTopic.id);
+            formData.append("public_id", attachmentPublicId);
+
+            const blob = (await openTopicAttachmentAction(formData)).blob;
+
+            if (blob && newTab) {
+                const url = URL.createObjectURL(blob);
+
+                newTab.location.href = url;
+                toast.success("Anexo aberto", { id: "open-attachment" });
+
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            } else {
+                if (newTab) newTab.close();
+                toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
+            }
+        } catch {
+            if (newTab) newTab.close();
+            toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
+        }
+    };
+
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -235,10 +265,14 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                                         <div className="flex flex-col gap-2 min-w-0">
                                             {nextTopic.attachments!.map((attachment) => (
                                                 <div key={attachment.id} className="w-full min-w-0 text-sm">
-                                                    <Link href={attachment.url || "#"} target="_blank" className="flex gap-2 items-center w-full border hoverComponentsStatic p-0.5 rounded-sm" >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
+                                                        className="flex gap-2 items-center w-full border hoverComponentsStatic p-0.5 rounded-sm text-left cursor-pointer transition-colors"
+                                                    >
                                                         <FileText className="h-4 w-4 shrink-0" style={{ color: nextTopic.subject.color }} />
-                                                        <span className="min-w-0 flex-1 truncate">{attachment.name} afsf asfas fasfasfasfasfas fas fas fasf as</span>
-                                                    </Link>
+                                                        <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
