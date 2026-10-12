@@ -1,15 +1,48 @@
+import { getCycleAction } from "@/actions/cycle.actions";
 import { getSubjectsAction } from "@/actions/subjects.actions";
 import { getTimelinesAction } from "@/actions/timeline.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
 import { ScrambleText } from "@/components/scramble-text";
 import { Topic } from "@/types/topic";
+import { CycleView } from "./components/cycle-view";
+import { getPendingTopicsBySubject, getTodayReviews } from "./components/cycle-utils";
 import { DayCard } from "./components/day-card";
+import { ViewToggle } from "./components/view-toggle";
 
 const WEEK_DAYS = [
     "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
 ]
 
-export default async function CronogramaPage() {
+export default async function CronogramaPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+    const { view } = await searchParams;
+
+    if (view === "ciclo") {
+        const [cycle, allSubjects, allTopics] = await Promise.all([getCycleAction(), getSubjectsAction(), getTopicsAction()]);
+
+        return (
+            <main className="space-y-4">
+                <header className="space-y-1">
+                    <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
+                        <ScrambleText text="CICLO DE ESTUDOS" />
+                    </h1>
+                    <div className="flex flex-wrap justify-between gap-2 p-2 items-center">
+                        <p className="text-sm font-medium text-muted-foreground">
+                            Estude em sequência, sem depender de dias fixos.
+                        </p>
+                        <ViewToggle active="ciclo" />
+                    </div>
+                </header>
+
+                <CycleView
+                    initialCycle={cycle}
+                    subjects={allSubjects.filter((subject) => subject.active !== false)}
+                    pendingTopicsBySubject={getPendingTopicsBySubject(allTopics)}
+                    todayReviews={getTodayReviews(allTopics)}
+                />
+            </main>
+        );
+    }
+
     const currentDayName = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: "America/Sao_Paulo" }).format(new Date());
 
     const [allTimelines, allTopics, allSubjects] = await Promise.all([
@@ -94,10 +127,11 @@ export default async function CronogramaPage() {
                 <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
                     <ScrambleText text="CRONOGRAMA" />
                 </h1>
-                <div className="flex justify-between p-2 items-center">
+                <div className="flex flex-wrap justify-between gap-2 p-2 items-center">
                     <p className="text-sm font-medium text-muted-foreground">
                         Gerencie seu cronograma.
                     </p>
+                    <ViewToggle active="cronograma" />
                 </div>
             </header>
 

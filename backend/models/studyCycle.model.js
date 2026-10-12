@@ -1,0 +1,64 @@
+import mongoose from "mongoose";
+
+// Estados possíveis de uma sessão dentro da volta atual do ciclo.
+export const SESSION_STATUS = ["PENDENTE", "EM_ANDAMENTO", "CONCLUIDA", "PULADA"];
+
+const cycleSessionSchema = new mongoose.Schema({
+    subject_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject",
+        required: true
+    },
+    // Duração planejada em minutos.
+    duration: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 720
+    },
+    // Estado da sessão na volta atual (volta nova => tudo volta para PENDENTE).
+    status: {
+        type: String,
+        enum: SESSION_STATUS,
+        default: "PENDENTE"
+    },
+    startedAt: {
+        type: Date,
+        default: null
+    }
+});
+
+const studyCycleSchema = new mongoose.Schema({
+    user_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+        unique: true // um ciclo por usuário
+    },
+    // A ordem do array é a ordem oficial do ciclo.
+    sessions: [cycleSessionSchema],
+    // Posição atual do estudante no ciclo (não depende de dia/semana).
+    currentSessionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: null
+    },
+    // Número da volta atual (começa em 1).
+    lap: {
+        type: Number,
+        default: 1
+    },
+    // Total de sessões concluídas desde a criação do ciclo.
+    totalCompleted: {
+        type: Number,
+        default: 0
+    }
+}, {
+    timestamps: true,
+    // Protege contra cliques duplicados / abas simultâneas: um save com documento
+    // desatualizado lança VersionError em vez de sobrescrever o progresso.
+    optimisticConcurrency: true
+});
+
+const StudyCycle = mongoose.model("StudyCycle", studyCycleSchema);
+
+export default StudyCycle;
