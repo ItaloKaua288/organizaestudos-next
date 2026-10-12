@@ -5,12 +5,13 @@ import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowDown, ArrowUp, CheckCircle2, Clock, Eye, FileText, Link as LinkLucide, Paperclip, PencilLine, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, GripVertical, Link as LinkLucide, Paperclip, PencilLine, Trash2 } from "lucide-react";
 
 import { useState } from "react";
 import toast from "react-hot-toast";
 
 import { deleteTopicAction, openTopicAttachmentAction, sendattachmentPDFAction, updateTopicAction } from "@/actions/topics.actions";
+import { TopicDragProps } from "@/hooks/use-topic-reorder";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 
@@ -42,6 +43,12 @@ type TopicRowProps = {
     isFirst: boolean;
     isLast: boolean;
     subject: Subject;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    isReordering?: boolean;
+    dragProps?: TopicDragProps;
+    isDragging?: boolean;
+    isDragOver?: boolean;
 } & Omit<SubjectBoxProps, "subject">;
 
 export function TopicRow({
@@ -50,12 +57,22 @@ export function TopicRow({
     isFirst,
     isLast,
     subject,
+    onMoveUp,
+    onMoveDown,
+    isReordering = false,
+    dragProps,
+    isDragging = false,
+    isDragOver = false,
 }: TopicRowProps) {
     const hasAttachments = topic.attachments && topic.attachments.length > 0;
     const [editedTitle, setEditedTitle] = useState(topic.title);
     const [editedLink, setEditedLink] = useState((topic as Topic).link || '');
     const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(true);
+    // A linha só vira "arrastável" enquanto o mouse está no ícone de arrastar,
+    // assim não atrapalha selecionar texto nem clicar nos botões da linha.
+    const [canDrag, setCanDrag] = useState(false);
 
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,10 +166,6 @@ export function TopicRow({
         }
     };
 
-    const handleMoveUp = async () => { }
-
-    const handleMoveDown = async () => { }
-
     async function handleTopicStatusChange(topic: Topic, newStatus: TopicStatus) {
         try {
             toast.loading("Atualizando status do assunto...", { id: "update-status-topic" });
@@ -172,13 +185,29 @@ export function TopicRow({
 
     return (
         <>
-            <div className="hoverComponents flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm ">
+            <div
+                {...dragProps}
+                draggable={!!dragProps && canDrag && !isReordering}
+                className={`hoverComponents flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-opacity ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
+            >
                 <div className="flex min-w-0 flex-1 items-center gap-3">
+                    {dragProps && (
+                        <span
+                            onMouseDown={() => setCanDrag(true)}
+                            onMouseUp={() => setCanDrag(false)}
+                            onDragEnd={() => setCanDrag(false)}
+                            title="Arraste para mudar a ordem"
+                            aria-label="Arrastar para reordenar"
+                            className={`flex shrink-0 touch-none items-center text-muted-foreground transition-colors hover:text-primary ${isReordering ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"}`}
+                        >
+                            <GripVertical size={16} />
+                        </span>
+                    )}
                     <div className="flex flex-col">
                         <button
                             type="button"
-                            onClick={handleMoveUp}
-                            disabled={isFirst}
+                            onClick={onMoveUp}
+                            disabled={isFirst || isReordering || !onMoveUp}
                             aria-label="Mover para cima"
                             className="btn btn-ghost btn-xs h-5 w-5 cursor-pointer p-0 hover:text-primary disabled:bg-transparent disabled:text-base-content/20"
                         >
@@ -186,8 +215,8 @@ export function TopicRow({
                         </button>
                         <button
                             type="button"
-                            onClick={handleMoveDown}
-                            disabled={isLast}
+                            onClick={onMoveDown}
+                            disabled={isLast || isReordering || !onMoveDown}
                             aria-label="Mover para baixo"
                             className="btn btn-ghost btn-xs h-4 w-4 min-h-0 cursor-pointer p-0 hover:text-primary disabled:bg-transparent disabled:text-base-content/10"
                         >
@@ -329,12 +358,21 @@ export function TopicRow({
 
             {hasAttachments && (
                 <div className="flex flex-col gap-1 px-2 py-1">
-                    <h3 className="text-sm font-semibold text-muted-foreground">Anexos:</h3>
-                    {topic.attachments!.map((attachment, index) => (
+                    <button
+                        type="button"
+                        onClick={() => setIsAttachmentsOpen((open) => !open)}
+                        aria-expanded={isAttachmentsOpen}
+                        aria-label={isAttachmentsOpen ? "Reduzir anexos" : "Expandir anexos"}
+                        className="flex w-fit cursor-pointer items-center gap-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        {isAttachmentsOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                        Anexos ({topic.attachments!.length})
+                    </button>
+                    {isAttachmentsOpen && topic.attachments!.map((attachment, index) => (
                         <span
                             key={attachment.id || index}
                             onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                            className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer"
+                            className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer animate-in fade-in slide-in-from-top-1 duration-200"
                         >
                             <FileText color={topic.subject.color} size={15} className="mr-2 shrink-0" />
                             {attachment.name}

@@ -5,7 +5,7 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ExternalLink, PencilLine, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, ExternalLink, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -14,6 +14,7 @@ import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.act
 import { createTopicAction } from "@/actions/topics.actions";
 import { SubjectActiveToggle } from "../../../../components/subject-active-toggle";
 import { TopicRow } from "@/components/topic-row";
+import { useTopicReorder } from "@/hooks/use-topic-reorder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,10 +24,15 @@ import Link from "next/link";
 type SubjectBoxProps = {
     subject: Subject;
     onUpdate?: () => void;
+    /** Controlado pelo pai (botões "Expandir/Reduzir todas"). Padrão: expandida. */
+    isExpanded?: boolean;
+    onToggleExpanded?: () => void;
 };
 
 export default function SubjectBox({
     subject,
+    isExpanded = true,
+    onToggleExpanded,
 }: SubjectBoxProps) {
     const [draftColor, setDraftColor] = useState(subject.color);
     const [topicTitle, setTopicTitle] = useState("")
@@ -89,7 +95,7 @@ export default function SubjectBox({
         }
     }
 
-    const topics = subject.topics || [];
+    const { topics, moveTopic, isReordering, draggedId, overId, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
     const isActive = subject.active !== false;
 
     if (!isActive) {
@@ -129,14 +135,25 @@ export default function SubjectBox({
 
     return (
         <div className="rounded-lg border p-4 shadow-sm bg-card">
-            <header className="mb-2 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
+            <header className={`${isExpanded ? "mb-2" : ""} flex items-center justify-between gap-2`}>
+                <div className="flex min-w-0 items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={onToggleExpanded}
+                        aria-expanded={isExpanded}
+                        aria-label={isExpanded ? "Reduzir matéria" : "Expandir matéria"}
+                        title={isExpanded ? "Reduzir" : "Expandir"}
+                        className="flex shrink-0 cursor-pointer items-center rounded-sm p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                        {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </button>
                     <span
                         className="h-4 w-4 shrink-0 rounded-full"
                         style={{ backgroundColor: subject.color }}
                         aria-hidden="true"
                     />
-                    <h2 className="text-md font-bold">{subject.title}</h2>
+                    <h2 className="text-md font-bold truncate">{subject.title}</h2>
+                    {!isExpanded && <Badge variant="secondary">{topics.length}</Badge>}
                 </div>
 
                 <div className="flex items-center">
@@ -187,7 +204,8 @@ export default function SubjectBox({
                 </div>
             </header>
 
-            <div className="flex flex-col gap-2">
+            {isExpanded && (
+            <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                 {topics.map((topic, index) => (
                     <TopicRow
                         key={topic.id || `topic-${index}`}
@@ -196,6 +214,12 @@ export default function SubjectBox({
                         isFirst={index === 0}
                         isLast={index === topics.length - 1}
                         subject={subject}
+                        isReordering={isReordering}
+                        dragProps={getDragProps(topic.id)}
+                        isDragging={draggedId === topic.id}
+                        isDragOver={overId === topic.id}
+                        onMoveUp={() => moveTopic(topic.id, "up")}
+                        onMoveDown={() => moveTopic(topic.id, "down")}
                     />
                 ))}
                 {topics.length === 0 && (
@@ -208,6 +232,7 @@ export default function SubjectBox({
                     <Button variant={"outline"} className={"max-w-10 dark:bg-input/30 bg-input/10 "} nativeButton={false} render={<Plus size={15} />} onClick={handleSubjectCreate}></Button>
                 </Field>
             </div>
+            )}
         </div>
     );
 }

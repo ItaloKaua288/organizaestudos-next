@@ -140,7 +140,12 @@ export const reorderTopics = async (req, res) => {
     try {
         const { updates } = req.body; // Array de { _id, order }
 
-        if (!Array.isArray(updates))
+        if (!Array.isArray(updates) || updates.length === 0)
+            return res.status(400).json({ success: false, message: "Invalid updates" });
+
+        const isValidUpdate = (u) => u && u._id && Number.isInteger(u.order) && u.order >= 0;
+
+        if (!updates.every(isValidUpdate))
             return res.status(400).json({ success: false, message: "Invalid updates" });
 
         const topicIds = updates.map(u => u._id);
@@ -150,9 +155,12 @@ export const reorderTopics = async (req, res) => {
         if (topics.length !== updates.length)
             return res.status(404).json({ success: false, message: "Um ou mais tópicos não encontrados" });
 
-        for (const topic of topics)
+        for (const topic of topics) {
             if (topic.subject_id.user_id.toString() !== req.userId.toString())
                 return res.status(403).json({ success: false, message: "Forbidden" });
+
+            if (isInactive(topic.subject_id)) return inactiveResponse(res);
+        }
 
         const bulkOps = updates.map(update => ({
             updateOne: {
@@ -165,6 +173,7 @@ export const reorderTopics = async (req, res) => {
 
         res.status(200).json({ success: true, message: "Ordem atualizada" });
     } catch (error) {
+        console.log("error in reorderTopics ", error);
         res.status(500).json({ success: false, message: "Erro ao reordenar" });
     }
 };

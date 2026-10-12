@@ -455,3 +455,34 @@ export async function updateTopicReviewStatusAction(formData: FormData) {
         return { success: false, message: "Ocorreu um erro inesperado." };
     }
 }
+
+export async function reorderTopicsAction(subjectId: string, orderedTopicIds: string[]) {
+    try {
+        if (!subjectId || !Array.isArray(orderedTopicIds) || orderedTopicIds.length === 0) {
+            return { success: false, message: "Dados inválidos para reordenar." };
+        }
+
+        const updates = orderedTopicIds.map((id, order) => ({ _id: id, order }));
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/topics/reorder-topics`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify({ updates })
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, message: errorData.message || "Falha da API ao reordenar assuntos." };
+        }
+
+        revalidatePath("/materias")
+        revalidatePath(`/materias/${subjectId}`)
+
+        return { success: true, message: "Ordem atualizada com sucesso!" };
+    } catch (error) {
+        console.error("Erro interno ao reordenar assuntos:", error);
+        return { success: false, message: "Ocorreu um erro inesperado." };
+    }
+}

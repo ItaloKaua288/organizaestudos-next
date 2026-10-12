@@ -13,9 +13,9 @@ router.get("/", verifyToken, getAllTopics);
 router.get("/:subject_id", verifyToken, getTopics);
 // Rotas fixas PUT precisam vir ANTES de "/:id", senão o Express casa "/:id" primeiro
 router.put("/redistribute-reviews", verifyToken, redistributeMonthlyReviews);
+router.put("/reorder-topics", verifyToken, reorderTopics);
 router.put("/:id", verifyToken, updateTopic);
 router.delete("/:id", verifyToken, deleteTopic);
-router.put('/reorder-topics', verifyToken, reorderTopics);
 router.put('/concluded-review/:id/:review', verifyToken, concludedReview);
 router.put('/undo-review/:id/:review', verifyToken, UndoCompletedReview);
 

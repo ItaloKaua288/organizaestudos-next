@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
+import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { FormEvent, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -23,6 +24,20 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
     const [color, setColor] = useState("#3b82f6");
     const [title, setTitle] = useState("");
     const [isCreateSubjectOpen, setIsCreateSubjectOpen] = useState(false)
+    // Ids das matérias reduzidas. Vazio = todas expandidas (padrão).
+    const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
+
+    const toggleSubject = (subjectId: string) => {
+        setCollapsedIds((current) => {
+            const next = new Set(current);
+            if (next.has(subjectId)) next.delete(subjectId);
+            else next.add(subjectId);
+            return next;
+        });
+    };
+
+    const expandAll = () => setCollapsedIds(new Set());
+    const collapseAll = () => setCollapsedIds(new Set(subjects.map((subject) => subject.id)));
 
     async function handleSubmitSubject(event: FormEvent) {
         event.preventDefault();
@@ -47,6 +62,13 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
         <div className="flex flex-col min-h-screen">
             <div className="flex items-center gap-3 justify-between">
                 <p className="p-2 py-4 font-medium text-sm text-muted-foreground">Gerencie suas matérias e assuntos</p>
+                <div className="flex items-center gap-1 mr-2">
+                <Button variant="outline" size="sm" onClick={expandAll} title="Expandir todas as matérias" disabled={subjects.length === 0}>
+                    <ChevronsUpDown size={15} /> <span className="max-sm:hidden">Expandir todas</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={collapseAll} title="Reduzir todas as matérias" disabled={subjects.length === 0}>
+                    <ChevronsDownUp size={15} /> <span className="max-sm:hidden">Reduzir todas</span>
+                </Button>
                 <DialogDemo
                     contentBtn="Nova Matéria"
                     title="Nova Matéria"
@@ -55,7 +77,7 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
                     onSubmit={handleSubmitSubject}
                     open={isCreateSubjectOpen}
                     onOpenChange={setIsCreateSubjectOpen}
-                    classNameBtn="mr-2"
+                    classNameBtn=""
                 >
                     <FieldGroup>
                         <Field>
@@ -68,6 +90,7 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
                         </Field>
                     </FieldGroup>
                 </DialogDemo>
+                </div>
             </div>
 
             <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -76,6 +99,8 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
                         <SubjectBox
                             key={subject.id}
                             subject={subject}
+                            isExpanded={!collapsedIds.has(subject.id)}
+                            onToggleExpanded={() => toggleSubject(subject.id)}
                         />
                     ))
                 ) : (
