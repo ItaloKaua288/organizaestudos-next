@@ -65,7 +65,7 @@ async function RevisaoContent() {
     return (
         <div className="flex flex-col gap-3">
             <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
-                Visualize suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
+                Visualize suas revisões. Começam em 24 horas, 7 dias e 30 dias e a próxima data se ajusta conforme você avalia (errei, difícil, bom ou fácil).
             </p>
             {sections.map((sec, index) => (
                 <ReviewSection

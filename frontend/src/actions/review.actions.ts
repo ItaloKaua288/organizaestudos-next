@@ -4,15 +4,22 @@ import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
 import { revalidatePath } from "next/cache";
 import { updateTopicReviewStatusAction } from "./topics.actions";
 
-export async function changeReviewStatus(topicId: string, review: string, isCompleted: boolean) {
+export type ReviewPerformance = "ERROU" | "DIFICIL" | "BOM" | "FACIL";
+
+export async function changeReviewStatus(topicId: string, review: string, isCompleted: boolean, performance?: ReviewPerformance) {
     try {
         const formData = new FormData()
         formData.append("topicId", topicId)
         formData.append("review", review)
         formData.append("isCompleted", `${isCompleted}`)
-        await updateTopicReviewStatusAction(formData);
+        if (performance) formData.append("performance", performance)
+        const result = await updateTopicReviewStatusAction(formData);
 
-        return { success: true };
+        if (!result.success) {
+            return { success: false, error: result.message };
+        }
+
+        return { success: true, nextReview: result.nextReview };
     } catch (error) {
         console.error("Error completing review:", error);
 

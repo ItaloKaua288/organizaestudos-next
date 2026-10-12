@@ -1,3 +1,4 @@
+import { getDueReview } from "@/lib/review-due";
 import { Topic } from "@/types/topic";
 
 export function formatMinutes(total: number) {
@@ -19,35 +20,16 @@ export function getPendingTopicsBySubject(topics: Topic[]) {
     }, {});
 }
 
-export type TodayReview = { topic: Topic; number: 1 | 2 | 3 };
+export type TodayReview = { topic: Topic; number: 1 | 2 | 3; overdueDays: number };
 
-/** Revisões que vencem hoje (fuso de São Paulo), com a mesma regra de revisão pendente do cronograma. */
+/** Revisões que vencem hoje ou estão atrasadas (as mais atrasadas primeiro). */
 export function getTodayReviews(topics: Topic[]): TodayReview[] {
-    const formatBR = (d: Date) => d.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-    const today = formatBR(new Date());
     const result: TodayReview[] = [];
 
     topics.forEach((topic) => {
-        if (topic.status !== "CONCLUIDO") return;
-
-        let reviewDate: Date | null = null;
-        let number: 1 | 2 | 3 = 1;
-
-        if (!topic.reviews.first.concluded) {
-            reviewDate = new Date(topic.reviews.first.date);
-        } else if (!topic.reviews.second.concluded) {
-            reviewDate = new Date(topic.reviews.second.date);
-            number = 2;
-        } else if (!topic.reviews.third.concluded) {
-            reviewDate = new Date(topic.reviews.third.date);
-            number = 3;
-        }
-
-        if (!reviewDate) return;
-
-        reviewDate.setUTCHours(12, 0, 0, 0);
-        if (formatBR(reviewDate) === today) result.push({ topic, number });
+        const due = getDueReview(topic);
+        if (due) result.push({ topic, number: due.number, overdueDays: due.overdueDays });
     });
 
-    return result;
+    return result.sort((a, b) => b.overdueDays - a.overdueDays);
 }

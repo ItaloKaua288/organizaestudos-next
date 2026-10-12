@@ -8,28 +8,10 @@ import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getDueReview } from "@/lib/review-due";
 import { AlertCircle, BadgeCheck, BookOpen, ClipboardClock, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-
-function isReviewScheduledForToday(reviewDateString?: string | Date) {
-    if (!reviewDateString) return false;
-
-    const reviewDateUTC = new Date(reviewDateString);
-    if (isNaN(reviewDateUTC.getTime())) return false;
-
-    const reviewDate = new Date(
-        reviewDateUTC.getUTCFullYear(),
-        reviewDateUTC.getUTCMonth(),
-        reviewDateUTC.getUTCDate()
-    );
-
-    const brString = new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-    const todayBR = new Date(brString);
-    todayBR.setHours(0, 0, 0, 0);
-
-    return todayBR.getTime() === reviewDate.getTime();
-}
 
 export default async function DashboardPage() {
     const currentDayName = new Intl.DateTimeFormat('pt-BR', {
@@ -53,13 +35,13 @@ export default async function DashboardPage() {
     const pendingTopics = data.topics.filter((t) => t.status === "PENDENTE");
     const concludedTopics = data.topics.filter((t) => t.status === "CONCLUIDO");
 
-    const reviewTodayTopics = data.topics.filter((topic) =>
-        Object.values(topic.reviews || {}).some(
-            (review) => !review.concluded && isReviewScheduledForToday(review.date)
-        )
-    );
+    // Revisões de hoje + atrasadas (as mais atrasadas primeiro).
+    const reviewTodayTopics = data.topics
+        .map((topic) => ({ topic, due: getDueReview(topic) }))
+        .filter((item): item is { topic: typeof item.topic; due: NonNullable<typeof item.due> } => item.due !== null)
+        .sort((a, b) => b.due.overdueDays - a.due.overdueDays);
 
-    const reviewTodaySubjects = reviewTodayTopics.map(topic => topic.subject);
+    const reviewTodaySubjects = reviewTodayTopics.map(({ topic }) => topic.subject);
     const timelineSubjects = data.timeline
         .filter(t => t.day.toLowerCase() === currentDayName.toLowerCase() && t.subject)
         .map(t => t.subject!);
@@ -175,10 +157,10 @@ export default async function DashboardPage() {
                         </CardHeader>
                         <CardContent className="max-h-60 overflow-y-auto pb-4 ">
                             {!reviewTodayTopics.length ? (
-                                <p className="text-sm text-muted-foreground">Nenhuma revisão agendada para hoje.</p>
+                                <p className="text-sm text-muted-foreground">Nenhuma revisão para hoje nem atrasada.</p>
                             ) : (
                                 <div className="flex flex-col gap-1.5">
-                                    {reviewTodayTopics.map((topic) => (
+                                    {reviewTodayTopics.map(({ topic, due }) => (
                                         <DialogDemo
                                             key={topic.id}
                                             title={topic.title}
@@ -190,6 +172,9 @@ export default async function DashboardPage() {
                                                         <span className="truncate">{topic.title}</span>
                                                         <span className="text-xs text-muted-foreground truncate">{topic.subject.title}</span>
                                                     </div>
+                                                    {due.overdueDays > 0 && (
+                                                        <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {due.overdueDays}d</Badge>
+                                                    )}
                                                 </div>
 
                                             }

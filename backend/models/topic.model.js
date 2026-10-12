@@ -49,6 +49,24 @@ const topicSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    // Intervalo (em dias) da revisão recorrente de 30 dias. Cresce quando o estudante
+    // acerta e encolhe quando erra (revisões inteligentes). Padrão = 30 (comportamento antigo).
+    review3_interval: {
+        type: Number,
+        default: 30
+    },
+    // Registro das últimas revisões concluídas. Serve para desfazer uma revisão restaurando
+    // exatamente a data que ela havia alterado.
+    reviewLog: [{
+        _id: false,
+        review: String, // review1 | review2 | review3
+        performance: { type: String, default: null }, // ERROU | DIFICIL | BOM | FACIL
+        at: { type: Date, default: Date.now },
+        target: { type: String, default: null }, // qual data foi reagendada (review2 | review3)
+        prevDate: { type: Date, default: null }, // data que ela tinha antes
+        prevInterval: { type: Number, default: null }, // intervalo recorrente antes (só review3)
+        nextDate: { type: Date, default: null } // nova data
+    }],
     link: {
         type: String,
         default: null

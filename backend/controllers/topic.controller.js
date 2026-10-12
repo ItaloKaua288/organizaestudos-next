@@ -108,7 +108,11 @@ export const updateTopic = async (req, res) => {
                 topic.review1 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000);
                 topic.review2 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
                 topic.review3 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                topic.review3_interval = 30;
+                topic.reviewLog = [];
             } else {
+                topic.review3_interval = 30;
+                topic.reviewLog = [];
                 topic.review1 = null;
                 topic.review2 = null;
                 topic.review3 = null;
@@ -276,6 +280,30 @@ export const removeAttachment = async (req, res) => {
 
 const allowedReviews = ["review1", "review2", "review3"];
 
+/*
+ * REVISÕES INTELIGENTES
+ * Ao concluir uma revisão o estudante pode avaliar como foi (ERROU, DIFICIL, BOM, FACIL) e a
+ * próxima revisão é reagendada a partir de HOJE:
+ *  - review1 (24h)  -> agenda a review2
+ *  - review2 (7d)   -> agenda a review3
+ *  - review3 (30d)  -> repete a própria review3, com intervalo que cresce/encolhe
+ * "BOM" reproduz o calendário antigo (7 dias e 30 dias). Sem avaliação, nada muda no calendário.
+ */
+const REVIEW_PERFORMANCES = ["ERROU", "DIFICIL", "BOM", "FACIL"];
+const NEXT_REVIEW_DAYS = {
+    review1: { ERROU: 2, DIFICIL: 4, BOM: 7, FACIL: 12 },
+    review2: { ERROU: 7, DIFICIL: 15, BOM: 30, FACIL: 45 },
+};
+const RECURRING_FACTOR = { ERROU: 0.3, DIFICIL: 0.6, BOM: 1.5, FACIL: 2.5 };
+const RECURRING_MIN_DAYS = 7;
+const RECURRING_MAX_DAYS = 180;
+const DEFAULT_RECURRING_DAYS = 30;
+const REVIEW_LOG_LIMIT = 20;
+const REVIEW_DAY_MS = 24 * 60 * 60 * 1000;
+
+const addDaysFromToday = (days) => new Date(getTodayBR().getTime() + days * REVIEW_DAY_MS);
+const nextReviewKey = { review1: "review2", review2: "review3" };
+
 export const concludedReview = async (req, res) => {
     const { id, review } = req.params;
 
@@ -294,18 +322,54 @@ export const concludedReview = async (req, res) => {
 
         if (isInactive(topic.subject_id)) return inactiveResponse(res);
 
-        if (review === "review3") {
-            const nextReviewDate = getTodayBR();
-            nextReviewDate.setDate(nextReviewDate.getDate() + 30);
+        const { performance } = req.body ?? {};
+        if (performance !== undefined && performance !== null && !REVIEW_PERFORMANCES.includes(performance))
+            return res.status(400).json({ success: false, message: "Invalid performance" });
 
-            topic.review3 = nextReviewDate;
+        const rating = performance || null;
+        const entry = { review, performance: rating, at: new Date(), target: null, prevDate: null, prevInterval: null, nextDate: null };
+        let nextReview = null;
+
+        if (review === "review3") {
+            const currentInterval = topic.review3_interval || DEFAULT_RECURRING_DAYS;
+            let nextInterval = currentInterval;
+
+            if (rating) {
+                nextInterval = Math.round(currentInterval * RECURRING_FACTOR[rating]);
+                nextInterval = Math.min(RECURRING_MAX_DAYS, Math.max(RECURRING_MIN_DAYS, nextInterval));
+            }
+
+            entry.target = "review3";
+            entry.prevDate = topic.review3;
+            entry.prevInterval = currentInterval;
+
+            topic.review3 = addDaysFromToday(nextInterval);
             topic.review3_concluded = false;
+            topic.review3_interval = nextInterval;
+
+            entry.nextDate = topic.review3;
+            nextReview = { key: "review3", date: topic.review3, days: nextInterval };
         } else {
             topic[`${review}_concluded`] = true;
+
+            // Só reagenda a próxima revisão quando houve avaliação e ela ainda não foi concluída.
+            const target = nextReviewKey[review];
+            if (rating && !topic[`${target}_concluded`]) {
+                const days = NEXT_REVIEW_DAYS[review][rating];
+
+                entry.target = target;
+                entry.prevDate = topic[target];
+                topic[target] = addDaysFromToday(days);
+                entry.nextDate = topic[target];
+                nextReview = { key: target, date: topic[target], days };
+            }
         }
 
+        topic.reviewLog.push(entry);
+        if (topic.reviewLog.length > REVIEW_LOG_LIMIT) topic.reviewLog.splice(0, topic.reviewLog.length - REVIEW_LOG_LIMIT);
+
         await topic.save();
-        res.status(200).json({ success: true, topic });
+        res.status(200).json({ success: true, topic, nextReview });
     } catch (error) {
         console.error("Erro interno em concludedReview:", error);
         res.status(500).json({ success: false, message: "Erro interno ao concluir revisão." });
@@ -329,15 +393,26 @@ export const UndoCompletedReview = async (req, res) => {
 
         if (isInactive(topic.subject_id)) return inactiveResponse(res);
 
-        if (review === "review3") {
-            const prevReviewDate = new Date(topic.review3);
-            prevReviewDate.setDate(prevReviewDate.getDate() - 30);
+        // Desfaz a conclusão restaurando a data que ela alterou (quando é a última do registro).
+        const lastEntry = topic.reviewLog[topic.reviewLog.length - 1];
+        const entry = lastEntry && lastEntry.review === review ? lastEntry : null;
 
-            topic.review3 = prevReviewDate;
+        if (review === "review3") {
+            if (entry && entry.prevDate) {
+                topic.review3 = entry.prevDate;
+                topic.review3_interval = entry.prevInterval || DEFAULT_RECURRING_DAYS;
+            } else {
+                const prevReviewDate = new Date(topic.review3);
+                prevReviewDate.setDate(prevReviewDate.getDate() - (topic.review3_interval || DEFAULT_RECURRING_DAYS));
+                topic.review3 = prevReviewDate;
+            }
             topic.review3_concluded = false;
         } else {
             topic[`${review}_concluded`] = false;
+            if (entry && entry.target && entry.prevDate) topic[entry.target] = entry.prevDate;
         }
+
+        if (entry) topic.reviewLog.pop();
 
         await topic.save();
         res.status(200).json({ success: true, topic });

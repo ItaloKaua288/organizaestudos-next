@@ -416,6 +416,11 @@ const updateTopicReviewStatusSchema = z.object({
         (value) => value == "true" ? true : false,
         z.boolean()
     ),
+    // Avaliação opcional ao concluir (revisões inteligentes). Vazio = calendário padrão.
+    performance: z.preprocess(
+        (value) => (value === "" || value === undefined ? undefined : value),
+        z.enum(["ERROU", "DIFICIL", "BOM", "FACIL"]).optional()
+    ),
 })
 
 export async function updateTopicReviewStatusAction(formData: FormData) {
@@ -428,13 +433,14 @@ export async function updateTopicReviewStatusAction(formData: FormData) {
             return { success: false, message: "Dados inválidos enviados no formulário." };
         }
 
-        const { topicId, review, isCompleted } = validatedData.data;
+        const { topicId, review, isCompleted, performance } = validatedData.data;
         const baseUrl = await getBaseUrl();
         const headers = await getAuthHeaders();
 
         const res = await fetch(`${baseUrl}/topics/${isCompleted ? "concluded-review" : "undo-review"}/${topicId}/${review}`, {
             method: "PUT",
-            headers
+            headers,
+            body: JSON.stringify(isCompleted && performance ? { performance } : {})
         });
 
         if (!res.ok) {
@@ -442,14 +448,18 @@ export async function updateTopicReviewStatusAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao atualizar status da revisão." };
         }
 
-        const subjectId = (await res.json()).topic.subject_id
+        const responseData = await res.json();
+        const subjectId = responseData.topic.subject_id
+        const nextReview = responseData.nextReview
+            ? { date: String(responseData.nextReview.date), days: Number(responseData.nextReview.days) }
+            : undefined;
 
         revalidatePath("/")
         revalidatePath("/revisoes")
         revalidatePath("/materias")
         revalidatePath(`/materias/${subjectId}`)
 
-        return { success: true, message: "Status da revisão atualizado com sucesso!" };
+        return { success: true, message: "Status da revisão atualizado com sucesso!", nextReview };
     } catch (error) {
         console.error("Erro interno ao atualizar status da revisão:", error);
         return { success: false, message: "Ocorreu um erro inesperado." };

@@ -1,6 +1,6 @@
 "use client";
 
-import { changeReviewStatus, redistributeMonthlyReviewsAction } from "@/actions/review.actions";
+import { changeReviewStatus, redistributeMonthlyReviewsAction, ReviewPerformance } from "@/actions/review.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { getTodayBR } from "@/lib/date";
 import { Topic } from "@/types/topic";
 import { CalendarRange, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useState, useTransition } from "react";
 import toast from "react-hot-toast";
 
@@ -25,8 +26,20 @@ interface ReviewItemProps {
     reviewIndex?: number;
 }
 
+// Avaliação ao concluir uma revisão: errou volta antes, acertou espaça mais.
+const PERFORMANCE_OPTIONS: { value: ReviewPerformance; label: string; hint: string; className: string }[] = [
+    { value: "ERROU", label: "Errei", hint: "Revisar de novo em breve", className: "hover:border-destructive hover:text-destructive" },
+    { value: "DIFICIL", label: "Difícil", hint: "Voltar um pouco antes", className: "hover:border-orange-500 hover:text-orange-500" },
+    { value: "BOM", label: "Bom", hint: "Intervalo padrão", className: "hover:border-primary hover:text-primary" },
+    { value: "FACIL", label: "Fácil", hint: "Espaçar mais", className: "hover:border-green-500 hover:text-green-500" },
+];
+
+const formatShortDate = (value: string) =>
+    new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" });
+
 function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
     const [isPending, startTransition] = useTransition();
+    const [isRating, setIsRating] = useState(false);
     const hasAttachments = Boolean(item.attachments && item.attachments.length > 0);
     const isConcludedSection = !reviewIndex;
 
@@ -47,7 +60,7 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
         const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
         if (diffDays < 0) {
-            return <Badge variant="destructive">Atrasado</Badge>;
+            return <Badge variant="destructive">Atrasado {-diffDays}d</Badge>;
         } else if (diffDays === 0) {
             return <Badge variant="default">Hoje</Badge>;
         } else if (diffDays === 1) {
@@ -57,7 +70,7 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
         }
     };
 
-    const handleConclude = (e: React.MouseEvent) => {
+    const handleConclude = (e: React.MouseEvent, performance: ReviewPerformance) => {
         e.stopPropagation();
         if (!reviewIndex) return;
 
@@ -65,8 +78,20 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
             try {
                 const reviewKey = `review${reviewIndex}`
                 toast.loading("Concluindo revisão...", { id: "conclude-review" });
-                await changeReviewStatus(item.id, reviewKey, true);
-                toast.success("Revisão concluída!", { id: "conclude-review" });
+                const result = await changeReviewStatus(item.id, reviewKey, true, performance);
+
+                if (!result.success) {
+                    toast.error("Erro ao concluir revisão.", { id: "conclude-review" });
+                    return;
+                }
+
+                setIsRating(false);
+                toast.success(
+                    result.nextReview
+                        ? `Revisão concluída! Próxima em ${result.nextReview.days} dias (${formatShortDate(result.nextReview.date)}).`
+                        : "Revisão concluída!",
+                    { id: "conclude-review" }
+                );
             } catch {
                 toast.error("Erro ao concluir revisão.", { id: "conclude-review" });
             }
@@ -81,7 +106,7 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                 description="Informações sobre o tópico da revisão"
                 disableBtns={true}
                 contentBtn={
-                    <div className="hoverComponents flex items-center justify-between w-full gap-3 border border-base-content/10 bg-base-200/30 p-2 rounded-md hover:bg-base-200/60 transition-all">
+                    <div className="hoverComponents flex flex-wrap items-center justify-between w-full gap-3 border border-base-content/10 bg-base-200/30 p-2 rounded-md hover:bg-base-200/60 transition-all">
                         <div className="flex-1 min-w-0 text-sm flex items-center gap-2.5">
                             <span
                                 className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"
@@ -105,8 +130,9 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                     variant="secondary"
                                     size="sm"
                                     className="shrink-0 ml-2"
-                                    onClick={handleConclude}
+                                    onClick={(e) => { e.stopPropagation(); setIsRating((v) => !v); }}
                                     disabled={isPending}
+                                    aria-expanded={isRating}
                                 >
                                     {isPending ? (
                                         <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
@@ -116,6 +142,29 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                     {isPending ? "Salvando..." : "Feito"}
                                 </Button>
                             </>
+                        )}
+
+                        {!isConcludedSection && isRating && (
+                            <div className="w-full flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-xs text-muted-foreground">Como foi essa revisão? Isso ajusta a data da próxima.</span>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                    {PERFORMANCE_OPTIONS.map((option) => (
+                                        <Button
+                                            key={option.value}
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            title={option.hint}
+                                            disabled={isPending}
+                                            onClick={(e) => handleConclude(e, option.value)}
+                                            className={cn("flex-col h-auto py-1.5 gap-0", option.className)}
+                                        >
+                                            <span className="font-medium">{option.label}</span>
+                                            <span className="text-[10px] font-normal text-muted-foreground">{option.hint}</span>
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
                         )}
                     </div>
                 }
@@ -231,7 +280,7 @@ export function ReviewSectionSkeleton() {
     return (
         <>
             <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
-                Visualize suas revisões. Elas são espaçadas entre 24 horas, 7 dias e 30 dias.
+                Visualize suas revisões. Começam em 24 horas, 7 dias e 30 dias e a próxima data se ajusta conforme você avalia (errei, difícil, bom ou fácil).
             </p>
             {sections.map((sec, index) => (
                 <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden shadow-sm bg-card" key={index}>

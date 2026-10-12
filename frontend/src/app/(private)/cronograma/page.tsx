@@ -5,6 +5,7 @@ import { getTopicsAction } from "@/actions/topics.actions";
 import { ScrambleText } from "@/components/scramble-text";
 import { Topic } from "@/types/topic";
 import { CycleView } from "./components/cycle-view";
+import { getDueReview } from "@/lib/review-due";
 import { getPendingTopicsBySubject, getTodayReviews } from "./components/cycle-utils";
 import { DayCard } from "./components/day-card";
 import { ViewToggle } from "./components/view-toggle";
@@ -23,8 +24,7 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
             <main className="space-y-4">
                 <header className="space-y-1">
                     <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
-                        CICLO DE ESTUDOS
-                        {/* <ScrambleText text="CICLO DE ESTUDOS" /> */}
+                        <ScrambleText text="CICLO DE ESTUDOS" />
                     </h1>
                     <div className="flex flex-wrap justify-between gap-2 p-2 items-center">
                         <p className="text-sm font-medium text-muted-foreground">
@@ -89,6 +89,14 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
 
     data.topics.forEach(topic => {
         if (topic.status !== "CONCLUIDO") return;
+
+        // Revisões atrasadas aparecem no card de hoje (as futuras seguem no dia da semana delas).
+        const due = getDueReview(topic);
+        if (due && due.overdueDays > 0) {
+            const todayLabel = WEEK_DAYS[currentDate.getDay()];
+            timeline_reviews[todayLabel] = [...(timeline_reviews[todayLabel] || []), topic];
+            return;
+        }
 
         let reviewDate: Date | null = null;
 

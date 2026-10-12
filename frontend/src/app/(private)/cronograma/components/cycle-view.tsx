@@ -116,20 +116,20 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
     const { draggedId, overId, ghost, ghostRef, getDragProps } = useCycleReorder(cycle?.sessions ?? [], handleReorder, isBusy);
 
     const reviewsSection = (
-        <Card className="introduction-card" style={{ animationDelay: `${4 * 150}ms` }}>
+        <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <RotateCw className="h-4 w-4" /> Revisões de hoje
                     <Badge variant="secondary">{todayReviews.length}</Badge>
                 </CardTitle>
-                <CardDescription>Assuntos já estudados que precisam ser revisados hoje.</CardDescription>
+                <CardDescription>Assuntos para revisar hoje, incluindo os atrasados.</CardDescription>
             </CardHeader>
             <CardContent>
                 {todayReviews.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhuma revisão para hoje.</p>
+                    <p className="text-sm text-muted-foreground">Nenhuma revisão para hoje nem atrasada.</p>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        {todayReviews.map(({ topic, number }) => (
+                        {todayReviews.map(({ topic, number, overdueDays }) => (
                             <DialogDemo
                                 key={topic.id}
                                 title={topic.title}
@@ -138,7 +138,8 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
                                     <span className="flex w-full items-center gap-2 truncate text-sm">
                                         <BookOpen className="h-3.5 w-3.5 shrink-0" color={topic.subject.color} />
                                         <span className="truncate">{topic.title}</span>
-                                        <Badge variant="outline" className="ml-auto shrink-0">{number}ª revisão</Badge>
+                                        {overdueDays > 0 && <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {overdueDays}d</Badge>}
+                                        <Badge variant="outline" className={overdueDays > 0 ? "shrink-0" : "ml-auto shrink-0"}>{number}ª revisão</Badge>
                                     </span>
                                 }
                                 classNameBtn="w-full h-auto py-2 truncate flex justify-start rounded-sm dark:bg-card bg-card"
@@ -208,8 +209,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
 
     return (
         <section className="p-2 pt-0 space-y-3">
-            <div className="flex flex-wrap items-center gap-2 introduction-card"
-                style={{ animationDelay: `${1 * 150}ms` }} >
+            <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setIsEditorOpen(true)} disabled={isBusy}>
                     <Pencil className="h-4 w-4" /> Editar ciclo
                 </Button>
@@ -240,9 +240,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-                <Card
-                    className="lg:col-span-3 introduction-card"
-                    style={{ animationDelay: `${1 * 150}ms` }}>
+                <Card className="lg:col-span-3">
                     <CardHeader>
                         <CardDescription className="flex items-center gap-2">
                             <span>{current?.status === "EM_ANDAMENTO" ? "Estudando agora" : "Próxima matéria a estudar"}</span>
@@ -336,8 +334,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-2 introduction-card"
-                    style={{ animationDelay: `${2 * 150}ms` }} >
+                <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardDescription>Progresso da volta {cycle.lap}</CardDescription>
                         <CardTitle className="text-2xl">{percent}%</CardTitle>
@@ -366,8 +363,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
                 </Card>
             </div>
 
-            <Card className="introduction-card" style={{ animationDelay: `${3 * 150}ms` }} >
-
+            <Card>
                 <CardHeader>
                     <CardTitle>Sessões do ciclo</CardTitle>
                     <CardDescription>A ordem abaixo é a ordem oficial do ciclo. Segure e arraste para reordenar.</CardDescription>
@@ -382,61 +378,61 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
                             const dragProps = getDragProps(session.id);
                             return (
                                 <Fragment key={session.id}>
-                                    {startsDay && (
-                                        <li
-                                            role="presentation"
-                                            className={cn("flex items-center gap-2 pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground", index > 0 && "border-t border-dashed pt-3 mt-2")}
-                                        >
-                                            Meta {index / perDay + 1}
-                                        </li>
-                                    )}
+                                {startsDay && (
                                     <li
-                                        {...dragProps.rowProps}
-                                        aria-current={isCurrent ? "step" : undefined}
+                                        role="presentation"
+                                        className={cn("flex items-center gap-2 pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground", index > 0 && "border-t border-dashed pt-3 mt-2")}
+                                    >
+                                        Dia {index / perDay + 1}
+                                    </li>
+                                )}
+                                <li
+                                    {...dragProps.rowProps}
+                                    aria-current={isCurrent ? "step" : undefined}
+                                    className={cn(
+                                        "flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-opacity",
+                                        isCurrent && "border-primary/50 bg-primary/5",
+                                        session.inactive && "opacity-50",
+                                        draggedId === session.id && "opacity-40",
+                                        overId === session.id && draggedId !== session.id && "ring-2 ring-primary"
+                                    )}
+                                >
+                                    <span
+                                        {...dragProps.handleProps}
+                                        title="Segure e arraste para mudar a ordem"
+                                        aria-label="Arrastar para reordenar"
                                         className={cn(
-                                            "flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-opacity",
-                                            isCurrent && "border-primary/50 bg-primary/5",
-                                            session.inactive && "opacity-50",
-                                            draggedId === session.id && "opacity-40",
-                                            overId === session.id && draggedId !== session.id && "ring-2 ring-primary"
+                                            "flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary",
+                                            isBusy ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"
                                         )}
                                     >
-                                        <span
-                                            {...dragProps.handleProps}
-                                            title="Segure e arraste para mudar a ordem"
-                                            aria-label="Arrastar para reordenar"
-                                            className={cn(
-                                                "flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary",
-                                                isBusy ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"
-                                            )}
-                                        >
-                                            <GripVertical size={16} />
-                                        </span>
-                                        <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">{index + 1}</span>
-                                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
-                                        <button
-                                            type="button"
-                                            disabled={session.inactive}
-                                            onClick={() => setDetailSubject(session.subject)}
-                                            title="Ver assunto a ser estudado"
-                                            className={cn(
-                                                "flex-1 truncate text-left font-medium enabled:cursor-pointer enabled:hover:text-primary transition-colors",
-                                                session.status === "CONCLUIDA" && "line-through text-muted-foreground"
-                                            )}
-                                        >
-                                            {session.subject.title}
-                                        </button>
-                                        <span className="text-muted-foreground shrink-0">{formatMinutes(session.duration)}</span>
-                                        {session.inactive ? (
-                                            <Badge variant="outline">{session.removed ? "Removida" : "Desativada"}</Badge>
-                                        ) : isCurrent ? (
-                                            <Badge>{session.status === "EM_ANDAMENTO" ? "Em andamento" : "Atual"}</Badge>
-                                        ) : (
-                                            <Badge variant={session.status === "CONCLUIDA" ? "secondary" : "outline"}>
-                                                {STATUS_LABEL[session.status]}
-                                            </Badge>
+                                        <GripVertical size={16} />
+                                    </span>
+                                    <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">{index + 1}</span>
+                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
+                                    <button
+                                        type="button"
+                                        disabled={session.inactive}
+                                        onClick={() => setDetailSubject(session.subject)}
+                                        title="Ver assunto a ser estudado"
+                                        className={cn(
+                                            "flex-1 truncate text-left font-medium enabled:cursor-pointer enabled:hover:text-primary transition-colors",
+                                            session.status === "CONCLUIDA" && "line-through text-muted-foreground"
                                         )}
-                                    </li>
+                                    >
+                                        {session.subject.title}
+                                    </button>
+                                    <span className="text-muted-foreground shrink-0">{formatMinutes(session.duration)}</span>
+                                    {session.inactive ? (
+                                        <Badge variant="outline">{session.removed ? "Removida" : "Desativada"}</Badge>
+                                    ) : isCurrent ? (
+                                        <Badge>{session.status === "EM_ANDAMENTO" ? "Em andamento" : "Atual"}</Badge>
+                                    ) : (
+                                        <Badge variant={session.status === "CONCLUIDA" ? "secondary" : "outline"}>
+                                            {STATUS_LABEL[session.status]}
+                                        </Badge>
+                                    )}
+                                </li>
                                 </Fragment>
                             );
                         })}
@@ -452,7 +448,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
 
             {reviewsSection}
 
-            <Card className="introduction-card" style={{ animationDelay: `${5 * 150}ms` }}>
+            <Card>
                 <CardHeader>
                     <Button variant="ghost" className="w-fit px-0 hover:bg-transparent" onClick={() => setShowHistory((v) => !v)}>
                         <History className="h-4 w-4" />
