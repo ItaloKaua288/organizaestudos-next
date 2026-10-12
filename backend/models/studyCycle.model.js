@@ -42,6 +42,14 @@ const studyCycleSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         default: null
     },
+    // Quantas sessões formam um "dia" na visualização (0 = sem divisão por dia).
+    // É só organização visual: não altera a ordem nem o avanço do ciclo.
+    sessionsPerDay: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 50
+    },
     // Número da volta atual (começa em 1).
     lap: {
         type: Number,

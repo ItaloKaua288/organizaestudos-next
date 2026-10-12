@@ -98,6 +98,7 @@ const buildView = async (cycle, subjectMap) => {
     return {
         id: String(cycle._id),
         lap: cycle.lap,
+        sessionsPerDay: cycle.sessionsPerDay ?? 0,
         totalCompleted: cycle.totalCompleted,
         currentSessionId: cycle.currentSessionId ? String(cycle.currentSessionId) : null,
         sessions,
@@ -165,7 +166,12 @@ export const getCycle = async (req, res) => {
 
 export const saveCycle = async (req, res) => {
     try {
-        const { sessions } = req.body;
+        const { sessions, sessionsPerDay } = req.body;
+
+        // Opcional: se não vier (ex.: ao reordenar), mantém o valor atual. 0 = sem divisão por dia.
+        if (sessionsPerDay !== undefined && (!Number.isInteger(sessionsPerDay) || sessionsPerDay < 0 || sessionsPerDay > 50)) {
+            return res.status(400).json({ success: false, message: "Matérias por dia deve ser um número inteiro de 0 a 50." });
+        }
 
         if (!Array.isArray(sessions) || sessions.length === 0 || sessions.length > MAX_SESSIONS) {
             return res.status(400).json({ success: false, message: `O ciclo precisa ter de 1 a ${MAX_SESSIONS} sessões.` });
@@ -221,10 +227,11 @@ export const saveCycle = async (req, res) => {
         }
 
         if (!cycle) {
-            cycle = new StudyCycle({ user_id: req.userId, sessions: next, lap: 1, totalCompleted: 0 });
+            cycle = new StudyCycle({ user_id: req.userId, sessions: next, lap: 1, totalCompleted: 0, sessionsPerDay: sessionsPerDay ?? 0 });
             cycle.currentSessionId = next[0]._id;
         } else {
             cycle.sessions = next;
+            if (sessionsPerDay !== undefined) cycle.sessionsPerDay = sessionsPerDay;
         }
 
         resolvePointer(cycle, subjectMap);

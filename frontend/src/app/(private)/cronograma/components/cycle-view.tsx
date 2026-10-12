@@ -20,7 +20,7 @@ import { Cycle, CycleActionResult, CycleSession } from "@/types/cycle";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
 import { BookOpen, Check, ChevronDown, ChevronUp, GripVertical, History, Pencil, Play, Plus, RotateCcw, RotateCw, SkipForward, Trash2, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { CycleDragGhost } from "./cycle-drag-ghost";
 import { CycleEditor } from "./cycle-editor";
@@ -370,11 +370,22 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
                 <CardContent className="space-y-2">
                     <ol className="space-y-1.5">
                         {cycle.sessions.map((session, index) => {
+                            // Com "matérias por dia" > 0, cada grupo ganha um título e uma linha separadora.
+                            const perDay = cycle.sessionsPerDay;
+                            const startsDay = perDay > 0 && index % perDay === 0;
                             const isCurrent = session.id === cycle.currentSessionId;
                             const dragProps = getDragProps(session.id);
                             return (
+                                <Fragment key={session.id}>
+                                {startsDay && (
+                                    <li
+                                        role="presentation"
+                                        className={cn("flex items-center gap-2 pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground", index > 0 && "border-t border-dashed pt-3 mt-2")}
+                                    >
+                                        Meta {index / perDay + 1}
+                                    </li>
+                                )}
                                 <li
-                                    key={session.id}
                                     {...dragProps.rowProps}
                                     aria-current={isCurrent ? "step" : undefined}
                                     className={cn(
@@ -421,6 +432,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, toda
                                         </Badge>
                                     )}
                                 </li>
+                                </Fragment>
                             );
                         })}
                     </ol>

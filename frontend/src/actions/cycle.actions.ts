@@ -56,8 +56,9 @@ export async function getCycleAction(): Promise<Cycle | null> {
     }
 }
 
-export async function saveCycleAction(sessions: CycleSessionInput[]) {
-    return runCycleAction("PUT", "", { sessions }, "Falha da API ao salvar o ciclo.");
+export async function saveCycleAction(sessions: CycleSessionInput[], sessionsPerDay?: number) {
+    // sessionsPerDay ausente = mantém o valor salvo (usado ao reordenar).
+    return runCycleAction("PUT", "", { sessions, sessionsPerDay }, "Falha da API ao salvar o ciclo.");
 }
 
 export async function deleteCycleAction() {

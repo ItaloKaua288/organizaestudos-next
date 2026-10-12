@@ -52,6 +52,7 @@ export function CycleEditor({ open, onOpenChange, cycle, subjects, onSaved }: Cy
 function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditorProps, "open" | "onOpenChange"> & { onClose: () => void }) {
     const [rows, setRows] = useState<Row[]>(() => buildRows(cycle));
     const [isSaving, setIsSaving] = useState(false);
+    const [perDay, setPerDay] = useState(() => String(cycle?.sessionsPerDay ?? 0));
 
     // Matérias desativadas que já estão no ciclo continuam aparecendo para poderem ser trocadas/removidas.
     const options: Subject[] = [
@@ -112,10 +113,16 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
             sessions.push({ id: row.id, subject_id: row.subject_id, duration });
         }
 
+        const sessionsPerDay = Number(perDay === "" ? 0 : perDay);
+        if (!Number.isInteger(sessionsPerDay) || sessionsPerDay < 0 || sessionsPerDay > 50) {
+            toast.error("Matérias por dia deve ser um número inteiro de 0 a 50.");
+            return;
+        }
+
         setIsSaving(true);
         toast.loading("Salvando ciclo...", { id: "save-cycle" });
         try {
-            const result = await saveCycleAction(sessions);
+            const result = await saveCycleAction(sessions, sessionsPerDay);
             if (result.success && result.cycle) {
                 toast.success(cycle ? "Ciclo atualizado!" : "Ciclo criado!", { id: "save-cycle" });
                 onSaved(result.cycle);
@@ -140,7 +147,23 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="py-4 flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
+                <div className="pt-4 flex items-center gap-2">
+                    <label htmlFor="sessions-per-day" className="text-sm font-medium">Matérias por dia:</label>
+                    <Input
+                        id="sessions-per-day"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={50}
+                        value={perDay}
+                        onChange={(e) => setPerDay(e.target.value)}
+                        className="w-16 text-center"
+                        disabled={isSaving}
+                    />
+                    <span className="text-xs text-muted-foreground">0 = sem divisão por dia</span>
+                </div>
+
+                <div className="py-4 flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
                     {rows.map((row, index) => (
                         <div key={row.key} className="flex items-center gap-2">
                             <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">{index + 1}</span>

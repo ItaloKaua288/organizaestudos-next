@@ -26,6 +26,8 @@ export interface Cycle {
     id: string;
     /** Volta atual (começa em 1). */
     lap: number;
+    /** Quantas sessões formam um "dia" na lista (0 = sem divisão por dia). */
+    sessionsPerDay: number;
     /** Sessões concluídas desde a criação do ciclo. */
     totalCompleted: number;
     /** Posição atual no ciclo. Null quando não há sessões utilizáveis. */
