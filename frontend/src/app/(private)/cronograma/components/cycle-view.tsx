@@ -124,7 +124,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     const { draggedId, overId, ghost, ghostRef, getDragProps } = useCycleReorder(cycle?.sessions ?? [], handleReorder, isBusy);
 
     const reviewsSection = (
-        <Card>
+        <Card className="introduction-card" style={{ animationDelay: `${4 * 150}ms` }}>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <RotateCw className="h-4 w-4" /> Revisões de hoje
@@ -224,7 +224,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     };
 
     return (
-        <section className="p-2 pt-0 space-y-3">
+        <section className="p-2 pt-0 space-y-3 introduction-card" style={{ animationDelay: `${1 * 150}ms` }}>
             <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => setIsEditorOpen(true)} disabled={isBusy}>
                     <Pencil className="h-4 w-4" /> Editar ciclo
@@ -256,7 +256,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-                <Card className="lg:col-span-3">
+                <Card className="lg:col-span-3 introduction-card" style={{ animationDelay: `${1 * 150}ms` }}>
                     <CardHeader>
                         <CardDescription className="flex items-center gap-2">
                             <span>{current?.status === "EM_ANDAMENTO" ? "Estudando agora" : "Próxima matéria a estudar"}</span>
@@ -350,7 +350,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-2">
+                <Card className="lg:col-span-2 introduction-card" style={{ animationDelay: `${2 * 150}ms` }}>
                     <CardHeader>
                         <CardDescription>Progresso da volta {cycle.lap}</CardDescription>
                         <CardTitle className="text-2xl">{percent}%</CardTitle>
@@ -379,7 +379,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                 </Card>
             </div>
 
-            <Card>
+            <Card className="introduction-card" style={{ animationDelay: `${3 * 150}ms` }}>
                 <CardHeader>
                     <CardTitle>Sessões do ciclo</CardTitle>
                     <CardDescription>A ordem abaixo é a ordem oficial do ciclo. Segure e arraste para reordenar.</CardDescription>
@@ -394,61 +394,61 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                             const dragProps = getDragProps(session.id);
                             return (
                                 <Fragment key={session.id}>
-                                {startsDay && (
+                                    {startsDay && (
+                                        <li
+                                            role="presentation"
+                                            className={cn("flex items-center gap-2 pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground", index > 0 && "border-t border-dashed pt-3 mt-2")}
+                                        >
+                                            Dia {index / perDay + 1}
+                                        </li>
+                                    )}
                                     <li
-                                        role="presentation"
-                                        className={cn("flex items-center gap-2 pb-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground", index > 0 && "border-t border-dashed pt-3 mt-2")}
+                                        {...dragProps.rowProps}
+                                        aria-current={isCurrent ? "step" : undefined}
+                                        className={cn(
+                                            "flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-opacity",
+                                            isCurrent && "border-primary/50 bg-primary/5",
+                                            session.inactive && "opacity-50",
+                                            draggedId === session.id && "opacity-40",
+                                            overId === session.id && draggedId !== session.id && "ring-2 ring-primary"
+                                        )}
                                     >
-                                        Dia {index / perDay + 1}
+                                        <span
+                                            {...dragProps.handleProps}
+                                            title="Segure e arraste para mudar a ordem"
+                                            aria-label="Arrastar para reordenar"
+                                            className={cn(
+                                                "flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary",
+                                                isBusy ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"
+                                            )}
+                                        >
+                                            <GripVertical size={16} />
+                                        </span>
+                                        <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">{index + 1}</span>
+                                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
+                                        <button
+                                            type="button"
+                                            disabled={session.inactive}
+                                            onClick={() => setDetailSubject(session.subject)}
+                                            title="Ver assunto a ser estudado"
+                                            className={cn(
+                                                "flex-1 truncate text-left font-medium enabled:cursor-pointer enabled:hover:text-primary transition-colors",
+                                                session.status === "CONCLUIDA" && "line-through text-muted-foreground"
+                                            )}
+                                        >
+                                            {session.subject.title}
+                                        </button>
+                                        <span className="text-muted-foreground shrink-0">{formatMinutes(session.duration)}</span>
+                                        {session.inactive ? (
+                                            <Badge variant="outline">{session.removed ? "Removida" : "Desativada"}</Badge>
+                                        ) : isCurrent ? (
+                                            <Badge>{session.status === "EM_ANDAMENTO" ? "Em andamento" : "Atual"}</Badge>
+                                        ) : (
+                                            <Badge variant={session.status === "CONCLUIDA" ? "secondary" : "outline"}>
+                                                {STATUS_LABEL[session.status]}
+                                            </Badge>
+                                        )}
                                     </li>
-                                )}
-                                <li
-                                    {...dragProps.rowProps}
-                                    aria-current={isCurrent ? "step" : undefined}
-                                    className={cn(
-                                        "flex items-center gap-3 rounded-md border px-3 py-2 text-sm transition-opacity",
-                                        isCurrent && "border-primary/50 bg-primary/5",
-                                        session.inactive && "opacity-50",
-                                        draggedId === session.id && "opacity-40",
-                                        overId === session.id && draggedId !== session.id && "ring-2 ring-primary"
-                                    )}
-                                >
-                                    <span
-                                        {...dragProps.handleProps}
-                                        title="Segure e arraste para mudar a ordem"
-                                        aria-label="Arrastar para reordenar"
-                                        className={cn(
-                                            "flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary",
-                                            isBusy ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"
-                                        )}
-                                    >
-                                        <GripVertical size={16} />
-                                    </span>
-                                    <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">{index + 1}</span>
-                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
-                                    <button
-                                        type="button"
-                                        disabled={session.inactive}
-                                        onClick={() => setDetailSubject(session.subject)}
-                                        title="Ver assunto a ser estudado"
-                                        className={cn(
-                                            "flex-1 truncate text-left font-medium enabled:cursor-pointer enabled:hover:text-primary transition-colors",
-                                            session.status === "CONCLUIDA" && "line-through text-muted-foreground"
-                                        )}
-                                    >
-                                        {session.subject.title}
-                                    </button>
-                                    <span className="text-muted-foreground shrink-0">{formatMinutes(session.duration)}</span>
-                                    {session.inactive ? (
-                                        <Badge variant="outline">{session.removed ? "Removida" : "Desativada"}</Badge>
-                                    ) : isCurrent ? (
-                                        <Badge>{session.status === "EM_ANDAMENTO" ? "Em andamento" : "Atual"}</Badge>
-                                    ) : (
-                                        <Badge variant={session.status === "CONCLUIDA" ? "secondary" : "outline"}>
-                                            {STATUS_LABEL[session.status]}
-                                        </Badge>
-                                    )}
-                                </li>
                                 </Fragment>
                             );
                         })}
@@ -464,7 +464,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
 
             {reviewsSection}
 
-            <Card>
+            <Card className="introduction-card" style={{ animationDelay: `${5 * 150}ms` }}>
                 <CardHeader>
                     <Button variant="ghost" className="w-fit px-0 hover:bg-transparent" onClick={() => setShowHistory((v) => !v)}>
                         <History className="h-4 w-4" />
