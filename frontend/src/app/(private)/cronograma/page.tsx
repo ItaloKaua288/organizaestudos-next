@@ -23,7 +23,8 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
             <main className="space-y-4">
                 <header className="space-y-1">
                     <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
-                        <ScrambleText text="CICLO DE ESTUDOS" />
+                        CICLO DE ESTUDOS
+                        {/* <ScrambleText text="CICLO DE ESTUDOS" /> */}
                     </h1>
                     <div className="flex flex-wrap justify-between gap-2 p-2 items-center">
                         <p className="text-sm font-medium text-muted-foreground">
