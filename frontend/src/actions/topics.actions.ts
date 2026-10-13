@@ -2,12 +2,18 @@
 
 import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
 import { fixEncoding } from "@/lib/text";
+import { sortTopicsHierarchically, TOPIC_TITLE_SEPARATOR } from "@/lib/topic-tree";
 import { TopicsApiResponse } from "@/types/apiResponse";
 import { Topic } from "@/types/topic";
 import { revalidatePath } from "next/cache";
 import z from "zod";
 
-export async function getTopicsAction(): Promise<Topic[]> {
+/**
+ * Lista todos os assuntos (inclusive subassuntos), cada subassunto logo após o pai.
+ * Por padrão o título do subassunto vem como "Assunto › Subassunto" (para revisões, cronograma
+ * e dashboard fazerem sentido). A tela de matérias usa { rawTitles: true } para editar o título real.
+ */
+export async function getTopicsAction(options?: { rawTitles?: boolean }): Promise<Topic[]> {
     try {
         const baseUrl = await getBaseUrl();
         const headers = await getAuthHeaders();
@@ -24,27 +30,38 @@ export async function getTopicsAction(): Promise<Topic[]> {
 
         const data: TopicsApiResponse = await res.json();
 
-        return data.topics.map((topic) => ({
-            id: topic._id,
-            title: topic.title,
-            status: topic.status,
-            order: topic.order,
-            link: topic.link,
-            subject: {
-                id: topic.subject_id._id,
-                title: topic.subject_id.title,
-                color: topic.subject_id.color,
-            },
-            reviews: {
-                first: { date: topic.review1, concluded: topic.review1_concluded },
-                second: { date: topic.review2, concluded: topic.review2_concluded },
-                third: { date: topic.review3, concluded: topic.review3_concluded },
-            },
-            attachments: topic.attachments.map(attachment => ({
-                ...attachment,
-                name: fixEncoding(attachment.name),
-            })),
-        }))
+        const titleById = new Map(data.topics.map((topic) => [topic._id, topic.title]));
+
+        const topics: Topic[] = data.topics.map((topic) => {
+            const parentId = topic.parent_id && titleById.has(topic.parent_id) ? topic.parent_id : null;
+            const parentTitle = parentId ? titleById.get(parentId) ?? null : null;
+
+            return {
+                id: topic._id,
+                title: parentTitle && !options?.rawTitles ? `${parentTitle}${TOPIC_TITLE_SEPARATOR}${topic.title}` : topic.title,
+                status: topic.status,
+                order: topic.order,
+                parentId,
+                parentTitle,
+                link: topic.link,
+                subject: {
+                    id: topic.subject_id._id,
+                    title: topic.subject_id.title,
+                    color: topic.subject_id.color,
+                },
+                reviews: {
+                    first: { date: topic.review1, concluded: topic.review1_concluded },
+                    second: { date: topic.review2, concluded: topic.review2_concluded },
+                    third: { date: topic.review3, concluded: topic.review3_concluded },
+                },
+                attachments: topic.attachments.map(attachment => ({
+                    ...attachment,
+                    name: fixEncoding(attachment.name),
+                })),
+            };
+        });
+
+        return sortTopicsHierarchically(topics);
     } catch (error) {
         console.error("Erro interno ao buscar as anotações:", error);
         throw new Error("Não foi possível carregar as anotações. Tente novamente mais tarde.");
@@ -94,7 +111,9 @@ export async function deleteAttachAction(formData: FormData) {
 
 const createTopicSchema = z.object({
     title: z.string().min(1, "O Título é obrigatório"),
-    subject_id: z.string().min(1, "O ID da matéria é obrigatório!")
+    subject_id: z.string().min(1, "O ID da matéria é obrigatório!"),
+    // Quando informado, o novo item é um subassunto deste assunto.
+    parent_id: z.string().optional()
 })
 
 export async function createTopicAction(formData: FormData) {
@@ -107,14 +126,14 @@ export async function createTopicAction(formData: FormData) {
             return { success: false, message: "Dados inválidos enviados no formulário." };
         }
 
-        const { title, subject_id } = validatedData.data;
+        const { title, subject_id, parent_id } = validatedData.data;
         const baseUrl = await getBaseUrl();
         const headers = await getAuthHeaders();
 
         const res = await fetch(`${baseUrl}/topics`, {
             method: "POST",
             headers,
-            body: JSON.stringify({ title, subject_id })
+            body: JSON.stringify({ title, subject_id, parent_id: parent_id || null })
         });
 
         if (!res.ok) {
@@ -127,7 +146,7 @@ export async function createTopicAction(formData: FormData) {
         revalidatePath("/materias")
         revalidatePath(`/materias/${subjectId}`)
 
-        return { success: true, message: "Assunto criado com sucesso!" }
+        return { success: true, message: parent_id ? "Subassunto criado com sucesso!" : "Assunto criado com sucesso!" }
     } catch (error) {
         console.error("Erro ao criar assunto:", error);
         return { success: false, message: "Erro ao criar assunto." }

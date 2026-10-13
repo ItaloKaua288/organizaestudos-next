@@ -64,6 +64,8 @@ export async function getDetailSubjectAction(subject_id: string) {
             active: data.subject.active !== false,
         };
 
+        const titleById = new Map(data.topics.map((topic) => [topic._id, topic.title]));
+
         return {
             ...subjectInfo,
 
@@ -72,6 +74,8 @@ export async function getDetailSubjectAction(subject_id: string) {
                 title: topic.title,
                 status: topic.status,
                 order: topic.order,
+                parentId: topic.parent_id && titleById.has(topic.parent_id) ? topic.parent_id : null,
+                parentTitle: topic.parent_id ? titleById.get(topic.parent_id) ?? null : null,
 
                 subject: subjectInfo,
 

@@ -95,7 +95,7 @@ export default function SubjectBox({
         }
     }
 
-    const { topics, moveTopic, isReordering, draggedId, overId, ghost, ghostRef, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
+    const { topics, moveTopic, getTopicMeta, isReordering, draggedId, overId, ghost, ghostRef, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
     const isActive = subject.active !== false;
 
     if (!isActive) {
@@ -206,13 +206,18 @@ export default function SubjectBox({
 
             {isExpanded && (
             <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                {topics.map((topic, index) => (
+                {topics.map((topic, index) => {
+                    const meta = getTopicMeta(topic.id);
+
+                    return (
                     <TopicRow
                         key={topic.id || `topic-${index}`}
                         topic={topic}
                         index={index}
-                        isFirst={index === 0}
-                        isLast={index === topics.length - 1}
+                        isFirst={meta.isFirst}
+                        isLast={meta.isLast}
+                        isSubtopic={meta.isSubtopic}
+                        childCount={meta.childCount}
                         subject={subject}
                         isReordering={isReordering}
                         dragProps={getDragProps(topic.id)}
@@ -221,7 +226,8 @@ export default function SubjectBox({
                         onMoveUp={() => moveTopic(topic.id, "up")}
                         onMoveDown={() => moveTopic(topic.id, "down")}
                     />
-                ))}
+                    );
+                })}
                 <TopicDragGhost ghost={ghost} elementRef={ghostRef} />
                 {topics.length === 0 && (
                     <p className="text-sm text-muted-foreground p-2 text-center">

@@ -8,6 +8,24 @@ const MAX_ENTRIES = 30;
 
 const isId = (v) => mongoose.isValidObjectId(v);
 
+// Subassuntos aparecem como "Assunto › Subassunto" e vêm logo depois do assunto pai.
+const TITLE_SEPARATOR = " › ";
+
+const orderHierarchically = (topics) => {
+    const ids = new Set(topics.map((t) => String(t._id)));
+    const isChild = (t) => t.parent_id && ids.has(String(t.parent_id));
+    const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+
+    const roots = topics.filter((t) => !isChild(t)).sort(byOrder);
+    const childrenOf = new Map();
+    topics.filter(isChild).forEach((t) => {
+        const key = String(t.parent_id);
+        childrenOf.set(key, [...(childrenOf.get(key) ?? []), t]);
+    });
+
+    return roots.flatMap((root) => [root, ...(childrenOf.get(String(root._id)) ?? []).sort(byOrder)]);
+};
+
 const percentOf = (correct, total) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0);
 
 /**
@@ -104,7 +122,7 @@ export const getQuestionStats = async (req, res) => {
         const subjectIds = subjects.map((s) => s._id);
 
         const [topics, byTopic, recent] = await Promise.all([
-            Topic.find({ subject_id: { $in: subjectIds } }).select("title subject_id order").sort({ order: 1 }).lean(),
+            Topic.find({ subject_id: { $in: subjectIds } }).select("title subject_id order parent_id").sort({ order: 1 }).lean(),
             QuestionLog.aggregate([
                 { $match: { user_id: new mongoose.Types.ObjectId(req.userId), subject_id: { $in: subjectIds } } },
                 {
@@ -125,7 +143,12 @@ export const getQuestionStats = async (req, res) => {
         ]);
 
         const topicStats = new Map(byTopic.map((row) => [String(row._id), row]));
-        const topicTitles = new Map(topics.map((t) => [String(t._id), t.title]));
+        const rawTitles = new Map(topics.map((t) => [String(t._id), t.title]));
+        const fullTitle = (t) =>
+            t.parent_id && rawTitles.has(String(t.parent_id))
+                ? `${rawTitles.get(String(t.parent_id))}${TITLE_SEPARATOR}${t.title}`
+                : t.title;
+        const topicTitles = new Map(topics.map((t) => [String(t._id), fullTitle(t)]));
 
         const result = subjects.map((subject) => {
             const subjectId = String(subject._id);
@@ -135,13 +158,12 @@ export const getQuestionStats = async (req, res) => {
             const total = subjectRows.reduce((sum, row) => sum + row.total, 0);
             const correct = subjectRows.reduce((sum, row) => sum + row.correct, 0);
 
-            const subjectTopics = topics
-                .filter((t) => String(t.subject_id) === subjectId)
+            const subjectTopics = orderHierarchically(topics.filter((t) => String(t.subject_id) === subjectId))
                 .map((t) => {
                     const stats = topicStats.get(String(t._id));
                     return {
                         id: String(t._id),
-                        title: t.title,
+                        title: topicTitles.get(String(t._id)) ?? t.title,
                         total: stats?.total ?? 0,
                         correct: stats?.correct ?? 0,
                         wrong: (stats?.total ?? 0) - (stats?.correct ?? 0),

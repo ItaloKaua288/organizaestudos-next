@@ -5,13 +5,13 @@ import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, GripVertical, Link as LinkLucide, Paperclip, PencilLine, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { RefObject, useState } from "react";
 import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 
-import { deleteTopicAction, openTopicAttachmentAction, sendattachmentPDFAction, updateTopicAction } from "@/actions/topics.actions";
+import { createTopicAction, deleteTopicAction, openTopicAttachmentAction, sendattachmentPDFAction, updateTopicAction } from "@/actions/topics.actions";
 import { TopicDragGhostData, TopicDragProps } from "@/hooks/use-topic-reorder";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
@@ -89,6 +89,10 @@ type TopicRowProps = {
     dragProps?: TopicDragProps;
     isDragging?: boolean;
     isDragOver?: boolean;
+    /** true quando o item é um subassunto (aparece recuado e não aceita subassuntos). */
+    isSubtopic?: boolean;
+    /** Quantos subassuntos este assunto tem (usado no aviso ao excluir). */
+    childCount?: number;
 } & Omit<SubjectBoxProps, "subject">;
 
 export function TopicRow({
@@ -103,6 +107,8 @@ export function TopicRow({
     dragProps,
     isDragging = false,
     isDragOver = false,
+    isSubtopic = false,
+    childCount = 0,
 }: TopicRowProps) {
     const hasAttachments = topic.attachments && topic.attachments.length > 0;
     const [editedTitle, setEditedTitle] = useState(topic.title);
@@ -110,6 +116,35 @@ export function TopicRow({
     const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(true);
+    const [subtopicTitle, setSubtopicTitle] = useState('');
+    const [isSubtopicDialogOpen, setIsSubtopicDialogOpen] = useState(false);
+
+    const handleSubtopicSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const title = subtopicTitle.trim();
+        if (!title) return;
+
+        try {
+            toast.loading("Criando subassunto...", { id: "create-subtopic" });
+            const formData = new FormData()
+            formData.append("title", title)
+            formData.append("subject_id", subject.id)
+            formData.append("parent_id", topic.id)
+            const result = await createTopicAction(formData);
+
+            if (result?.success) {
+                toast.success("Subassunto criado!", { id: "create-subtopic" });
+                setSubtopicTitle('');
+                setIsSubtopicDialogOpen(false);
+            } else {
+                toast.error(result?.message || "Falha ao criar o subassunto!", { id: "create-subtopic" });
+            }
+        } catch (error) {
+            toast.error("Falha ao criar o subassunto!", { id: "create-subtopic" });
+            console.error("Erro:", error);
+        }
+    };
 
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,8 +255,21 @@ export function TopicRow({
         }
     }
 
+    const kind = isSubtopic ? "Subassunto" : "Assunto";
+
     return (
-        <>
+        // Subassunto fica recuado com uma linha lateral, para ficar claro de qual assunto ele faz parte.
+        <div
+            className={`flex flex-col gap-2 ${isSubtopic
+                    ? "ml-4 border-l-2 pl-2 sm:ml-8 sm:pl-3 border-dotted"
+                    : ""
+                }`}
+            style={
+                isSubtopic
+                    ? { borderLeftColor: topic.subject.color }
+                    : undefined
+            }
+        >
             <div
                 {...dragProps?.rowProps}
                 className={`hoverComponents flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-opacity ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
@@ -237,7 +285,7 @@ export function TopicRow({
                             <GripVertical size={16} />
                         </span>
                     )}
-                    <div className="flex flex-col">
+                    {/* <div className="flex flex-col">
                         <button
                             type="button"
                             onClick={onMoveUp}
@@ -256,7 +304,7 @@ export function TopicRow({
                         >
                             <ArrowDown size={15} />
                         </button>
-                    </div>
+                    </div> */}
 
                     {topic.status === "CONCLUIDO" ? (
                         <CheckCircle2 size={15} className="shrink-0 text-green-500" />
@@ -334,9 +382,35 @@ export function TopicRow({
                             <Paperclip size={15} />
                         </label>
 
+                        {!isSubtopic && (
+                            <DialogDemo
+                                title="Novo subassunto"
+                                description={`Adicione um subassunto em "${topic.title}".`}
+                                contentBtn={<span title="Adicionar subassunto" className="flex"><Plus size={15} /></span>}
+                                classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-primary p-0 m-0"
+                                nameConfirmBtn="Adicionar"
+                                onSubmit={handleSubtopicSubmit}
+                                open={isSubtopicDialogOpen}
+                                onOpenChange={setIsSubtopicDialogOpen}
+                            >
+                                <FieldGroup>
+                                    <Field>
+                                        <Label htmlFor={`subtopic-title-${topic.id}`}>Título</Label>
+                                        <Input
+                                            id={`subtopic-title-${topic.id}`}
+                                            value={subtopicTitle}
+                                            onChange={(e) => setSubtopicTitle(e.target.value)}
+                                            placeholder="Nome do subassunto"
+                                            required
+                                        />
+                                    </Field>
+                                </FieldGroup>
+                            </DialogDemo>
+                        )}
+
                         <DialogDemo
-                            title="Editar Assunto"
-                            description="Modifique os detalhes deste assunto."
+                            title={`Editar ${kind}`}
+                            description={`Modifique os detalhes deste ${kind.toLowerCase()}.`}
                             contentBtn={<PencilLine className="" size={15} />}
                             classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-primary"
                             nameConfirmBtn="Editar"
@@ -377,8 +451,8 @@ export function TopicRow({
                         </DialogDemo>
 
                         <DialogDemo
-                            title="Excluir Assunto"
-                            description="Tem certeza que deseja deletar este assunto? Esta ação é irreversível."
+                            title={`Excluir ${kind}`}
+                            description={`Tem certeza que deseja deletar este ${kind.toLowerCase()}? Esta ação é irreversível.${childCount > 0 ? ` Os ${childCount} subassunto${childCount > 1 ? "s" : ""} dele também ${childCount > 1 ? "serão excluídos" : "será excluído"}.` : ""}`}
                             contentBtn={<Trash2 className="" size={15} />}
                             classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-destructive"
                             nameConfirmBtn="Excluir"
@@ -414,6 +488,6 @@ export function TopicRow({
                     ))}
                 </div>
             )}
-        </>
+        </div>
     );
 }

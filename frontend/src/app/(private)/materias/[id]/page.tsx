@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayBR } from "@/lib/date";
+import { TOPIC_TITLE_SEPARATOR } from "@/lib/topic-tree";
 import { Topic } from "@/types/topic";
 import DOMPurify from "isomorphic-dompurify";
 import { CalendarClock, CheckCircle2, Clock } from "lucide-react";
@@ -107,7 +108,10 @@ export default async function DetailMateriaPage({
         });
     };
 
-    const concludedTopics = sortedTopics.filter(topic => topic.status === "CONCLUIDO")
+    // Na aba de revisões o subassunto aparece como "Assunto › Subassunto".
+    const concludedTopics = sortedTopics
+        .filter(topic => topic.status === "CONCLUIDO")
+        .map(topic => topic.parentTitle ? { ...topic, title: `${topic.parentTitle}${TOPIC_TITLE_SEPARATOR}${topic.title}` } : topic)
     const topicTimes = {
         concluded: concludedTopics.filter(
             topic =>

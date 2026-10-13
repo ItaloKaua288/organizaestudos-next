@@ -19,6 +19,14 @@ const topicSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Subassunto: aponta para o assunto "pai" (apenas 1 nível). null/ausente = assunto principal.
+    // O subassunto é um Topic completo (status, revisões, anexos, questões) e a ordem (order)
+    // é relativa aos irmãos, ou seja, aos assuntos que têm o mesmo parent_id.
+    parent_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Topic",
+        default: null
+    },
     // NOVO: Array para guardar os arquivos anexados
     attachments: [{
         name: String,
@@ -74,6 +82,7 @@ const topicSchema = new mongoose.Schema({
 }, { timestamps: true })
 
 topicSchema.index({ subject_id: 1 });
+topicSchema.index({ parent_id: 1 });
 
 const Topic = mongoose.model("Topic", topicSchema);
 

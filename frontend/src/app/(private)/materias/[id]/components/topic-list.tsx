@@ -11,17 +11,22 @@ interface TopicListProps {
 }
 
 export function TopicList({ sortedTopics, subject }: TopicListProps) {
-    const { topics, moveTopic, isReordering, draggedId, overId, ghost, ghostRef, getDragProps } = useTopicReorder(subject.id, sortedTopics);
+    const { topics, moveTopic, getTopicMeta, isReordering, draggedId, overId, ghost, ghostRef, getDragProps } = useTopicReorder(subject.id, sortedTopics);
 
     return (
         <div className="flex flex-col gap-2">
-            {topics.map((topic, index) => (
+            {topics.map((topic, index) => {
+                const meta = getTopicMeta(topic.id);
+
+                return (
                 <TopicRow
                     key={topic.id || `topic-${index}`}
                     topic={topic}
                     index={index}
-                    isFirst={index === 0}
-                    isLast={index === topics.length - 1}
+                    isFirst={meta.isFirst}
+                    isLast={meta.isLast}
+                    isSubtopic={meta.isSubtopic}
+                    childCount={meta.childCount}
                     subject={subject}
                     isReordering={isReordering}
                     dragProps={getDragProps(topic.id)}
@@ -30,7 +35,8 @@ export function TopicList({ sortedTopics, subject }: TopicListProps) {
                     onMoveUp={() => moveTopic(topic.id, "up")}
                     onMoveDown={() => moveTopic(topic.id, "down")}
                 />
-            ))}
+                );
+            })}
             <TopicDragGhost ghost={ghost} elementRef={ghostRef} />
         </div>
     )

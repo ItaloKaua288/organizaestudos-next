@@ -37,6 +37,7 @@ interface ApiTopic {
     status: "PENDENTE" | "CONCLUIDO"
     subject_id: ApiSubject
     order: number
+    parent_id?: string | null
     review1: string
     review2: string
     review3: string

@@ -1,4 +1,5 @@
 import https from 'https';
+import mongoose from 'mongoose';
 import Subject from "../models/subject.model.js";
 import Topic from "../models/topic.model.js";
 import cloudinary from '../utils/cloudinary.js';
@@ -10,7 +11,7 @@ const inactiveResponse = (res) =>
     res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para continuar." });
 
 export const createTopic = async (req, res) => {
-    const { title, subject_id } = req.body;
+    const { title, subject_id, parent_id } = req.body;
 
     try {
         const cleanTitle = title?.trim();
@@ -25,18 +26,37 @@ export const createTopic = async (req, res) => {
 
         if (isInactive(subject)) return inactiveResponse(res);
 
-        const lastTopic = await Topic.findOne({ subject_id }).sort("-order");
+        // Subassunto: o pai precisa existir, ser da mesma matéria e ser um assunto principal (1 nível).
+        let parentId = null;
+
+        if (parent_id) {
+            if (!mongoose.isValidObjectId(parent_id))
+                return res.status(400).json({ success: false, message: "Invalid parent topic" });
+
+            const parent = await Topic.findOne({ _id: parent_id, subject_id: subject._id });
+
+            if (!parent) return res.status(404).json({ success: false, message: "Parent topic not found" });
+
+            if (parent.parent_id)
+                return res.status(400).json({ success: false, message: "Um subassunto não pode ter subassuntos." });
+
+            parentId = parent._id;
+        }
+
+        // A ordem é calculada entre os irmãos (mesmo pai). parent_id: null também casa com documentos antigos.
+        const lastTopic = await Topic.findOne({ subject_id, parent_id: parentId }).sort("-order");
         const newOrder = lastTopic ? lastTopic.order + 1 : 0;
 
         const topic = new Topic({
             title: cleanTitle,
             subject_id,
+            parent_id: parentId,
             order: newOrder
         });
 
         await topic.save();
 
-        res.status(201).json({ success: true, message: "Topic created successfully", topic: topic });
+        res.status(201).json({ success: true, message: parentId ? "Subtopic created successfully" : "Topic created successfully", topic: topic });
     } catch (error) {
         console.log("error in createTopic ", error);
         res.status(500).json({ success: false, message: "Error creating topic" });
@@ -195,10 +215,16 @@ export const deleteTopic = async (req, res) => {
         if (topic.subject_id.user_id.toString() !== req.userId.toString())
             return res.status(403).json({ success: false, message: "Forbidden" });
 
-        if (topic.attachments && topic.attachments.length > 0) {
-            const deletePromises = topic.attachments.map(file => cloudinary.uploader.destroy(file.public_id));
+        // Excluir um assunto também exclui os subassuntos dele (e os anexos de todos).
+        const subtopics = await Topic.find({ parent_id: topic._id });
+        const attachments = [...(topic.attachments ?? []), ...subtopics.flatMap(sub => sub.attachments ?? [])];
+
+        if (attachments.length > 0) {
+            const deletePromises = attachments.map(file => cloudinary.uploader.destroy(file.public_id));
             await Promise.all(deletePromises);
         }
+
+        if (subtopics.length > 0) await Topic.deleteMany({ parent_id: topic._id });
 
         await topic.deleteOne();
 
