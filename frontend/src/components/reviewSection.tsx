@@ -28,7 +28,7 @@ interface ReviewItemProps {
 
 // Avaliação ao concluir uma revisão: errou volta antes, acertou espaça mais.
 const PERFORMANCE_OPTIONS: { value: ReviewPerformance; label: string; hint: string; className: string }[] = [
-    { value: "ERROU", label: "Errei", hint: "Revisar de novo em breve", className: "hover:border-destructive hover:text-destructive" },
+    { value: "ERROU", label: "Muito difícil ", hint: "Revisar de novo em breve", className: "hover:border-destructive hover:text-destructive" },
     { value: "DIFICIL", label: "Difícil", hint: "Voltar um pouco antes", className: "hover:border-orange-500 hover:text-orange-500" },
     { value: "BOM", label: "Bom", hint: "Intervalo padrão", className: "hover:border-primary hover:text-primary" },
     { value: "FACIL", label: "Fácil", hint: "Espaçar mais", className: "hover:border-green-500 hover:text-green-500" },
@@ -280,7 +280,7 @@ export function ReviewSectionSkeleton() {
     return (
         <>
             <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
-                Visualize suas revisões. Começam em 24 horas, 7 dias e 30 dias e a próxima data se ajusta conforme você avalia (errei, difícil, bom ou fácil).
+                Visualize suas revisões. Começam em 24 horas, 7 dias e 30 dias e a próxima data se ajusta conforme você avalia (Muito difícil , difícil, bom ou fácil).
             </p>
             {sections.map((sec, index) => (
                 <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden shadow-sm bg-card" key={index}>
