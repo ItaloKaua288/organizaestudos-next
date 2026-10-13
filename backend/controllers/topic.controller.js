@@ -10,6 +10,12 @@ const isInactive = (subject) => subject?.active === false;
 const inactiveResponse = (res) =>
     res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para continuar." });
 
+// Assunto que tem subassuntos vira apenas um "organizador": não tem status, revisões, anexos,
+// link nem questões próprias (o progresso vem dos subassuntos).
+const isContainerTopic = async (topicId) => !!(await Topic.exists({ parent_id: topicId }));
+const containerResponse = (res, message = "Este assunto possui subassuntos e serve apenas para organização.") =>
+    res.status(400).json({ success: false, message });
+
 export const createTopic = async (req, res) => {
     const { title, subject_id, parent_id } = req.body;
 
@@ -55,6 +61,27 @@ export const createTopic = async (req, res) => {
         });
 
         await topic.save();
+
+        // O pai passa a ser só um organizador: zera status e revisões para que ele não apareça mais
+        // em revisões, cronograma, dashboard nem no progresso. (Anexos e link ficam guardados.)
+        if (parentId) {
+            await Topic.updateOne(
+                { _id: parentId },
+                {
+                    $set: {
+                        status: "PENDENTE",
+                        review1: null,
+                        review2: null,
+                        review3: null,
+                        review1_concluded: false,
+                        review2_concluded: false,
+                        review3_concluded: false,
+                        review3_interval: 30,
+                        reviewLog: []
+                    }
+                }
+            );
+        }
 
         res.status(201).json({ success: true, message: parentId ? "Subtopic created successfully" : "Topic created successfully", topic: topic });
     } catch (error) {
@@ -111,6 +138,9 @@ export const updateTopic = async (req, res) => {
             return res.status(403).json({ success: false, message: "Forbidden" });
 
         if (isInactive(topic.subject_id)) return inactiveResponse(res);
+
+        if ((status || review1) && (await isContainerTopic(topic._id)))
+            return containerResponse(res, "Este assunto possui subassuntos: o status e as revisões são dos subassuntos.");
 
         if (title !== undefined) {
             const cleanTitle = title.trim();
@@ -249,6 +279,9 @@ export const uploadAttachment = async (req, res) => {
 
         if (isInactive(topic.subject_id)) return inactiveResponse(res);
 
+        if (await isContainerTopic(topic._id))
+            return containerResponse(res, "Este assunto possui subassuntos: anexe os arquivos em um subassunto.");
+
         if (topic.attachments.length >= 3) return res.status(400).json({ success: false, message: "Limite de 3 arquivos atingido." });
         if (!req.file) return res.status(400).json({ success: false, message: "Nenhum arquivo enviado." });
 
@@ -348,6 +381,8 @@ export const concludedReview = async (req, res) => {
 
         if (isInactive(topic.subject_id)) return inactiveResponse(res);
 
+        if (await isContainerTopic(topic._id)) return containerResponse(res);
+
         const { performance } = req.body ?? {};
         if (performance !== undefined && performance !== null && !REVIEW_PERFORMANCES.includes(performance))
             return res.status(400).json({ success: false, message: "Invalid performance" });
@@ -418,6 +453,8 @@ export const UndoCompletedReview = async (req, res) => {
             return res.status(403).json({ success: false, message: "Forbidden" });
 
         if (isInactive(topic.subject_id)) return inactiveResponse(res);
+
+        if (await isContainerTopic(topic._id)) return containerResponse(res);
 
         // Desfaz a conclusão restaurando a data que ela alterou (quando é a última do registro).
         const lastEntry = topic.reviewLog[topic.reviewLog.length - 1];
@@ -493,7 +530,10 @@ export const redistributeMonthlyReviews = async (req, res) => {
         const subjects = await Subject.find({ user_id: req.userId, active: { $ne: false } }).select("_id");
         const subjectIds = subjects.map(subject => subject._id);
 
+        const parentIds = await Topic.distinct("parent_id", { subject_id: { $in: subjectIds }, parent_id: { $ne: null } });
+
         const topics = await Topic.find({
+            _id: { $nin: parentIds },
             subject_id: { $in: subjectIds },
             status: "CONCLUIDO",
             review3: { $ne: null },

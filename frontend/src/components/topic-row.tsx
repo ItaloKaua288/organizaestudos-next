@@ -5,7 +5,7 @@ import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, FolderOpen, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { RefObject, useState } from "react";
 import { createPortal } from "react-dom";
@@ -59,7 +59,9 @@ export function TopicDragGhost({
             className="flex cursor-grabbing items-center gap-3 rounded-lg border border-primary bg-card px-3 py-2 text-sm shadow-2xl"
         >
             <GripVertical size={16} className="shrink-0 text-primary" />
-            {topic.status === "CONCLUIDO" ? (
+            {topic.isContainer ? (
+                <FolderOpen size={15} className="shrink-0 text-muted-foreground" />
+            ) : topic.status === "CONCLUIDO" ? (
                 <CheckCircle2 size={15} className="shrink-0 text-green-500" />
             ) : (
                 <Clock size={15} className="shrink-0 text-destructive" />
@@ -110,7 +112,9 @@ export function TopicRow({
     isSubtopic = false,
     childCount = 0,
 }: TopicRowProps) {
-    const hasAttachments = topic.attachments && topic.attachments.length > 0;
+    // Assunto com subassuntos: só organiza (sem status, revisões, anexos, link ou questões próprias).
+    const isContainer = !!topic.isContainer;
+    const hasAttachments = !isContainer && topic.attachments && topic.attachments.length > 0;
     const [editedTitle, setEditedTitle] = useState(topic.title);
     const [editedLink, setEditedLink] = useState((topic as Topic).link || '');
     const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
@@ -306,7 +310,9 @@ export function TopicRow({
                         </button>
                     </div> */}
 
-                    {topic.status === "CONCLUIDO" ? (
+                    {isContainer ? (
+                        <FolderOpen color={topic.subject.color} size={15} className="shrink-0 text-muted-foreground" />
+                    ) : topic.status === "CONCLUIDO" ? (
                         <CheckCircle2 size={15} className="shrink-0 text-green-500" />
                     ) : (
                         <Clock size={15} className="shrink-0 text-destructive" />
@@ -320,6 +326,17 @@ export function TopicRow({
                     </span>
 
                     <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+                        {isContainer && (
+                            <span
+                                className="shrink-0 rounded-sm border px-1.5 py-0.5 text-xs text-muted-foreground"
+                                title={`${topic.subtopicsDone ?? 0} de ${topic.subtopicsTotal ?? 0} subassuntos concluídos`}
+                            >
+                                {topic.subtopicsDone ?? 0}/{topic.subtopicsTotal ?? 0}
+                            </span>
+                        )}
+
+                        {!isContainer && (
+                            <>
                         {/* Mobile */}
                         <select
                             value={topic.status}
@@ -382,6 +399,9 @@ export function TopicRow({
                             <Paperclip size={15} />
                         </label>
 
+                            </>
+                        )}
+
                         {!isSubtopic && (
                             <DialogDemo
                                 title="Novo subassunto"
@@ -427,6 +447,7 @@ export function TopicRow({
                                         onChange={(e) => setEditedTitle(e.target.value)}
                                     />
                                 </Field>
+                                {!isContainer && (
                                 <Field>
                                     <Label className="flex gap-1" htmlFor="topic-link">Link<span className="p-0 m-0 text-card-foreground/40">(Opcional)</span> </Label>
                                     <Input
@@ -436,7 +457,8 @@ export function TopicRow({
                                         placeholder="https://..."
                                     />
                                 </Field>
-                                {topic.status === 'CONCLUIDO' && (
+                                )}
+                                {!isContainer && topic.status === 'CONCLUIDO' && (
                                     <Field>
                                         <label htmlFor="topic-first-review-date">Data da primeira revisão </label>
                                         <Input

@@ -64,6 +64,11 @@ export const parseQuestionEntries = async (rawEntries, userId, subjectId = null)
     const topics = await Topic.find({ _id: { $in: [...merged.keys()] } }).select("subject_id").lean();
     if (topics.length !== merged.size) return { error: "Assunto não encontrado." };
 
+    // Assunto com subassuntos é só organizador: as questões devem ser registradas nos subassuntos.
+    if (await Topic.exists({ parent_id: { $in: [...merged.keys()] } })) {
+        return { error: "Assuntos com subassuntos não recebem questões. Escolha um subassunto." };
+    }
+
     const subjectIds = [...new Set(topics.map((t) => String(t.subject_id)))];
     const subjects = await Subject.find({ _id: { $in: subjectIds }, user_id: userId }).select("active").lean();
     if (subjects.length !== subjectIds.length) return { error: "Assunto não encontrado." };
@@ -142,6 +147,9 @@ export const getQuestionStats = async (req, res) => {
                 .lean(),
         ]);
 
+        // Assuntos com subassuntos são só organizadores e não entram na lista de assuntos das estatísticas.
+        const parentIdSet = new Set(topics.filter((t) => t.parent_id).map((t) => String(t.parent_id)));
+
         const topicStats = new Map(byTopic.map((row) => [String(row._id), row]));
         const rawTitles = new Map(topics.map((t) => [String(t._id), t.title]));
         const fullTitle = (t) =>
@@ -159,6 +167,7 @@ export const getQuestionStats = async (req, res) => {
             const correct = subjectRows.reduce((sum, row) => sum + row.correct, 0);
 
             const subjectTopics = orderHierarchically(topics.filter((t) => String(t.subject_id) === subjectId))
+                .filter((t) => !parentIdSet.has(String(t._id)))
                 .map((t) => {
                     const stats = topicStats.get(String(t._id));
                     return {

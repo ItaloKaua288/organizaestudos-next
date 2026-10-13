@@ -2,7 +2,7 @@
 
 import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
 import { fixEncoding } from "@/lib/text";
-import { sortTopicsHierarchically, TOPIC_TITLE_SEPARATOR } from "@/lib/topic-tree";
+import { markContainers, sortTopicsHierarchically, TOPIC_TITLE_SEPARATOR, withoutContainers } from "@/lib/topic-tree";
 import { TopicsApiResponse } from "@/types/apiResponse";
 import { Topic } from "@/types/topic";
 import { revalidatePath } from "next/cache";
@@ -12,8 +12,12 @@ import z from "zod";
  * Lista todos os assuntos (inclusive subassuntos), cada subassunto logo após o pai.
  * Por padrão o título do subassunto vem como "Assunto › Subassunto" (para revisões, cronograma
  * e dashboard fazerem sentido). A tela de matérias usa { rawTitles: true } para editar o título real.
+ *
+ * Assuntos que têm subassuntos são apenas organizadores: por padrão eles NÃO vêm na lista (assim não
+ * entram em revisões, cronograma, dashboard nem no progresso). A tela de matérias usa
+ * { includeContainers: true } para mostrá-los.
  */
-export async function getTopicsAction(options?: { rawTitles?: boolean }): Promise<Topic[]> {
+export async function getTopicsAction(options?: { rawTitles?: boolean; includeContainers?: boolean }): Promise<Topic[]> {
     try {
         const baseUrl = await getBaseUrl();
         const headers = await getAuthHeaders();
@@ -61,7 +65,9 @@ export async function getTopicsAction(options?: { rawTitles?: boolean }): Promis
             };
         });
 
-        return sortTopicsHierarchically(topics);
+        const marked = markContainers(topics);
+
+        return sortTopicsHierarchically(options?.includeContainers ? marked : withoutContainers(marked));
     } catch (error) {
         console.error("Erro interno ao buscar as anotações:", error);
         throw new Error("Não foi possível carregar as anotações. Tente novamente mais tarde.");

@@ -153,7 +153,7 @@ export default function SubjectBox({
                         aria-hidden="true"
                     />
                     <h2 className="text-md font-bold truncate">{subject.title}</h2>
-                    {!isExpanded && <Badge variant="secondary">{topics.length}</Badge>}
+                    {!isExpanded && <Badge variant="secondary">{topics.filter((topic) => !topic.isContainer).length}</Badge>}
                 </div>
 
                 <div className="flex items-center">

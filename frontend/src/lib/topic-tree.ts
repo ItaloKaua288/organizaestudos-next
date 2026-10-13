@@ -23,3 +23,43 @@ export function sortTopicsHierarchically<T extends TreeNode>(topics: T[]): T[] {
 
     return roots.flatMap((root) => [root, ...(childrenOf.get(root.id) ?? []).sort(byOrder)]);
 }
+
+
+type ContainerNode = {
+    id: string;
+    parentId?: string | null;
+    status: "CONCLUIDO" | "PENDENTE";
+    isContainer?: boolean;
+    subtopicsTotal?: number;
+    subtopicsDone?: number;
+};
+
+/**
+ * Marca como "organizador" (isContainer) todo assunto que tem subassuntos e calcula quantos
+ * subassuntos ele tem / quantos estão concluídos. Os demais itens passam sem alteração.
+ */
+export function markContainers<T extends ContainerNode>(topics: T[]): T[] {
+    const ids = new Set(topics.map((topic) => topic.id));
+    const stats = new Map<string, { total: number; done: number }>();
+
+    topics.forEach((topic) => {
+        if (!topic.parentId || !ids.has(topic.parentId)) return;
+
+        const current = stats.get(topic.parentId) ?? { total: 0, done: 0 };
+        current.total += 1;
+        if (topic.status === "CONCLUIDO") current.done += 1;
+        stats.set(topic.parentId, current);
+    });
+
+    return topics.map((topic) => {
+        const info = stats.get(topic.id);
+        if (!info) return topic;
+
+        return { ...topic, isContainer: true, subtopicsTotal: info.total, subtopicsDone: info.done };
+    });
+}
+
+/** Itens "de verdade" (que contam em progresso, revisões, cronograma etc.): tira os organizadores. */
+export function withoutContainers<T extends { isContainer?: boolean }>(topics: T[]): T[] {
+    return topics.filter((topic) => !topic.isContainer);
+}

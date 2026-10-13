@@ -12,7 +12,7 @@ async function MateriasContent() {
     const [allSubjects, allTopics] = await Promise.all([
         getSubjectsAction(),
         // Títulos reais (sem o prefixo "Assunto › ") porque esta tela permite editar os títulos.
-        getTopicsAction({ rawTitles: true })
+        getTopicsAction({ rawTitles: true, includeContainers: true })
     ]);
 
     const topicsMap = new Map();

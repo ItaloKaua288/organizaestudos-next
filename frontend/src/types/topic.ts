@@ -14,6 +14,15 @@ export interface Topic {
     parentId?: string | null;
     /** Título do assunto pai (só para exibição). */
     parentTitle?: string | null;
+    /**
+     * true quando o assunto tem subassuntos: ele vira apenas um organizador (sem status, revisões,
+     * anexos, link ou questões próprias) e o progresso vem dos subassuntos.
+     */
+    isContainer?: boolean;
+    /** Quantidade de subassuntos (só quando isContainer). */
+    subtopicsTotal?: number;
+    /** Quantidade de subassuntos concluídos (só quando isContainer). */
+    subtopicsDone?: number;
     reviews: {
         first: { date: string; concluded: boolean };
         second: { date: string; concluded: boolean };

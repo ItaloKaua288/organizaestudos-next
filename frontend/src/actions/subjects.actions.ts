@@ -5,6 +5,7 @@ import { fixEncoding } from "@/lib/text";
 import { ApiDetailSubjectResponse, ApiSubjectResponse } from "@/types/apiResponse";
 import { Note } from "@/types/note";
 import { Subject } from "@/types/subject";
+import { markContainers } from "@/lib/topic-tree";
 import { Topic } from "@/types/topic";
 import { revalidatePath } from "next/cache";
 import z from "zod";
@@ -69,7 +70,7 @@ export async function getDetailSubjectAction(subject_id: string) {
         return {
             ...subjectInfo,
 
-            topics: data.topics.map((topic): Topic => ({
+            topics: markContainers(data.topics.map((topic): Topic => ({
                 id: topic._id,
                 title: topic.title,
                 status: topic.status,
@@ -102,7 +103,7 @@ export async function getDetailSubjectAction(subject_id: string) {
                     file: attach.file,
                     public_id: attach.public_id,
                 })),
-            })),
+            }))),
 
             notes: data.notes.map((note): Note => ({
                 id: note._id,

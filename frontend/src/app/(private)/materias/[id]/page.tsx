@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayBR } from "@/lib/date";
-import { TOPIC_TITLE_SEPARATOR } from "@/lib/topic-tree";
+import { TOPIC_TITLE_SEPARATOR, withoutContainers } from "@/lib/topic-tree";
 import { Topic } from "@/types/topic";
 import DOMPurify from "isomorphic-dompurify";
 import { CalendarClock, CheckCircle2, Clock } from "lucide-react";
@@ -74,13 +74,15 @@ export default async function DetailMateriaPage({
         return bPinned - aPinned;
     })
 
-    const totalTopics = subject.topics?.length || 0;
-    const completedTopics = subject.topics?.filter(t => t.status === 'CONCLUIDO').length || 0;
+    // Assuntos com subassuntos são só organizadores: não contam no progresso nem nas revisões.
+    const countableTopics = withoutContainers(subject.topics ?? []);
+    const totalTopics = countableTopics.length;
+    const completedTopics = countableTopics.filter(t => t.status === 'CONCLUIDO').length;
     const progressPercentage = totalTopics === 0 ? 0 : Math.round((completedTopics / totalTopics) * 100);
     const sortedTopics = subject.topics ? [...subject.topics].sort((a, b) => a.order - b.order) : [];
 
     const allReviews: { topicTitle: string; reviewType: string; date: string; concluded: boolean; status: boolean }[] = [];
-    subject.topics?.forEach(topic => {
+    countableTopics.forEach(topic => {
         if (topic.reviews) {
             allReviews.push({ topicTitle: topic.title, reviewType: 'R1', date: topic.reviews.first.date, concluded: topic.reviews.first.concluded, status: topic.status === "CONCLUIDO" });
             allReviews.push({ topicTitle: topic.title, reviewType: 'R2', date: topic.reviews.second.date, concluded: topic.reviews.second.concluded, status: topic.status === "CONCLUIDO" });
@@ -109,7 +111,7 @@ export default async function DetailMateriaPage({
     };
 
     // Na aba de revisões o subassunto aparece como "Assunto › Subassunto".
-    const concludedTopics = sortedTopics
+    const concludedTopics = withoutContainers(sortedTopics)
         .filter(topic => topic.status === "CONCLUIDO")
         .map(topic => topic.parentTitle ? { ...topic, title: `${topic.parentTitle}${TOPIC_TITLE_SEPARATOR}${topic.title}` } : topic)
     const topicTimes = {
@@ -166,7 +168,7 @@ export default async function DetailMateriaPage({
 
                 <div className="flex gap-8 border-b-2">
                     <Link href="?tab=assuntos" className={tab === 'assuntos' ? activeTabStyle : inactiveTabStyle}>
-                        Assuntos <Badge className="px-1 py-2.5" variant="secondary">{subject.topics?.length}</Badge>
+                        Assuntos <Badge className="px-1 py-2.5" variant="secondary">{totalTopics}</Badge>
                     </Link>
                     <Link href="?tab=notas" className={tab === 'notas' ? activeTabStyle : inactiveTabStyle}>
                         Notas <Badge className="px-1 py-2.5" variant="secondary">{subject.notes?.length}</Badge>
