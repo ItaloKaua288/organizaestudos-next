@@ -22,7 +22,7 @@ type Level = { label: string; text: string; bar: string };
 function getLevel(percent: number): Level {
     if (percent < 60) return { label: "Fraco", text: "text-red-600 dark:text-red-400", bar: "bg-red-500" };
     if (percent < 80) return { label: "Regular", text: "text-amber-600 dark:text-amber-400", bar: "bg-amber-500" };
-    return { label: "Forte", text: "text-green-600 dark:text-green-400", bar: "bg-green-500" };
+    return { label: "Forte", text: "text-blue-600 dark:text-blue-400", bar: "bg-blue-500" };
 }
 
 const formatPercent = (value: number) => `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
