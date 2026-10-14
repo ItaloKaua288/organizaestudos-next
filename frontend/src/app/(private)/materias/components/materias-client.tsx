@@ -2,6 +2,7 @@
 
 import { createSubjectAction } from "@/actions/subjects.actions";
 import SubjectBox, { SubjectBoxSkeleton } from "@/app/(private)/materias/components/subject-box";
+import { DataTransfer } from "@/components/data-transfer";
 import { DialogDemo } from "@/components/dialog-button";
 import { Button } from "@/components/ui/button";
 import { ColorPicker } from "@/components/ui/color-picker";
@@ -69,6 +70,7 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
                 <Button variant="outline" size="sm" onClick={collapseAll} title="Reduzir todas as matérias" disabled={subjects.length === 0}>
                     <ChevronsDownUp size={15} /> <span className="max-sm:hidden">Reduzir todas</span>
                 </Button>
+                <DataTransfer />
                 <DialogDemo
                     contentBtn="Nova Matéria"
                     title="Nova Matéria"

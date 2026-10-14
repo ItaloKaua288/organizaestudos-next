@@ -11,6 +11,7 @@ import { CalendarClock, Captions, ChartColumn, LayoutDashboard, Menu, NotepadTex
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { GlobalSearch } from "./global-search";
 import { Logo } from "./logo";
 
 import dynamic from "next/dynamic";
@@ -137,6 +138,8 @@ export function Navbar2() {
                                 Sair
                             </Button>
                         )}
+
+                        {!isLoading && isAuthenticated && <GlobalSearch />}
 
                         <ThemeToggle size="icon" variant="outline" />
 

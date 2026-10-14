@@ -41,9 +41,19 @@ export interface QuestionRecentLog {
     answeredAt: string;
 }
 
+/** Questões e acertos somados em uma semana (segunda a domingo). */
+export interface QuestionTrendPoint {
+    weekStart: string;
+    total: number;
+    correct: number;
+    percent: number;
+}
+
 export interface QuestionStats {
     overall: { total: number; correct: number; wrong: number; percent: number };
     subjects: QuestionSubjectStat[];
+    /** Evolução semanal das últimas 12 semanas (só semanas com questões), da mais antiga para a mais nova. */
+    trend: QuestionTrendPoint[];
     recent: QuestionRecentLog[];
 }
 

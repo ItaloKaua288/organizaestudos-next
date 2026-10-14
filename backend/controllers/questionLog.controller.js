@@ -5,6 +5,8 @@ import Topic from "../models/topic.model.js";
 
 const MAX_QUESTIONS = 10000;
 const MAX_ENTRIES = 30;
+const TREND_WEEKS = 12;
+const TIMEZONE = "America/Sao_Paulo";
 
 const isId = (v) => mongoose.isValidObjectId(v);
 
@@ -126,7 +128,9 @@ export const getQuestionStats = async (req, res) => {
             .lean();
         const subjectIds = subjects.map((s) => s._id);
 
-        const [topics, byTopic, recent] = await Promise.all([
+        const trendSince = new Date(Date.now() - TREND_WEEKS * 7 * 24 * 60 * 60 * 1000);
+
+        const [topics, byTopic, recent, byWeek] = await Promise.all([
             Topic.find({ subject_id: { $in: subjectIds } }).select("title subject_id order parent_id").sort({ order: 1 }).lean(),
             QuestionLog.aggregate([
                 { $match: { user_id: new mongoose.Types.ObjectId(req.userId), subject_id: { $in: subjectIds } } },
@@ -145,7 +149,32 @@ export const getQuestionStats = async (req, res) => {
                 .sort({ answeredAt: -1 })
                 .limit(15)
                 .lean(),
+            // Evolução: questões e acertos somados por semana (semana começa na segunda, fuso de São Paulo).
+            QuestionLog.aggregate([
+                {
+                    $match: {
+                        user_id: new mongoose.Types.ObjectId(req.userId),
+                        subject_id: { $in: subjectIds },
+                        answeredAt: { $gte: trendSince },
+                    },
+                },
+                {
+                    $group: {
+                        _id: { $dateTrunc: { date: "$answeredAt", unit: "week", startOfWeek: "monday", timezone: TIMEZONE } },
+                        total: { $sum: "$total" },
+                        correct: { $sum: "$correct" },
+                    },
+                },
+                { $sort: { _id: 1 } },
+            ]),
         ]);
+
+        const trend = byWeek.map((week) => ({
+            weekStart: week._id,
+            total: week.total,
+            correct: week.correct,
+            percent: percentOf(week.correct, week.total),
+        }));
 
         // Assuntos com subassuntos são só organizadores e não entram na lista de assuntos das estatísticas.
         const parentIdSet = new Set(topics.filter((t) => t.parent_id).map((t) => String(t.parent_id)));
@@ -207,6 +236,7 @@ export const getQuestionStats = async (req, res) => {
                 percent: percentOf(overallCorrect, overallTotal),
             },
             subjects: result,
+            trend,
             recent: recent.map((log) => ({
                 id: String(log._id),
                 subjectId: String(log.subject_id),

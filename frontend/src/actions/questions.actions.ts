@@ -24,6 +24,7 @@ export async function getQuestionStatsAction(): Promise<QuestionStats> {
         return {
             overall: data.overall,
             subjects: data.subjects,
+            trend: data.trend ?? [],
             recent: data.recent,
         };
     } catch (error) {

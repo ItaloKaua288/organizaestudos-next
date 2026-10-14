@@ -13,6 +13,8 @@ import timeLineRoutes from './routes/timeLine.route.js';
 import noteRoutes from './routes/note.route.js';
 import cycleRoutes from './routes/cycle.route.js';
 import questionLogRoutes from './routes/questionLog.route.js';
+import searchRoutes from './routes/search.route.js';
+import dataRoutes from './routes/data.route.js';
 
 
 dotenv.config();
@@ -27,7 +29,8 @@ app.use(cors({
     credentials: true,
 }));
 
-app.use(express.json());
+// 500kb: o padrão (100kb) não comporta a importação de um edital grande.
+app.use(express.json({ limit: "500kb" }));
 app.use(cookieParser());
 
 app.get('/', (req, res) => {
@@ -43,6 +46,8 @@ app.use("/api/timelines", timeLineRoutes)
 app.use("/api/notes", noteRoutes)
 app.use("/api/cycle", cycleRoutes)
 app.use("/api/questions", questionLogRoutes)
+app.use("/api/search", searchRoutes)
+app.use("/api/data", dataRoutes)
 
 if (process.env.VERCEL) {
     await connectDB();
