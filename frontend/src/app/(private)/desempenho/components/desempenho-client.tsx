@@ -178,7 +178,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
                 {/* Evolução */}
-                <Card className="introduction-card lg:col-span-2" style={{ animationDelay: `${2 * 150}ms` }}>
+                <Card className="introduction-card lg:col-span-2 h-full" style={{ animationDelay: `${2 * 150}ms` }}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <TrendingUp className="h-4 w-4" /> Evolução do % de acerto
@@ -199,7 +199,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                 </Card>
 
                 {/* Pontos fracos */}
-                <Card className="introduction-card h-full" style={{ animationDelay: `${2 * 150}ms` }}>
+                <Card className="introduction-card h-full max-h-105 " style={{ animationDelay: `${2 * 150}ms` }}>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4" /> Pontos fracos
@@ -209,7 +209,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                             Menos de {LEVEL_WEAK_BELOW}% de acerto, com pelo menos {WEAK_MIN_QUESTIONS} questões feitas.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="overflow-auto">
                         {weakTopics.length === 0 ? (
                             <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
                                 {hasData ? "Nenhum assunto fraco por enquanto." : "Os assuntos fracos aparecem aqui depois de registrar questões."}
