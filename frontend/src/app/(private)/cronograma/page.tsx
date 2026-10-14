@@ -4,10 +4,12 @@ import { getTimelinesAction } from "@/actions/timeline.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
 import { ScrambleText } from "@/components/scramble-text";
 import { Topic } from "@/types/topic";
+import { cookies } from "next/headers";
 import { CycleView } from "./components/cycle-view";
 import { getDueReview } from "@/lib/review-due";
 import { getPendingTopicsBySubject, getTodayReviews, getTopicsBySubject } from "./components/cycle-utils";
 import { DayCard } from "./components/day-card";
+import { VIEW_COOKIE } from "./components/view-cookie";
 import { ViewToggle } from "./components/view-toggle";
 
 const WEEK_DAYS = [
@@ -15,7 +17,11 @@ const WEEK_DAYS = [
 ]
 
 export default async function CronogramaPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-    const { view } = await searchParams;
+    const { view: viewParam } = await searchParams;
+
+    // Sem ?view= na URL (ex.: link da navbar), usa a última visualização salva no cookie.
+    const savedView = (await cookies()).get(VIEW_COOKIE)?.value;
+    const view = viewParam ?? savedView;
 
     if (view === "ciclo") {
         const [cycle, allSubjects, allTopics] = await Promise.all([getCycleAction(), getSubjectsAction(), getTopicsAction()]);
