@@ -56,16 +56,16 @@ async function RevisaoContent() {
     };
 
     const sections = [
-        { title: "24 horas", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
-        { title: "7 dias", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
-        { title: "30 dias", reviewIndex: 3, icon: <Clock size={20} />, topics: topicTimes.month },
+        { title: "1° Revisão", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
+        { title: "2° Revisão", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
+        { title: "3° Revisão", reviewIndex: 3, icon: <Clock size={20} />, topics: topicTimes.month },
         { title: "Concluído", icon: <CheckCircle2 size={20} className="text-green-500" />, topics: topicTimes.concluded },
     ];
 
     return (
         <div className="flex flex-col gap-3">
             <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
-                Visualize suas revisões. Começam em 24 horas, 7 dias e 30 dias e a próxima data se ajusta conforme você avalia (Muito difícil, difícil, bom ou fácil).
+                Visualize suas revisões. Começam em 1° Revisão, 2° Revisão e 3° Revisão e a próxima data se ajusta conforme você avalia (Muito difícil, difícil, bom ou fácil).
             </p>
             {sections.map((sec, index) => (
                 <ReviewSection
