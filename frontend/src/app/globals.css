@@ -140,9 +140,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
@@ -150,22 +152,22 @@
 
 /* isso é usado para tirar a transparencia do botão tipo outline*/
 .antiTransparenceBtn {
-  @apply bg-card transition-all hover:shadow-sm dark:shadow-sm  hover:-translate-y-0.5 hover:brightness-75 dark:hover:brightness-125;
+  @apply bg-card transition-all hover:shadow-sm dark:shadow-sm hover:-translate-y-0.5 hover:brightness-75 dark:hover:brightness-125;
 }
 
 .hoverComponents {
-  @apply  bg-input/20 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm hover:-translate-y-0.5 transition-all;
+  @apply bg-input/20 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm hover:-translate-y-0.5 transition-all;
 }
 
 .hoverComponentsStatic {
-  @apply  bg-input/20 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm transition-all;
+  @apply bg-input/20 dark:bg-input/20 hover:bg-input/40 dark:hover:bg-input/40 hover:shadow-sm dark:hover:shadow-sm transition-all;
 }
 
 .introduction-Page {
   @apply animate-in fade-in slide-in-from-top-8 duration-700 ease-out fill-mode-both;
 }
 
-.reverse-introduction-page{
+.reverse-introduction-page {
   @apply animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both;
 }
 
@@ -185,4 +187,41 @@
   100% {
     transform: translateX(400%);
   }
+}
+
+/* Scrollbar personalizada */
+* {
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: color-mix(in oklab, var(--muted-foreground) 8%, transparent);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background-color 0.2s;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: color-mix(in oklab, var(--primary) 80%, black);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
