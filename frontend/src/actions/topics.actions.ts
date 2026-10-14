@@ -65,9 +65,13 @@ export async function getTopicsAction(options?: { rawTitles?: boolean; includeCo
             };
         });
 
-        const marked = markContainers(topics);
+        // Ordena a árvore COMPLETA (com os organizadores) e só depois remove os organizadores.
+        // Se removesse antes, os subassuntos perderiam o pai na lista, virariam "raízes" e seriam
+        // ordenados pelo `order` relativo aos irmãos (0, 1, 2...), passando na frente dos assuntos
+        // sem subassuntos e impedindo que estes apareçam como próximo assunto.
+        const sorted = sortTopicsHierarchically(markContainers(topics));
 
-        return sortTopicsHierarchically(options?.includeContainers ? marked : withoutContainers(marked));
+        return options?.includeContainers ? sorted : withoutContainers(sorted);
     } catch (error) {
         console.error("Erro interno ao buscar as anotações:", error);
         throw new Error("Não foi possível carregar as anotações. Tente novamente mais tarde.");
