@@ -138,9 +138,9 @@ export default async function DetailMateriaPage({
     const timelineDays = subject.timelines?.map((timeline) => timeline.day)
 
     const sections = [
-        { title: "24 horas", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
-        { title: "7 dias", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
-        { title: "30 dias", reviewIndex: 3, icon: <Clock size={20} />, topics: topicTimes.month },
+        { title: "1° Revisão", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
+        { title: "2° Revisão", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
+        { title: "3° Revisão", reviewIndex: 3, icon: <Clock size={20} />, topics: topicTimes.month },
         { title: "Concluído", icon: <CheckCircle2 size={20} className="text-green-500" />, topics: topicTimes.concluded },
     ];
 
