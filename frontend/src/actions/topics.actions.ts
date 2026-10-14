@@ -9,6 +9,22 @@ import { revalidatePath } from "next/cache";
 import z from "zod";
 
 /**
+ * Atualiza a lista de matérias e a página de detalhes da matéria.
+ * A API devolve `topic.subject_id` populado (objeto) em várias rotas; por isso o id é extraído com cuidado
+ * e a página dinâmica `/materias/[id]` também é revalidada, para nunca ficar com dados antigos em cache.
+ */
+function revalidateSubjectPages(subject?: unknown) {
+    const subjectId = typeof subject === "string"
+        ? subject
+        : (subject as { _id?: unknown } | null | undefined)?._id;
+
+    revalidatePath("/materias");
+    revalidatePath("/materias/[id]", "page");
+
+    if (subjectId) revalidatePath(`/materias/${String(subjectId)}`);
+}
+
+/**
  * Lista todos os assuntos (inclusive subassuntos), cada subassunto logo após o pai.
  * Por padrão o título do subassunto vem como "Assunto › Subassunto" (para revisões, cronograma
  * e dashboard fazerem sentido). A tela de matérias usa { rawTitles: true } para editar o título real.
@@ -109,8 +125,7 @@ export async function deleteAttachAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao deletar anexo." };
         }
 
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subject_id}`)
+        revalidateSubjectPages(subject_id)
 
         return { success: true, message: "Anexo deletado com sucesso!" }
     } catch (error) {
@@ -151,10 +166,9 @@ export async function createTopicAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao criar assunto." };
         }
 
-        const subjectId = (await res.json()).topic.subject_id
+        const subjectId = (await res.json()).topic?.subject_id
 
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subjectId}`)
+        revalidateSubjectPages(subjectId)
 
         return { success: true, message: parent_id ? "Subassunto criado com sucesso!" : "Assunto criado com sucesso!" }
     } catch (error) {
@@ -209,10 +223,9 @@ export async function updateTopicAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao atualizar assunto." };
         }
 
-        const subjectId = (await res.json()).topic.subject_id
+        const subjectId = (await res.json()).topic?.subject_id
 
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subjectId}`)
+        revalidateSubjectPages(subjectId)
 
         return { success: true, message: "Assunto atualizado com sucesso!" };
     } catch (error) {
@@ -253,10 +266,9 @@ export async function updateTopicStatusAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao atualizar assunto." };
         }
 
-        const subjectId = (await res.json()).topic.subject_id
+        const subjectId = (await res.json()).topic?.subject_id
 
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subjectId}`)
+        revalidateSubjectPages(subjectId)
 
         return { success: true, message: "Assunto atualizado com sucesso!" };
     } catch (error) {
@@ -294,8 +306,7 @@ export async function deleteTopicAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao deletar assunto." };
         }
 
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subject_id}`)
+        revalidateSubjectPages(subject_id)
 
         return { success: true, message: "Assunto deletado com sucesso!" };
     } catch (error) {
@@ -347,10 +358,9 @@ export async function sendattachmentPDFAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao enviar anexo." };
         }
 
-        const subjectId = (await res.json()).topic.subject_id
+        const subjectId = (await res.json()).topic?.subject_id
 
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subjectId}`)
+        revalidateSubjectPages(subjectId)
 
         return { success: true, message: "Anexo enviado com sucesso!" };
     } catch (error) {
@@ -425,11 +435,7 @@ export async function deleteAttachmentPDFAction(formData: FormData) {
             return { success: false, message: errorData.message || "Falha da API ao deletar anexo." };
         }
 
-        const subjectId = (await res.json()).topic.subject_id
-
-        revalidatePath("/materias")
-
-        revalidatePath(`/materias/${subjectId}`)
+        revalidateSubjectPages()
 
         return { success: true, message: "Anexo deletado com sucesso!" };
     } catch (error) {
@@ -478,15 +484,14 @@ export async function updateTopicReviewStatusAction(formData: FormData) {
         }
 
         const responseData = await res.json();
-        const subjectId = responseData.topic.subject_id
+        const subjectId = responseData.topic?.subject_id
         const nextReview = responseData.nextReview
             ? { date: String(responseData.nextReview.date), days: Number(responseData.nextReview.days) }
             : undefined;
 
         revalidatePath("/")
         revalidatePath("/revisoes")
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subjectId}`)
+        revalidateSubjectPages(subjectId)
 
         return { success: true, message: "Status da revisão atualizado com sucesso!", nextReview };
     } catch (error) {
@@ -516,8 +521,7 @@ export async function reorderTopicsAction(subjectId: string, orderedTopicIds: st
             return { success: false, message: errorData.message || "Falha da API ao reordenar assuntos." };
         }
 
-        revalidatePath("/materias")
-        revalidatePath(`/materias/${subjectId}`)
+        revalidateSubjectPages(subjectId)
 
         return { success: true, message: "Ordem atualizada com sucesso!" };
     } catch (error) {

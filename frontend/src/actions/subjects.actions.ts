@@ -201,7 +201,9 @@ export async function updateSubjectAction(formData: FormData) {
         }
 
         revalidatePath("/materias");
+        revalidatePath(`/materias/${subject_id}`);
         revalidatePath("/notas");
+        revalidatePath(`/notas/${subject_id}`);
         revalidatePath("/");
         revalidatePath("/cronograma");
         revalidatePath("/revisoes");

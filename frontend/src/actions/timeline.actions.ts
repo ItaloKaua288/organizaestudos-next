@@ -74,6 +74,7 @@ export async function createTimelineAction(formData: FormData) {
         }
 
         revalidatePath("/cronograma");
+        revalidatePath("/materias/[id]", "page");
 
         return { success: true, message: "Timeline criada com sucesso!", };
     } catch (error) {
@@ -112,6 +113,7 @@ export async function deleteTimelineAction(formData: FormData) {
         }
 
         revalidatePath("/cronograma")
+        revalidatePath("/materias/[id]", "page")
 
         return { success: true, message: "Timeline deletada com sucesso!", };
     } catch (error) {
@@ -156,6 +158,7 @@ export async function updateTimelineAction(formData: FormData) {
         }
 
         revalidatePath("/cronograma")
+        revalidatePath("/materias/[id]", "page")
 
         return { success: true, message: "Timeline atualizada com sucesso!", };
     } catch (error) {
