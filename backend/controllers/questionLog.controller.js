@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import QuestionLog from "../models/questionLog.model.js";
 import Subject from "../models/subject.model.js";
+import { subjectScope } from "../middleware/profile.js";
 import Topic from "../models/topic.model.js";
 
 const MAX_QUESTIONS = 10000;
@@ -122,7 +123,7 @@ export const createQuestionLogs = async (req, res) => {
 
 export const getQuestionStats = async (req, res) => {
     try {
-        const subjects = await Subject.find({ user_id: req.userId, active: { $ne: false } })
+        const subjects = await Subject.find(subjectScope(req, { active: { $ne: false } }))
             .select("title color")
             .sort({ createdAt: 1 })
             .lean();

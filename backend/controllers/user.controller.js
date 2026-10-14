@@ -1,5 +1,6 @@
 import User from '../models/user.model.js';
 import Subject from '../models/subject.model.js';
+import Profile from '../models/profile.model.js';
 import Topic from '../models/topic.model.js';
 import cloudinary from '../utils/cloudinary.js';
 
@@ -144,6 +145,7 @@ export const deleteUserAdmin = async (req, res) => {
 
         await Topic.deleteMany({ subject_id: { $in: subjectIds } });
         await Subject.deleteMany({ user_id: id });
+        await Profile.deleteMany({ user_id: id });
         await User.findByIdAndDelete(id);
 
         res.status(200).json({ success: true, message: "Usuário e todos os seus dados foram excluídos com sucesso." });

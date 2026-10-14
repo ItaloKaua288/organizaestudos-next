@@ -3,6 +3,7 @@ import StudyCycle from "../models/studyCycle.model.js";
 import CycleHistory from "../models/cycleHistory.model.js";
 import Subject from "../models/subject.model.js";
 import QuestionLog from "../models/questionLog.model.js";
+import { subjectScope } from "../middleware/profile.js";
 import { parseQuestionEntries } from "./questionLog.controller.js";
 
 /*
@@ -32,8 +33,11 @@ const MAX_SESSIONS = 50;
 
 const isId = (v) => mongoose.isValidObjectId(v);
 
-const loadSubjectMap = async (userId) => {
-    const subjects = await Subject.find({ user_id: userId }).select("title color active").lean();
+// Cada perfil tem o próprio ciclo e só enxerga as matérias do próprio perfil.
+const cycleScope = (req) => ({ user_id: req.userId, profile_id: req.profileId });
+
+const loadSubjectMap = async (req) => {
+    const subjects = await Subject.find(subjectScope(req)).select("title color active").lean();
     return new Map(subjects.map((s) => [String(s._id), s]));
 };
 
@@ -140,22 +144,22 @@ const handleError = (res, error, label) => {
 
 // Carrega o ciclo + matérias e normaliza a posição. Responde 404 quando não existe.
 const loadCycle = async (req, res) => {
-    const cycle = await StudyCycle.findOne({ user_id: req.userId });
+    const cycle = await StudyCycle.findOne(cycleScope(req));
     if (!cycle) {
         res.status(404).json({ success: false, message: "Você ainda não criou um ciclo de estudos." });
         return null;
     }
-    const subjectMap = await loadSubjectMap(req.userId);
+    const subjectMap = await loadSubjectMap(req);
     resolvePointer(cycle, subjectMap);
     return { cycle, subjectMap };
 };
 
 export const getCycle = async (req, res) => {
     try {
-        const cycle = await StudyCycle.findOne({ user_id: req.userId });
+        const cycle = await StudyCycle.findOne(cycleScope(req));
         if (!cycle) return res.status(200).json({ success: true, cycle: null });
 
-        const subjectMap = await loadSubjectMap(req.userId);
+        const subjectMap = await loadSubjectMap(req);
         resolvePointer(cycle, subjectMap);
 
         // Só persiste se a normalização mudou algo (ex.: matéria desativada). Falha de concorrência é inofensiva aqui.
@@ -182,8 +186,8 @@ export const saveCycle = async (req, res) => {
             return res.status(400).json({ success: false, message: `O ciclo precisa ter de 1 a ${MAX_SESSIONS} sessões.` });
         }
 
-        const subjectMap = await loadSubjectMap(req.userId);
-        let cycle = await StudyCycle.findOne({ user_id: req.userId });
+        const subjectMap = await loadSubjectMap(req);
+        let cycle = await StudyCycle.findOne(cycleScope(req));
         const existing = new Map((cycle?.sessions ?? []).map((s) => [String(s._id), s]));
         const seenIds = new Set();
         const next = [];
@@ -232,7 +236,7 @@ export const saveCycle = async (req, res) => {
         }
 
         if (!cycle) {
-            cycle = new StudyCycle({ user_id: req.userId, sessions: next, lap: 1, totalCompleted: 0, sessionsPerDay: sessionsPerDay ?? 0 });
+            cycle = new StudyCycle({ user_id: req.userId, profile_id: req.profileId, sessions: next, lap: 1, totalCompleted: 0, sessionsPerDay: sessionsPerDay ?? 0 });
             cycle.currentSessionId = next[0]._id;
         } else {
             cycle.sessions = next;
@@ -254,7 +258,7 @@ export const saveCycle = async (req, res) => {
 
 export const deleteCycle = async (req, res) => {
     try {
-        const cycle = await StudyCycle.findOneAndDelete({ user_id: req.userId });
+        const cycle = await StudyCycle.findOneAndDelete(cycleScope(req));
         if (!cycle) return res.status(404).json({ success: false, message: "Ciclo não encontrado." });
 
         await CycleHistory.deleteMany({ cycle_id: cycle._id });
@@ -386,9 +390,9 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
     } catch (error) {
         if (error?.name === "VersionError") {
             // Outro clique/aba já avançou o ciclo: devolve a posição atual sem contabilizar de novo.
-            const fresh = await StudyCycle.findOne({ user_id: req.userId });
+            const fresh = await StudyCycle.findOne(cycleScope(req));
             if (fresh) {
-                const subjectMap = await loadSubjectMap(req.userId);
+                const subjectMap = await loadSubjectMap(req);
                 return await staleResponse(res, fresh, subjectMap);
             }
         }

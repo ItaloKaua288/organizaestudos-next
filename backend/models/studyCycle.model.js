@@ -32,8 +32,13 @@ const studyCycleSchema = new mongoose.Schema({
     user_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true,
-        unique: true // um ciclo por usuário
+        required: true
+    },
+    // Um ciclo por perfil (e não mais um por usuário).
+    profile_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Profile",
+        default: null
     },
     // A ordem do array é a ordem oficial do ciclo.
     sessions: [cycleSessionSchema],
@@ -66,6 +71,8 @@ const studyCycleSchema = new mongoose.Schema({
     // desatualizado lança VersionError em vez de sobrescrever o progresso.
     optimisticConcurrency: true
 });
+
+studyCycleSchema.index({ user_id: 1, profile_id: 1 }, { unique: true });
 
 const StudyCycle = mongoose.model("StudyCycle", studyCycleSchema);
 

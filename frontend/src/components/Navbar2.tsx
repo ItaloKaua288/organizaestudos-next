@@ -7,12 +7,13 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, ChartColumn, LayoutDashboard, Menu, NotepadText, RotateCw } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GlobalSearch } from "./global-search";
 import { Logo } from "./logo";
+import { ProfileSwitcher } from "./profile-switcher";
 
 import dynamic from "next/dynamic";
 
@@ -59,19 +60,19 @@ export function Navbar2() {
 
     return (
         <header className="bg-muted fixed top-0 left-0 right-0 w-full z-50 border-b">
-            <div className="relative mx-auto flex items-center justify-between gap-8 py-5 px-2">
+            <div className="relative mx-auto flex items-center justify-between gap-2 py-5 px-2 sm:gap-8">
 
                 {/* Logo */}
-                <div className="transition-opacity hover:opacity-80">
+                <div className="shrink-0 transition-opacity hover:opacity-80">
                     <div className="flex items-center gap-3">
                         <Link className="hover:text-primary hover:scale-105 transition-all" href="/">
-                            <Logo />
+                            <Logo compact />
                         </Link>
                     </div>
                 </div>
 
                 {/* Desktop Navigation */}
-                <nav className=" absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-6 font-medium max-lg:hidden ">
+                <nav className=" absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-6 font-medium max-xl:hidden ">
                     <Link
                         href="/"
                         className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
@@ -117,9 +118,9 @@ export function Navbar2() {
                 </nav>
 
                 {/* Actions & Mobile Menu */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
 
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-1.5 sm:gap-3">
                         {!isLoading && !isAuthenticated && (
                             <>
                                 <Button
@@ -134,12 +135,14 @@ export function Navbar2() {
                         )}
 
                         {!isLoading && isAuthenticated && (
-                            <Button variant="outline" onClick={handleLogout}>
+                            <Button variant="outline" onClick={handleLogout} className="max-xl:hidden">
                                 Sair
                             </Button>
                         )}
 
                         {!isLoading && isAuthenticated && <GlobalSearch />}
+
+                        {!isLoading && isAuthenticated && <ProfileSwitcher />}
 
                         <ThemeToggle size="icon" variant="outline" />
 
@@ -148,7 +151,7 @@ export function Navbar2() {
                     {/* Mobile Menu */}
                     <Sheet>
                         <SheetTrigger render={
-                            <Button variant="outline" size="icon" className="lg:hidden" />
+                            <Button variant="outline" size="icon" className="xl:hidden" />
                         }>
                             <Menu className="h-5 w-5" />
                             <span className="sr-only">Toggle Menu</span>
@@ -205,6 +208,11 @@ export function Navbar2() {
                                     <ChartColumn /> Desempenho
                                 </Link>
                             </nav>
+                            {!isLoading && isAuthenticated && (
+                                <Button variant="outline" onClick={handleLogout} className="mt-auto gap-1">
+                                    <LogOut size={16} /> Sair
+                                </Button>
+                            )}
                             <div className="flex items-center gap-2 sm:gap-3">
                                 {!isLoading && !isAuthenticated && (
                                     <>

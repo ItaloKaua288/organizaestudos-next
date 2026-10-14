@@ -15,6 +15,8 @@ import cycleRoutes from './routes/cycle.route.js';
 import questionLogRoutes from './routes/questionLog.route.js';
 import searchRoutes from './routes/search.route.js';
 import dataRoutes from './routes/data.route.js';
+import profileRoutes from './routes/profile.route.js';
+import { attachProfile } from './middleware/profile.js';
 
 
 dotenv.config();
@@ -40,14 +42,16 @@ app.get('/', (req, res) => {
 //ROTAS
 app.use("/api/auth", authRoutes)
 app.use("/api/users", userRoutes)
-app.use("/api/subjects", subjectRoutes)
-app.use("/api/topics", topicRoutes)
-app.use("/api/timelines", timeLineRoutes)
+// attachProfile descobre o perfil de estudo ativo (header x-profile-id) e preenche req.profileId.
+app.use("/api/profiles", attachProfile, profileRoutes)
+app.use("/api/subjects", attachProfile, subjectRoutes)
+app.use("/api/topics", attachProfile, topicRoutes)
+app.use("/api/timelines", attachProfile, timeLineRoutes)
 app.use("/api/notes", noteRoutes)
-app.use("/api/cycle", cycleRoutes)
-app.use("/api/questions", questionLogRoutes)
-app.use("/api/search", searchRoutes)
-app.use("/api/data", dataRoutes)
+app.use("/api/cycle", attachProfile, cycleRoutes)
+app.use("/api/questions", attachProfile, questionLogRoutes)
+app.use("/api/search", attachProfile, searchRoutes)
+app.use("/api/data", attachProfile, dataRoutes)
 
 if (process.env.VERCEL) {
     await connectDB();

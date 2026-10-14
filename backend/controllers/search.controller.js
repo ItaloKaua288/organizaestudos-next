@@ -1,5 +1,6 @@
 import Note from "../models/note.model.js";
 import Subject from "../models/subject.model.js";
+import { subjectScope } from "../middleware/profile.js";
 import Topic from "../models/topic.model.js";
 
 const MIN_QUERY = 2;
@@ -44,7 +45,7 @@ export const globalSearch = async (req, res) => {
 
         const regex = new RegExp(escapeRegex(query), "i");
 
-        const activeSubjects = await Subject.find({ user_id: req.userId, active: { $ne: false } })
+        const activeSubjects = await Subject.find(subjectScope(req, { active: { $ne: false } }))
             .select("title color")
             .lean();
         const subjectIds = activeSubjects.map((subject) => subject._id);

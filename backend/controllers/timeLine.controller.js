@@ -1,4 +1,5 @@
 import TimeLine from '../models/timeLine.model.js';
+import { subjectScope } from "../middleware/profile.js";
 import Subject from "../models/subject.model.js";
 
 const allowedDays = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
@@ -22,8 +23,12 @@ export const addSubjectTimeLine = async (req, res) => {
         if (subject.active === false)
             return res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para adicioná-la ao cronograma." });
 
+        // Conflito de horário só vale dentro do perfil ativo (cada perfil tem o próprio cronograma).
+        const profileSubjectIds = await Subject.distinct("_id", subjectScope(req));
+
         const conflict = await TimeLine.findOne({
             user_id: req.userId,
+            subject_id: { $in: profileSubjectIds },
             day,
             startTime: { $lt: endTime },
             endTime: { $gt: startTime }
@@ -55,7 +60,7 @@ export const getTimeline = async (req, res) => {
     try {
         // Matérias desativadas saem do cronograma (os horários continuam salvos e voltam ao reativar).
         const timeline = await TimeLine.find({ user_id: req.userId })
-            .populate({ path: "subject_id", match: { active: { $ne: false } } })
+            .populate({ path: "subject_id", match: { active: { $ne: false }, profile_id: req.profileId } })
             .sort({ startTime: 1 })
             .lean();
 
@@ -97,8 +102,12 @@ export const updateTimeLine = async (req, res) => {
         if (subject.active === false)
             return res.status(403).json({ success: false, message: "Matéria desativada. Reative-a para editar o cronograma." });
 
+        // Conflito de horário só vale dentro do perfil ativo (cada perfil tem o próprio cronograma).
+        const profileSubjectIds = await Subject.distinct("_id", subjectScope(req));
+
         const conflict = await TimeLine.findOne({
             user_id: req.userId,
+            subject_id: { $in: profileSubjectIds },
             day,
             startTime: { $lt: endTime },
             endTime: { $gt: startTime },

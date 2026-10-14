@@ -1,5 +1,6 @@
 import Subject from "../models/subject.model.js";
 import Topic from "../models/topic.model.js";
+import { subjectScope } from "../middleware/profile.js";
 
 // Exportar/importar a ESTRUTURA do estudo (matérias > assuntos > subassuntos), por exemplo um edital.
 // Não leva progresso: revisões, status, anexos, notas e questões ficam de fora. Tudo que é importado
@@ -211,8 +212,8 @@ export const parseImportContent = (content) => {
 
 // ---------------------------------------------------------------- exportar
 
-const loadStructure = async (userId) => {
-    const subjects = await Subject.find({ user_id: userId }).sort({ createdAt: 1 }).lean();
+const loadStructure = async (req) => {
+    const subjects = await Subject.find(subjectScope(req)).sort({ createdAt: 1 }).lean();
     const topics = await Topic.find({ subject_id: { $in: subjects.map((s) => s._id) } })
         .select("title status link subject_id parent_id order")
         .sort({ order: 1 })
@@ -241,7 +242,7 @@ const loadStructure = async (userId) => {
 export const exportData = async (req, res) => {
     try {
         const format = req.query.format === "csv" ? "csv" : "json";
-        const subjects = await loadStructure(req.userId);
+        const subjects = await loadStructure(req);
         const stamp = new Date().toISOString().slice(0, 10);
 
         if (format === "json") {
@@ -278,7 +279,7 @@ export const importData = async (req, res) => {
         const parsed = parseImportContent(req.body?.content);
         if (parsed.error) return res.status(400).json({ success: false, message: parsed.error });
 
-        const existing = await Subject.find({ user_id: req.userId });
+        const existing = await Subject.find(subjectScope(req));
         const byTitle = new Map(existing.map((subject) => [norm(subject.title), subject]));
 
         const summary = { subjectsCreated: 0, subjectsMerged: 0, subjectsSkipped: 0, topicsCreated: 0, topicsSkipped: 0 };
@@ -299,6 +300,7 @@ export const importData = async (req, res) => {
                 subject = await Subject.create({
                     title: incoming.title,
                     user_id: req.userId,
+                    profile_id: req.profileId,
                     color: incoming.color || DEFAULT_COLORS[colorIndex++ % DEFAULT_COLORS.length],
                 });
                 byTitle.set(norm(incoming.title), subject);

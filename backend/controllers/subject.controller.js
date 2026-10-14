@@ -3,6 +3,7 @@ import QuestionLog from "../models/questionLog.model.js";
 import Subject from "../models/subject.model.js";
 import TimeLine from "../models/timeLine.model.js";
 import Topic from "../models/topic.model.js";
+import { subjectScope } from "../middleware/profile.js";
 import cloudinary from '../utils/cloudinary.js';
 
 export const createSubject = async (req, res) => {
@@ -26,6 +27,7 @@ export const createSubject = async (req, res) => {
         const subject = new Subject({
             title,
             user_id: req.userId,
+            profile_id: req.profileId,
             color: color || "#000000"
         });
 
@@ -40,7 +42,7 @@ export const createSubject = async (req, res) => {
 
 export const getSubjects = async (req, res) => {
     try {
-        const subjects = await Subject.find({ user_id: req.userId }).sort({ createdAt: 1 });
+        const subjects = await Subject.find(subjectScope(req)).sort({ createdAt: 1 });
         res.status(200).json({ success: true, subjects: subjects });
     } catch (error) {
         console.log("error in getSubjecs ", error);

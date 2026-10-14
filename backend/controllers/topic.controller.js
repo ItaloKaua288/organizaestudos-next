@@ -1,6 +1,7 @@
 import https from 'https';
 import mongoose from 'mongoose';
 import Subject from "../models/subject.model.js";
+import { subjectScope } from "../middleware/profile.js";
 import Topic from "../models/topic.model.js";
 import cloudinary from '../utils/cloudinary.js';
 import { getTodayBR } from '../utils/date.js';
@@ -111,7 +112,7 @@ export const getTopics = async (req, res) => {
 
 export const getAllTopics = async (req, res) => {
     try {
-        const subjects = await Subject.find({ user_id: req.userId, active: { $ne: false } });
+        const subjects = await Subject.find(subjectScope(req, { active: { $ne: false } }));
         const subjectIds = subjects.map(subject => subject._id);
 
         const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id').sort({ order: 1 }).lean();
@@ -527,7 +528,7 @@ const MONTH_SPAN_DAYS = 31; // hoje + 30 dias (ex.: 10/10 até 09/11)
 
 export const redistributeMonthlyReviews = async (req, res) => {
     try {
-        const subjects = await Subject.find({ user_id: req.userId, active: { $ne: false } }).select("_id");
+        const subjects = await Subject.find(subjectScope(req, { active: { $ne: false } })).select("_id");
         const subjectIds = subjects.map(subject => subject._id);
 
         const parentIds = await Topic.distinct("parent_id", { subject_id: { $in: subjectIds }, parent_id: { $ne: null } });
