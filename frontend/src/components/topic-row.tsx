@@ -2,10 +2,11 @@
 
 import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, FolderOpen, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Clock, Download, FileText, FolderOpen, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { RefObject, useState } from "react";
 import { createPortal } from "react-dom";
@@ -13,6 +14,7 @@ import toast from "react-hot-toast";
 
 import { createTopicAction, deleteTopicAction, openTopicAttachmentAction, sendattachmentPDFAction, updateTopicAction } from "@/actions/topics.actions";
 import { TopicDragGhostData, TopicDragProps } from "@/hooks/use-topic-reorder";
+import { downloadTopicAttachment } from "@/lib/download-attachment";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 
@@ -127,6 +129,7 @@ export function TopicRow({
     const [editedLink, setEditedLink] = useState((topic as Topic).link || '');
     const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(true);
     const [subtopicTitle, setSubtopicTitle] = useState('');
     const [isSubtopicDialogOpen, setIsSubtopicDialogOpen] = useState(false);
@@ -269,6 +272,17 @@ export function TopicRow({
 
     const kind = isSubtopic ? "Subassunto" : "Assunto";
 
+    // Clique na caixa abre as informações. Ignora cliques em botões, links, selects e
+    // em conteúdo de diálogos (eventos de portal também sobem pela árvore do React).
+    const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (isContainer || isDragging) return;
+        const target = e.target as HTMLElement;
+        if (!e.currentTarget.contains(target)) return;
+        const interactive = target.closest("button, a, select, input, label");
+        if (interactive && !interactive.hasAttribute("data-topic-open")) return;
+        setIsInfoOpen(true);
+    };
+
     return (
         // Subassunto fica recuado com uma linha lateral, para ficar claro de qual assunto ele faz parte.
         <div
@@ -284,7 +298,8 @@ export function TopicRow({
         >
             <div
                 {...dragProps?.rowProps}
-                className={`border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
+                onClick={handleRowClick}
+                className={`border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isContainer ? "" : "cursor-pointer"} ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
             >
                 {dragProps && (
                     <span
@@ -305,12 +320,25 @@ export function TopicRow({
                     <Clock size={15} className="shrink-0 text-muted-foreground" aria-label="Pendente" />
                 )}
 
-                <span
-                    className="block min-w-0 flex-1 truncate text-left font-medium"
-                    title={topic.title}
-                >
-                    {topic.title}
-                </span>
+                {isContainer ? (
+                    <span
+                        className="block min-w-0 flex-1 truncate text-left font-medium"
+                        title={topic.title}
+                    >
+                        {topic.title}
+                    </span>
+                ) : (
+                    <button
+                        type="button"
+                        data-topic-open=""
+                        aria-haspopup="dialog"
+                        aria-label={`Ver informações de ${topic.title}`}
+                        className="block min-w-0 flex-1 cursor-pointer truncate rounded-md text-left font-medium focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                        title={topic.title}
+                    >
+                        {topic.title}
+                    </button>
+                )}
 
                 <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
                     {isContainer && (
@@ -345,21 +373,6 @@ export function TopicRow({
                                 <option value="PENDENTE">Pendente</option>
                                 <option value="CONCLUIDO">Concluído</option>
                             </select>
-
-                            <DialogDemo
-                                contentBtn={<><Eye className="h-4 w-4" /><span className="sr-only">Ver informações</span></>}
-                                classNameBtn={ICON_BTN}
-                                title={topic.title}
-                                description="Informações do assunto"
-                                disableBtns={true}
-                            >
-                                <TopicInfoGroup
-                                    subject={subject.title}
-                                    topic={topic}
-                                    color={subject.color}
-                                    hasAttachments={hasAttachments}
-                                />
-                            </DialogDemo>
 
                             {topic.link && (
                                 <a
@@ -488,17 +501,46 @@ export function TopicRow({
                         Anexos ({topic.attachments!.length})
                     </button>
                     {isAttachmentsOpen && topic.attachments!.map((attachment, index) => (
-                        <button
-                            type="button"
-                            key={attachment.id || index}
-                            onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                            className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left text-sm transition-colors duration-150 hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-                        >
-                            <FileText color={topic.subject.color} size={14} className="shrink-0" />
-                            <span className="truncate">{attachment.name}</span>
-                        </button>
+                        <div key={attachment.id || index} className="flex w-full items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
+                                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left text-sm transition-colors duration-150 hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                            >
+                                <FileText color={topic.subject.color} size={14} className="shrink-0" />
+                                <span className="truncate">{attachment.name}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => downloadTopicAttachment(topic.id, attachment.public_id!, attachment.name)}
+                                className={ICON_LINK}
+                                title="Baixar anexo"
+                                aria-label={`Baixar ${attachment.name}`}
+                            >
+                                <Download size={14} />
+                            </button>
+                        </div>
                     ))}
                 </div>
+            )}
+
+            {!isContainer && (
+                <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+                    <DialogContent className="w-[95vw] sm:max-w-sm max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
+                        <DialogHeader className="shrink-0 pr-8">
+                            <DialogTitle>{topic.title}</DialogTitle>
+                            <DialogDescription>Informações do assunto</DialogDescription>
+                        </DialogHeader>
+                        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
+                            <TopicInfoGroup
+                                subject={subject.title}
+                                topic={topic}
+                                color={subject.color}
+                                hasAttachments={hasAttachments}
+                            />
+                        </div>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     );

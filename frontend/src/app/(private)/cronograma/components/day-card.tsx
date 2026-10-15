@@ -6,6 +6,8 @@ import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { downloadTopicAttachment } from "@/lib/download-attachment";
 import { cn } from "@/lib/utils";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -14,7 +16,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Subject } from "@/types/subject";
 import { Timeline } from "@/types/timeline";
 import { Topic } from "@/types/topic";
-import { BookOpen, ExternalLink, Eye, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Download, ExternalLink, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -171,6 +173,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
 function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
     const hasAttachments = nextTopic?.attachments && nextTopic.attachments.length > 0;
 
     const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
@@ -234,8 +237,23 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
         }
     }
 
+    // Clique na caixa abre as informações do assunto atual. Ignora cliques em botões e links
+    // e em conteúdo de diálogos (eventos de portal também sobem pela árvore do React).
+    const handleBoxClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!nextTopic) return;
+        const target = e.target as HTMLElement;
+        if (!e.currentTarget.contains(target)) return;
+        const interactive = target.closest("button, a, select, input, label");
+        if (interactive && !interactive.hasAttribute("data-topic-open")) return;
+        setIsInfoOpen(true);
+    };
+
     return (
-        <div className="flex flex-col gap-1 rounded-lg px-2 py-2.5 transition-colors hover:bg-foreground/6 border-b">
+        <>
+        <div
+            onClick={handleBoxClick}
+            className={cn("flex flex-col gap-1 rounded-lg px-2 py-2.5 transition-colors hover:bg-foreground/6 border-b", nextTopic && "cursor-pointer")}
+        >
             <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 flex-col gap-0.5">
                     <div className="flex min-w-0 items-center gap-2">
@@ -244,9 +262,21 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                             style={{ backgroundColor: item.subject?.color || "#ccc" }}
                             aria-hidden="true"
                         />
-                        <span className="truncate text-sm font-medium">
-                            {item.subject?.title || "Sem matéria"}
-                        </span>
+                        {nextTopic ? (
+                            <button
+                                type="button"
+                                data-topic-open=""
+                                aria-haspopup="dialog"
+                                aria-label={`Ver informações de ${nextTopic.title}`}
+                                className="min-w-0 cursor-pointer truncate rounded-md text-left text-sm font-medium focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                            >
+                                {item.subject?.title || "Sem matéria"}
+                            </button>
+                        ) : (
+                            <span className="truncate text-sm font-medium">
+                                {item.subject?.title || "Sem matéria"}
+                            </span>
+                        )}
                     </div>
                     <span className="pl-[18px] text-xs tabular-nums text-muted-foreground">
                         {item.start_time} - {item.end_time}
@@ -262,48 +292,6 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                     >
                         <ExternalLink className="h-4 w-4" />
                     </Link>
-                    {nextTopic && (
-                        <DialogDemo
-                            variant="button"
-                            title={nextTopic.title}
-                            description="Detalhes do tópico atual"
-                            contentBtn={<Eye className="h-4 w-4" />}
-                            classNameBtn={ICON_BTN}
-                            disableBtns={true}
-                            variantDialogBtn={"ghost"}
-                        >
-                            <div className="space-y-4 min-w-0">
-                                <div>
-                                    <span className="text-sm font-semibold">Matéria: </span>
-                                    <span className="text-sm">{nextTopic.subject.title}</span>
-                                </div>
-                                <div>
-                                    <span className="text-sm font-semibold flex items-center gap-1 mb-2">
-                                        <Paperclip className="h-4 w-4" /> Anexos: <Badge variant={"secondary"}>{nextTopic.attachments.length}</Badge>
-                                    </span>
-                                    {!hasAttachments ? (
-                                        <p className="text-sm text-muted-foreground">Sem anexos.</p>
-                                    ) : (
-                                        <div className="flex flex-col gap-2 min-w-0">
-                                            {nextTopic.attachments!.map((attachment) => (
-                                                <div key={attachment.id} className="w-full min-w-0 text-sm">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                                                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-                                                    >
-                                                        <FileText className="h-4 w-4 shrink-0" style={{ color: nextTopic.subject.color }} />
-                                                        <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </DialogDemo>
-                    )}
-
                     <DialogDemo
                         open={isEditOpen}
                         onOpenChange={setIsEditOpen}
@@ -361,5 +349,56 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                 </div>
             )}
         </div>
+
+        {nextTopic && (
+            <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+                <DialogContent className="w-[95vw] sm:max-w-sm max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
+                    <DialogHeader className="shrink-0 pr-8">
+                        <DialogTitle>{nextTopic.title}</DialogTitle>
+                        <DialogDescription>Detalhes do tópico atual</DialogDescription>
+                    </DialogHeader>
+                    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2">
+                        <div>
+                            <span className="text-sm font-semibold">Matéria: </span>
+                            <span className="text-sm">{nextTopic.subject.title}</span>
+                        </div>
+                        <div>
+                            <span className="mb-2 flex items-center gap-1 text-sm font-semibold">
+                                <Paperclip className="h-4 w-4" /> Anexos: <Badge variant={"secondary"}>{nextTopic.attachments.length}</Badge>
+                            </span>
+                            {!hasAttachments ? (
+                                <p className="text-sm text-muted-foreground">Sem anexos.</p>
+                            ) : (
+                                <div className="flex min-w-0 flex-col gap-1">
+                                    {nextTopic.attachments!.map((attachment) => (
+                                        <div key={attachment.id} className="flex w-full min-w-0 items-center gap-1 text-sm">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
+                                                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                                            >
+                                                <FileText className="h-4 w-4 shrink-0" style={{ color: nextTopic.subject.color }} />
+                                                <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
+                                            </button>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                className={ICON_BTN}
+                                                title="Baixar anexo"
+                                                aria-label={`Baixar ${attachment.name}`}
+                                                onClick={() => downloadTopicAttachment(nextTopic.id, attachment.public_id!, attachment.name)}
+                                            >
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        )}
+        </>
     )
 }

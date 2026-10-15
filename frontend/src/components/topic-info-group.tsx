@@ -4,8 +4,9 @@ import { changeReviewStatus } from "@/actions/review.actions";
 import { deleteAttachAction } from "@/actions/topics.actions";
 import { isDateOverdue, isToday } from "@/lib/date";
 import { openTopicAttachmentAction } from "@/actions/topics.actions";
+import { downloadTopicAttachment } from "@/lib/download-attachment";
 import { Topic } from "@/types/topic";
-import { FileText, RotateCw, Trash2 } from "lucide-react";
+import { Download, FileText, RotateCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Badge } from "./ui/badge";
@@ -140,7 +141,19 @@ export function TopicInfoGroup({ subject, topic, color, hasAttachments }: TopicI
                                     <span className="flex-1 truncate">{attachment.name}</span>
                                 </span>
                                 <Button
+                                    type="button"
                                     variant={"outline"}
+                                    title="Baixar anexo"
+                                    aria-label={`Baixar ${attachment.name}`}
+                                    onClick={() => downloadTopicAttachment(topic.id, attachment.public_id!, attachment.name)}
+                                >
+                                    <Download />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={"outline"}
+                                    title="Excluir anexo"
+                                    aria-label={`Excluir ${attachment.name}`}
                                     className={"hover:text-destructive"}
                                     onClick={() => handleTopicAttachmentDelete(attachment.public_id!)}
                                 >
