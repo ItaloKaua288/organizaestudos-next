@@ -6,8 +6,11 @@ import Profile from '../models/profile.model.js';
 import Topic from '../models/topic.model.js';
 import Note from '../models/note.model.js';
 import QuestionLog from '../models/questionLog.model.js';
+import StudyCycle from '../models/studyCycle.model.js';
+import CycleHistory from '../models/cycleHistory.model.js';
 import cloudinary from '../utils/cloudinary.js';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_NAME_LENGTH = 60;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 72; // limite do bcrypt
@@ -175,22 +178,72 @@ export const getStudyTime = async (req, res) => {
 // FUNÇOES ADMIN
 export const getAllUsersAdmin = async (req, res) => {
     try {
-        const requester = await User.findById(req.userId);
+        const requester = await User.findById(req.userId).select("isAdmin");
         if (!requester || !requester.isAdmin) {
             return res.status(403).json({ success: false, message: "Acesso negado. Apenas administradores." });
         }
 
-        const users = await User.find().select("-password").sort({ createdAt: -1 });
+        // Só os campos que a tela de Admin usa: nunca devolve o hash da senha nem tokens internos.
+        // Os totais saem de agregações (uma consulta por coleção) em vez de uma busca por usuário.
+        const [users, subjects, topicRows, profileRows, noteRows] = await Promise.all([
+            User.find().select("name email isAdmin isVerified createdAt lastLogin totalStudyTime").sort({ createdAt: -1 }).lean(),
+            Subject.find().select("title color active user_id").lean(),
+            Topic.aggregate([
+                {
+                    $group: {
+                        _id: "$subject_id",
+                        topics: { $sum: 1 },
+                        concluded: { $sum: { $cond: [{ $eq: ["$status", "CONCLUIDO"] }, 1, 0] } },
+                        attachments: { $sum: { $size: { $ifNull: ["$attachments", []] } } },
+                    },
+                },
+            ]),
+            Profile.aggregate([{ $group: { _id: "$user_id", count: { $sum: 1 } } }]),
+            Note.aggregate([{ $group: { _id: "$user_id", count: { $sum: 1 } } }]),
+        ]);
 
-        const usersWithStats = await Promise.all(users.map(async (user) => {
-            const subjects = await Subject.find({ user_id: user._id });
-            const subjectIds = subjects.map(m => m._id);
+        const topicsBySubject = new Map(topicRows.map((row) => [String(row._id), row]));
+        const profilesByUser = new Map(profileRows.map((row) => [String(row._id), row.count]));
+        const notesByUser = new Map(noteRows.map((row) => [String(row._id), row.count]));
 
-            const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id', 'title color');
-            const attachmentsCount = topics.reduce((acc, sub) => acc + (sub.attachments?.length || 0), 0);
+        const subjectsByUser = new Map();
+        for (const subject of subjects) {
+            const key = String(subject.user_id);
+            if (!subjectsByUser.has(key)) subjectsByUser.set(key, []);
+            subjectsByUser.get(key).push(subject);
+        }
 
-            return { ...user.toObject(), subjectsCount: subjects.length, topicsCount: topics.length, attachmentsCount, topics, subjects };
-        }));
+        const usersWithStats = users.map((user) => {
+            let topicsCount = 0;
+            let concludedTopicsCount = 0;
+            let attachmentsCount = 0;
+
+            const userSubjects = (subjectsByUser.get(String(user._id)) ?? []).map((subject) => {
+                const stats = topicsBySubject.get(String(subject._id));
+                topicsCount += stats?.topics ?? 0;
+                concludedTopicsCount += stats?.concluded ?? 0;
+                attachmentsCount += stats?.attachments ?? 0;
+
+                return {
+                    _id: subject._id,
+                    title: subject.title,
+                    color: subject.color,
+                    active: subject.active !== false,
+                    topicsCount: stats?.topics ?? 0,
+                };
+            });
+
+            return {
+                ...user,
+                profilesCount: profilesByUser.get(String(user._id)) ?? 0,
+                subjectsCount: userSubjects.length,
+                topicsCount,
+                concludedTopicsCount,
+                attachmentsCount,
+                notesCount: notesByUser.get(String(user._id)) ?? 0,
+                subjects: userSubjects,
+            };
+        });
 
         res.status(200).json({ success: true, users: usersWithStats });
     } catch (error) {
@@ -201,31 +254,62 @@ export const getAllUsersAdmin = async (req, res) => {
 
 export const updateUserAdmin = async (req, res) => {
     const { id } = req.params;
-    const { name, email, isAdmin, isVerified } = req.body;
+    const { name, email, isAdmin, isVerified } = req.body ?? {};
 
     try {
-        const requester = await User.findById(req.userId);
+        const requester = await User.findById(req.userId).select("isAdmin");
         if (!requester || !requester.isAdmin) {
             return res.status(403).json({ success: false, message: "Acesso negado. Apenas administradores." });
         }
 
-        const userToUpdate = await User.findById(id);
+        const userToUpdate = mongoose.isValidObjectId(id) ? await User.findById(id) : null;
         if (!userToUpdate) {
-            return res.status(404).json({ success: false, message: "Utilizador não encontrado." });
+            return res.status(404).json({ success: false, message: "Usuário não encontrado." });
         }
 
-        if (name) userToUpdate.name = name;
-        if (email) userToUpdate.email = email;
-        if (isAdmin !== undefined) userToUpdate.isAdmin = isAdmin;
-        if (isVerified !== undefined) userToUpdate.isVerified = isVerified;
+        // Evita que o único administrador se tranque para fora da própria página.
+        if (String(userToUpdate._id) === String(req.userId) && isAdmin === false) {
+            return res.status(400).json({ success: false, message: "Você não pode remover o seu próprio acesso de administrador." });
+        }
+
+        if (name !== undefined) {
+            const cleanName = String(name).trim().replace(/\s+/g, " ");
+            if (!cleanName) {
+                return res.status(400).json({ success: false, message: "O nome é obrigatório." });
+            }
+            if (cleanName.length > MAX_NAME_LENGTH) {
+                return res.status(400).json({ success: false, message: `O nome pode ter no máximo ${MAX_NAME_LENGTH} caracteres.` });
+            }
+            userToUpdate.name = cleanName;
+        }
+
+        if (email !== undefined) {
+            const cleanEmail = String(email).trim();
+            if (!EMAIL_REGEX.test(cleanEmail)) {
+                return res.status(400).json({ success: false, message: "Informe um e-mail válido." });
+            }
+            if (cleanEmail !== userToUpdate.email) {
+                const emailInUse = await User.exists({ email: cleanEmail, _id: { $ne: userToUpdate._id } });
+                if (emailInUse) {
+                    return res.status(409).json({ success: false, message: "Este e-mail já está em uso por outra conta." });
+                }
+                userToUpdate.email = cleanEmail;
+            }
+        }
+
+        if (typeof isAdmin === "boolean") userToUpdate.isAdmin = isAdmin;
+        if (typeof isVerified === "boolean") userToUpdate.isVerified = isVerified;
 
         await userToUpdate.save();
 
-        const userResponse = userToUpdate.toObject();
-        delete userResponse.password;
+        // Nunca devolve o hash da senha nem tokens internos.
+        const { password, resetPasswordtoken, resetPasswordexpiresAt, verificationToken, verificationExpiresAt, quickLinks, __v, ...safeUser } = userToUpdate.toObject();
 
-        res.status(200).json({ success: true, message: "Utilizador atualizado com sucesso", user: userResponse });
+        res.status(200).json({ success: true, message: "Usuário atualizado com sucesso", user: safeUser });
     } catch (error) {
+        if (error?.code === 11000) {
+            return res.status(409).json({ success: false, message: "Este e-mail já está em uso por outra conta." });
+        }
         console.log("error in updateUserAdmin ", error);
         res.status(500).json({ success: false, message: "Erro no servidor" });
     }
@@ -235,14 +319,18 @@ export const deleteUserAdmin = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const requester = await User.findById(req.userId);
+        const requester = await User.findById(req.userId).select("isAdmin");
         if (!requester || !requester.isAdmin) {
             return res.status(403).json({ success: false, message: "Acesso negado. Apenas administradores." });
         }
 
-        const userToDelete = await User.findById(id);
+        const userToDelete = mongoose.isValidObjectId(id) ? await User.findById(id).select("_id") : null;
         if (!userToDelete) {
             return res.status(404).json({ success: false, message: "Usuário não encontrado." });
+        }
+
+        if (String(userToDelete._id) === String(req.userId)) {
+            return res.status(400).json({ success: false, message: "Você não pode excluir a sua própria conta." });
         }
 
         const subjects = await Subject.find({ user_id: id });
@@ -260,6 +348,14 @@ export const deleteUserAdmin = async (req, res) => {
         await Topic.deleteMany({ subject_id: { $in: subjectIds } });
         await Subject.deleteMany({ user_id: id });
         await Profile.deleteMany({ user_id: id });
+        // Sem isto, notas, questões, ciclo e histórico do usuário ficariam órfãos no banco.
+        // (O cronograma semanal é apagado pelo gatilho do model de usuário.)
+        await Promise.all([
+            Note.deleteMany({ user_id: id }),
+            QuestionLog.deleteMany({ user_id: id }),
+            StudyCycle.deleteMany({ user_id: id }),
+            CycleHistory.deleteMany({ user_id: id }),
+        ]);
         await User.findByIdAndDelete(id);
 
         res.status(200).json({ success: true, message: "Usuário e todos os seus dados foram excluídos com sucesso." });

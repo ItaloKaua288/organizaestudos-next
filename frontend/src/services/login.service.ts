@@ -49,7 +49,7 @@ export async function signup({ username, email, password }: SignupCredentials) {
 
 type AuthResponse = {
     success: boolean;
-    user?: { id: string; name: string; email: string };
+    user?: { id: string; name: string; email: string; isAdmin?: boolean };
 };
 
 export async function checkAuth(): Promise<AuthResponse> {

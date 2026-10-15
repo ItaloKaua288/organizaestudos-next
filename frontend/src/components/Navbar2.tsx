@@ -7,7 +7,7 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, ChartColumn, CircleUser, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, CircleUser, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -28,6 +28,7 @@ export function Navbar2() {
     const router = useRouter();
     const pathname = usePathname();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -35,6 +36,7 @@ export function Navbar2() {
             try {
                 const response = await checkAuthApi();
                 setIsAuthenticated(response.success);
+                setIsAdmin(Boolean(response.user?.isAdmin));
                 if (!response.success)
                     router.push("/login");
             } catch {
@@ -144,6 +146,17 @@ export function Navbar2() {
 
                         {!isLoading && isAuthenticated && <ProfileSwitcher />}
 
+                        {!isLoading && isAuthenticated && isAdmin && (
+                            <Link
+                                href="/admin"
+                                title="Admin"
+                                aria-label="Admin"
+                                className={`${buttonVariants({ variant: "outline", size: "icon" })} max-xl:hidden ${pathname === "/admin" ? "border-primary text-primary" : ""}`}
+                            >
+                                <ShieldCheck />
+                            </Link>
+                        )}
+
                         {!isLoading && isAuthenticated && (
                             <Link
                                 href="/perfil"
@@ -224,6 +237,14 @@ export function Navbar2() {
                                 >
                                     <CircleUser /> Perfil
                                 </Link>
+                                {!isLoading && isAuthenticated && isAdmin && (
+                                    <Link
+                                        href="/admin"
+                                        className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/admin" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
+                                    >
+                                        <ShieldCheck /> Admin
+                                    </Link>
+                                )}
                             </nav>
                             {!isLoading && isAuthenticated && (
                                 <Button variant="outline" onClick={handleLogout} className="mt-auto gap-1">
