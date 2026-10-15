@@ -5,11 +5,16 @@ import { fixEncoding } from "@/lib/text";
 import { markContainers, sortTopicsHierarchically, TOPIC_TITLE_SEPARATOR, withoutContainers } from "@/lib/topic-tree";
 import { TopicsApiResponse } from "@/types/apiResponse";
 import { Topic } from "@/types/topic";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import z from "zod";
 
+/** Tag do cache dos assuntos: toda tela que lê `getTopicsAction` depende dela. */
+const TOPICS_CACHE_TAG = "topics";
+
 /**
- * Atualiza a lista de matérias e a página de detalhes da matéria.
+ * Atualiza tudo que depende dos assuntos: lista de matérias, página de detalhes da matéria e também
+ * cronograma, ciclo de estudos, dashboard e revisões (é lá que o anexo/assunto aparece no diálogo
+ * "Sem assunto pendente" / detalhe do assunto).
  * A API devolve `topic.subject_id` populado (objeto) em várias rotas; por isso o id é extraído com cuidado
  * e a página dinâmica `/materias/[id]` também é revalidada, para nunca ficar com dados antigos em cache.
  */
@@ -18,8 +23,14 @@ function revalidateSubjectPages(subject?: unknown) {
         ? subject
         : (subject as { _id?: unknown } | null | undefined)?._id;
 
+    // Expira o cache de dados (fetch) usado por getTopicsAction, em qualquer tela.
+    updateTag(TOPICS_CACHE_TAG);
+
     revalidatePath("/materias");
     revalidatePath("/materias/[id]", "page");
+    revalidatePath("/cronograma");
+    revalidatePath("/revisoes");
+    revalidatePath("/");
 
     if (subjectId) revalidatePath(`/materias/${String(subjectId)}`);
 }
@@ -41,6 +52,7 @@ export async function getTopicsAction(options?: { rawTitles?: boolean; includeCo
         const res = await fetch(`${baseUrl}/topics`, {
             headers,
             cache: "force-cache",
+            next: { tags: [TOPICS_CACHE_TAG] },
         });
 
         if (!res.ok) {
