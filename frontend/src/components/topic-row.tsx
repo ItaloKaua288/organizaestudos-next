@@ -5,7 +5,7 @@ import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowDown, ArrowUp, CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, FolderOpen, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Clock, Eye, FileText, FolderOpen, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { RefObject, useState } from "react";
 import { createPortal } from "react-dom";
@@ -56,21 +56,29 @@ export function TopicDragGhost({
                 pointerEvents: "none",
                 transform: `translate3d(${left}px, ${top}px, 0) scale(1.02)`,
             }}
-            className="flex cursor-grabbing items-center gap-3 rounded-lg border border-primary bg-card px-3 py-2 text-sm shadow-2xl"
+            className="glass-strong flex cursor-grabbing items-center gap-3 rounded-xl px-3 py-2 text-sm ring-1 ring-primary/50"
         >
             <GripVertical size={16} className="shrink-0 text-primary" />
             {topic.isContainer ? (
                 <FolderOpen size={15} className="shrink-0 text-muted-foreground" />
             ) : topic.status === "CONCLUIDO" ? (
-                <CheckCircle2 size={15} className="shrink-0 text-green-500" />
+                <CheckCircle2 size={15} className="shrink-0 text-primary" />
             ) : (
-                <Clock size={15} className="shrink-0 text-destructive" />
+                <Clock size={15} className="shrink-0 text-muted-foreground" />
             )}
             <span className="truncate font-medium">{topic.title}</span>
         </div>,
         document.body
     );
 }
+
+/** Botão de ícone discreto: sem moldura, só preenchimento ao passar o mouse. */
+const ICON_BTN =
+    "size-7 rounded-lg border-transparent bg-transparent p-0 text-muted-foreground shadow-none backdrop-blur-none hover:bg-foreground/8 hover:text-foreground aria-expanded:bg-foreground/8";
+const ICON_LINK =
+    "flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none has-focus-visible:ring-3 has-focus-visible:ring-ring/40";
+const STATUS_SELECT =
+    "h-7 cursor-pointer rounded-full border border-input bg-foreground/4 text-xs text-foreground outline-none transition-colors duration-150 hover:bg-foreground/8 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 [&>option]:bg-background [&>option]:text-foreground";
 
 type SubjectBoxProps = {
     subject: Subject;
@@ -264,7 +272,7 @@ export function TopicRow({
     return (
         // Subassunto fica recuado com uma linha lateral, para ficar claro de qual assunto ele faz parte.
         <div
-            className={`flex flex-col gap-2 ${isSubtopic
+            className={`flex flex-col ${isSubtopic
                     ? "ml-4 border-l-2 pl-2 sm:ml-8 sm:pl-3 border-dotted"
                     : ""
                 }`}
@@ -276,180 +284,162 @@ export function TopicRow({
         >
             <div
                 {...dragProps?.rowProps}
-                className={`hoverComponents flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm transition-opacity ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
             >
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                    {dragProps && (
+                {dragProps && (
+                    <span
+                        {...dragProps.handleProps}
+                        title="Arraste para mudar a ordem"
+                        aria-label="Arrastar para reordenar"
+                        className={`flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary ${isReordering ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"}`}
+                    >
+                        <GripVertical size={16} />
+                    </span>
+                )}
+
+                {isContainer ? (
+                    <FolderOpen color={topic.subject.color} size={15} className="shrink-0 text-muted-foreground" />
+                ) : topic.status === "CONCLUIDO" ? (
+                    <CheckCircle2 size={15} className="shrink-0 text-primary" aria-label="Concluído" />
+                ) : (
+                    <Clock size={15} className="shrink-0 text-muted-foreground" aria-label="Pendente" />
+                )}
+
+                <span
+                    className="block min-w-0 flex-1 truncate text-left font-medium"
+                    title={topic.title}
+                >
+                    {topic.title}
+                </span>
+
+                <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                    {isContainer && (
                         <span
-                            {...dragProps.handleProps}
-                            title="Arraste para mudar a ordem"
-                            aria-label="Arrastar para reordenar"
-                            className={`flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary ${isReordering ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"}`}
+                            className="shrink-0 rounded-full bg-foreground/6 px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
+                            title={`${topic.subtopicsDone ?? 0} de ${topic.subtopicsTotal ?? 0} subassuntos concluídos`}
                         >
-                            <GripVertical size={16} />
+                            {topic.subtopicsDone ?? 0}/{topic.subtopicsTotal ?? 0}
                         </span>
                     )}
-                    {/* <div className="flex flex-col">
-                        <button
-                            type="button"
-                            onClick={onMoveUp}
-                            disabled={isFirst || isReordering || !onMoveUp}
-                            aria-label="Mover para cima"
-                            className="btn btn-ghost btn-xs h-5 w-5 cursor-pointer p-0 hover:text-primary disabled:bg-transparent disabled:text-base-content/20"
-                        >
-                            <ArrowUp size={15} />
-                        </button>
-                        <button
-                            type="button"
-                            onClick={onMoveDown}
-                            disabled={isLast || isReordering || !onMoveDown}
-                            aria-label="Mover para baixo"
-                            className="btn btn-ghost btn-xs h-4 w-4 min-h-0 cursor-pointer p-0 hover:text-primary disabled:bg-transparent disabled:text-base-content/10"
-                        >
-                            <ArrowDown size={15} />
-                        </button>
-                    </div> */}
 
-                    {isContainer ? (
-                        <FolderOpen color={topic.subject.color} size={15} className="shrink-0 text-muted-foreground" />
-                    ) : topic.status === "CONCLUIDO" ? (
-                        <CheckCircle2 size={15} className="shrink-0 text-green-500" />
-                    ) : (
-                        <Clock size={15} className="shrink-0 text-destructive" />
+                    {!isContainer && (
+                        <>
+                            {/* Mobile */}
+                            <select
+                                value={topic.status}
+                                onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
+                                aria-label="Status do assunto"
+                                className={`${STATUS_SELECT} w-9 appearance-none px-0 text-center md:hidden`}
+                            >
+                                <option value="PENDENTE">✖</option>
+                                <option value="CONCLUIDO">✔</option>
+                            </select>
+
+                            {/* Desktop */}
+                            <select
+                                value={topic.status}
+                                onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
+                                aria-label="Status do assunto"
+                                className={`${STATUS_SELECT} mr-1 px-2.5 max-md:hidden`}
+                            >
+                                <option value="PENDENTE">Pendente</option>
+                                <option value="CONCLUIDO">Concluído</option>
+                            </select>
+
+                            <DialogDemo
+                                contentBtn={<><Eye className="h-4 w-4" /><span className="sr-only">Ver informações</span></>}
+                                classNameBtn={ICON_BTN}
+                                title={topic.title}
+                                description="Informações do assunto"
+                                disableBtns={true}
+                            >
+                                <TopicInfoGroup
+                                    subject={subject.title}
+                                    topic={topic}
+                                    color={subject.color}
+                                    hasAttachments={hasAttachments}
+                                />
+                            </DialogDemo>
+
+                            {topic.link && (
+                                <a
+                                    href={topic.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={ICON_LINK}
+                                    aria-label="Abrir link do assunto"
+                                    title="Abrir link"
+                                >
+                                    <LinkLucide size={15} />
+                                </a>
+                            )}
+
+                            <label
+                                className={ICON_LINK}
+                                title="Anexar PDF"
+                                htmlFor={`file-upload-${topic.id}`}
+                            >
+                                <input
+                                    accept=".pdf"
+                                    className="sr-only"
+                                    type="file"
+                                    onChange={handleFileChange}
+                                    id={`file-upload-${topic.id}`}
+                                    aria-label="Anexar PDF"
+                                />
+                                <Paperclip size={15} />
+                            </label>
+                        </>
                     )}
 
-                    <span
-                        className="block w-full max-w-50 truncate text-left font-medium sm:max-w-xs md:max-w-md lg:max-w-lg"
-                        title={topic.title}
-                    >
-                        {topic.title}
-                    </span>
-
-                    <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-                        {isContainer && (
-                            <span
-                                className="shrink-0 rounded-sm border px-1.5 py-0.5 text-xs text-muted-foreground"
-                                title={`${topic.subtopicsDone ?? 0} de ${topic.subtopicsTotal ?? 0} subassuntos concluídos`}
-                            >
-                                {topic.subtopicsDone ?? 0}/{topic.subtopicsTotal ?? 0}
-                            </span>
-                        )}
-
-                        {!isContainer && (
-                            <>
-                        {/* Mobile */}
-                        <select
-                            value={topic.status}
-                            onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
-                            aria-label="Status do tópico"
-                            className="select select-bordered select-xs hover:cursor-pointer md:hidden border rounded-sm p-0.5  max-w-10"
-                        >
-                            <option value="PENDENTE">✖</option>
-                            <option value="CONCLUIDO">✔</option>
-                        </select>
-
-                        {/* Desktop */}
-                        <select
-                            value={topic.status}
-                            onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
-                            aria-label="Status do tópico"
-                            className="select select-bordered select-sm hover:cursor-pointer max-md:hidden border rounded-sm p-0.5  "
-                        >
-                            <option value="PENDENTE">PENDENTE</option>
-                            <option value="CONCLUIDO">CONCLUÍDO</option>
-                        </select>
-
+                    {!isSubtopic && (
                         <DialogDemo
-                            contentBtn={<Eye className="h-4 w-4" />}
-                            title={topic.title}
-                            description="Informações do assunto"
-                            disableBtns={true}
-                        >
-                            <TopicInfoGroup
-                                subject={subject.title}
-                                topic={topic}
-                                color={subject.color}
-                                hasAttachments={hasAttachments}
-                            />
-                        </DialogDemo>
-
-                        {topic.link && (
-                            <a
-                                href={topic.link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-ghost btn-xs p-1 hover:text-primary sm:btn-sm"
-                            >
-                                <LinkLucide color={topic.subject.color} size={15} />
-                            </a>
-                        )}
-
-                        <label
-                            className="btn btn-ghost btn-xs cursor-pointer p-1 transition-colors hover:text-primary sm:btn-sm"
-                            title="Anexar PDF"
-                            htmlFor={`file-upload-${topic.id}`}
-                        >
-                            <input
-                                accept=".pdf"
-                                className="hidden"
-                                type="file"
-                                onChange={handleFileChange}
-                                id={`file-upload-${topic.id}`}
-                            />
-                            <Paperclip size={15} />
-                        </label>
-
-                            </>
-                        )}
-
-                        {!isSubtopic && (
-                            <DialogDemo
-                                title="Novo subassunto"
-                                description={`Adicione um subassunto em "${topic.title}".`}
-                                contentBtn={<span title="Adicionar subassunto" className="flex"><Plus size={15} /></span>}
-                                classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-primary p-0 m-0"
-                                nameConfirmBtn="Adicionar"
-                                onSubmit={handleSubtopicSubmit}
-                                open={isSubtopicDialogOpen}
-                                onOpenChange={setIsSubtopicDialogOpen}
-                            >
-                                <FieldGroup>
-                                    <Field>
-                                        <Label htmlFor={`subtopic-title-${topic.id}`}>Título</Label>
-                                        <Input
-                                            id={`subtopic-title-${topic.id}`}
-                                            value={subtopicTitle}
-                                            onChange={(e) => setSubtopicTitle(e.target.value)}
-                                            placeholder="Nome do subassunto"
-                                            required
-                                        />
-                                    </Field>
-                                </FieldGroup>
-                            </DialogDemo>
-                        )}
-
-                        <DialogDemo
-                            title={`Editar ${kind}`}
-                            description={`Modifique os detalhes deste ${kind.toLowerCase()}.`}
-                            contentBtn={<PencilLine className="" size={15} />}
-                            classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-primary"
-                            nameConfirmBtn="Editar"
-                            onSubmit={handleEditSubmit}
-                            open={isEditDialogOpen}
-                            onOpenChange={handleOpenChange}
+                            title="Novo subassunto"
+                            description={`Adicione um subassunto em "${topic.title}".`}
+                            contentBtn={<span title="Adicionar subassunto" className="flex"><Plus size={15} /><span className="sr-only">Adicionar subassunto</span></span>}
+                            classNameBtn={ICON_BTN}
+                            nameConfirmBtn="Adicionar"
+                            onSubmit={handleSubtopicSubmit}
+                            open={isSubtopicDialogOpen}
+                            onOpenChange={setIsSubtopicDialogOpen}
                         >
                             <FieldGroup>
                                 <Field>
-                                    <Label htmlFor="topic-title">Título</Label>
+                                    <Label htmlFor={`subtopic-title-${topic.id}`}>Título</Label>
                                     <Input
-                                        id="topic-title"
-                                        value={editedTitle}
-                                        onChange={(e) => setEditedTitle(e.target.value)}
+                                        id={`subtopic-title-${topic.id}`}
+                                        value={subtopicTitle}
+                                        onChange={(e) => setSubtopicTitle(e.target.value)}
+                                        placeholder="Nome do subassunto"
+                                        required
                                     />
                                 </Field>
-                                {!isContainer && (
+                            </FieldGroup>
+                        </DialogDemo>
+                    )}
+
+                    <DialogDemo
+                        title={`Editar ${kind.toLowerCase()}`}
+                        description={`Modifique os detalhes deste ${kind.toLowerCase()}.`}
+                        contentBtn={<><PencilLine size={15} /><span className="sr-only">Editar {kind.toLowerCase()}</span></>}
+                        classNameBtn={ICON_BTN}
+                        nameConfirmBtn="Salvar"
+                        onSubmit={handleEditSubmit}
+                        open={isEditDialogOpen}
+                        onOpenChange={handleOpenChange}
+                    >
+                        <FieldGroup>
+                            <Field>
+                                <Label htmlFor="topic-title">Título</Label>
+                                <Input
+                                    id="topic-title"
+                                    value={editedTitle}
+                                    onChange={(e) => setEditedTitle(e.target.value)}
+                                />
+                            </Field>
+                            {!isContainer && (
                                 <Field>
-                                    <Label className="flex gap-1" htmlFor="topic-link">Link<span className="p-0 m-0 text-card-foreground/40">(Opcional)</span> </Label>
+                                    <Label className="flex gap-1" htmlFor="topic-link">Link<span className="text-muted-foreground">(opcional)</span></Label>
                                     <Input
                                         id="topic-link"
                                         value={editedLink}
@@ -457,56 +447,56 @@ export function TopicRow({
                                         placeholder="https://..."
                                     />
                                 </Field>
-                                )}
-                                {!isContainer && topic.status === 'CONCLUIDO' && (
-                                    <Field>
-                                        <label htmlFor="topic-first-review-date">Data da primeira revisão </label>
-                                        <Input
-                                            type="date"
-                                            id="topic-first-review-date"
-                                            value={editedFirstReviewDate}
-                                            onChange={(e) => setEditedFirstReviewDate(e.target.value)}
-                                        />
-                                    </Field>
-                                )}
-                            </FieldGroup>
-                        </DialogDemo>
+                            )}
+                            {!isContainer && topic.status === 'CONCLUIDO' && (
+                                <Field>
+                                    <Label htmlFor="topic-first-review-date">Data da primeira revisão</Label>
+                                    <Input
+                                        type="date"
+                                        id="topic-first-review-date"
+                                        value={editedFirstReviewDate}
+                                        onChange={(e) => setEditedFirstReviewDate(e.target.value)}
+                                    />
+                                </Field>
+                            )}
+                        </FieldGroup>
+                    </DialogDemo>
 
-                        <DialogDemo
-                            title={`Excluir ${kind}`}
-                            description={`Tem certeza que deseja deletar este ${kind.toLowerCase()}? Esta ação é irreversível.${childCount > 0 ? ` Os ${childCount} subassunto${childCount > 1 ? "s" : ""} dele também ${childCount > 1 ? "serão excluídos" : "será excluído"}.` : ""}`}
-                            contentBtn={<Trash2 className="" size={15} />}
-                            classNameBtn="border-0 bg-transparent dark:bg-transparent hover:dark:bg-transparent p-1 m-0 hover:text-destructive"
-                            nameConfirmBtn="Excluir"
-                            variantConfirmBtn={"destructive"}
-                            onSubmit={(e) => { e.preventDefault(); handleTopicDelete(topic.id); }}
-                        >
-                        </DialogDemo>
-                    </div>
+                    <DialogDemo
+                        title={`Excluir ${kind.toLowerCase()}`}
+                        description={`Tem certeza que deseja deletar este ${kind.toLowerCase()}? Esta ação é irreversível.${childCount > 0 ? ` Os ${childCount} subassunto${childCount > 1 ? "s" : ""} dele também ${childCount > 1 ? "serão excluídos" : "será excluído"}.` : ""}`}
+                        contentBtn={<><Trash2 size={15} /><span className="sr-only">Excluir {kind.toLowerCase()}</span></>}
+                        classNameBtn={`${ICON_BTN} hover:text-destructive`}
+                        nameConfirmBtn="Excluir"
+                        variantConfirmBtn={"destructive"}
+                        onSubmit={(e) => { e.preventDefault(); handleTopicDelete(topic.id); }}
+                    >
+                    </DialogDemo>
                 </div>
             </div>
 
             {hasAttachments && (
-                <div className="flex flex-col gap-1 px-2 py-1">
+                <div className="flex flex-col gap-0.5 pb-1.5 pl-8 pr-2">
                     <button
                         type="button"
                         onClick={() => setIsAttachmentsOpen((open) => !open)}
                         aria-expanded={isAttachmentsOpen}
                         aria-label={isAttachmentsOpen ? "Reduzir anexos" : "Expandir anexos"}
-                        className="flex w-fit cursor-pointer items-center gap-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex w-fit cursor-pointer items-center gap-1 rounded-md py-0.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                     >
-                        {isAttachmentsOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                        {isAttachmentsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         Anexos ({topic.attachments!.length})
                     </button>
                     {isAttachmentsOpen && topic.attachments!.map((attachment, index) => (
-                        <span
+                        <button
+                            type="button"
                             key={attachment.id || index}
                             onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                            className="flex items-center rounded-sm border p-1 text-sm truncate hover:bg-secondary transition-colors cursor-pointer animate-in fade-in slide-in-from-top-1 duration-200"
+                            className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left text-sm transition-colors duration-150 hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                         >
-                            <FileText color={topic.subject.color} size={15} className="mr-2 shrink-0" />
-                            {attachment.name}
-                        </span>
+                            <FileText color={topic.subject.color} size={14} className="shrink-0" />
+                            <span className="truncate">{attachment.name}</span>
+                        </button>
                     ))}
                 </div>
             )}

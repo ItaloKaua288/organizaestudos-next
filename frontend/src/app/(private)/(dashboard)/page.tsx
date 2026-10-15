@@ -3,13 +3,13 @@ import { getTimelinesAction } from "@/actions/timeline.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import ProgressLabelDemo from "@/components/progress-label";
-import { ScrambleText } from "@/components/scramble-text";
+import { PageHeader } from "@/components/page-header";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDueReview } from "@/lib/review-due";
-import { AlertCircle, BadgeCheck, BookOpen, ClipboardClock, ExternalLink } from "lucide-react";
+import { BookOpen, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 
@@ -56,130 +56,114 @@ export default async function DashboardPage() {
         ? (concludedTopics.length / data.topics.length) * 100
         : 0;
 
+    const stats = [
+        { label: "Matérias ativas", value: data.subjects.length },
+        { label: "Assuntos pendentes", value: pendingTopics.length },
+        { label: "Assuntos concluídos", value: concludedTopics.length },
+    ];
+
+    const weekday = currentDayName.charAt(0).toUpperCase() + currentDayName.slice(1);
+
     return (
-        <main className="flex min-h-screen flex-col space-y-4 pb-8">
-            <header className="space-y-1">
-                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
-                    <ScrambleText text="DASHBOARD" />
-                </h1>
-            </header>
-            <section className=" flex flex-col space-y-4">
+        <main className="introduction-Page flex flex-col pb-8">
+            <PageHeader
+                title="Dashboard"
+                description={`${weekday}: veja o que estudar e revisar hoje.`}
+            />
 
-                <div className="gap-4  px-2 grid grid-cols-1 md:grid-cols-3 w-full">
-                    <Card className="introduction-card" style={{ animationDelay: `${1 * 150}ms` }} >
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                            <CardTitle className="text-sm font-medium">Matérias</CardTitle>
-                            <BookOpen className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <span className="text-2xl font-bold">{data.subjects.length}</span>
-                        </CardContent>
-                    </Card>
+            <div className="flex flex-col gap-4">
+                <section aria-label="Resumo" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    {stats.map((stat) => (
+                        <Card key={stat.label} size="sm">
+                            <CardContent className="flex flex-col gap-1">
+                                <span className="text-sm text-muted-foreground">{stat.label}</span>
+                                <span className="font-heading text-4xl font-semibold tabular-nums tracking-tight">{stat.value}</span>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </section>
 
-                    <Card className="introduction-card" style={{ animationDelay: `${1 * 150}ms` }} >
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                            <CardTitle className="text-sm font-medium">Assuntos Pendentes</CardTitle>
-                            <ClipboardClock className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <span className="text-2xl font-bold">{pendingTopics.length}</span>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="introduction-card" style={{ animationDelay: `${1 * 150}ms` }} >
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                            <CardTitle className="text-sm font-medium">Assuntos Concluídos</CardTitle>
-                            <BadgeCheck className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <span className="text-2xl font-bold">{concludedTopics.length}</span>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-2">
-
-                    <Card className="flex flex-col justify-start introduction-card" style={{ animationDelay: `${2 * 150}ms` }} >
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2 justify-between">
-                            <CardTitle className="text-sm font-medium">Desempenho</CardTitle>
-                            <BadgeCheck className="h-4 w-4 text-muted-foreground" />
+                <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Progresso geral</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <ProgressLabelDemo
                                 value={Number(progressPercentage.toFixed(2))}
-                                label="Progresso Geral"
+                                label="Progresso geral"
                                 description="dos assuntos foram concluídos"
                             />
                         </CardContent>
                     </Card>
-                    <Card className="introduction-card" style={{ animationDelay: `${2 * 150}ms` }} >
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="text-base font-semibold flex items-center gap-1">Estudar Hoje <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{subjectsToday.length}</Badge></CardTitle>
-                            {currentDayName && <Badge variant="outline">{currentDayName}</Badge>}
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                                Estudar hoje
+                                <Badge variant="secondary">{subjectsToday.length}</Badge>
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {
-                                !subjectsToday.length ? (
-                                    <p className="text-sm text-muted-foreground">Nenhum estudo pendente para hoje.</p>
-                                ) : (
-                                    <div className="flex max-h-48 flex-col gap-1.5 overflow-y-auto">
-                                        {subjectsToday.map((subject) => (
-                                            <div key={subject.id} className="flex gap-1 items-center p-2 rounded-sm justify-between hoverComponentsStatic">
-                                                <div className="flex  items-center">
-                                                    <span
-                                                        className="mr-2 h-2 w-2 shrink-0 rounded-full"
-                                                        style={{ backgroundColor: subject.color }}
-                                                    />
-                                                    <span className="truncate">{subject.title}</span>
-                                                </div>
-                                                <Link
-                                                    href={`/materias/${subject?.id}`}
-                                                    style={{ '--subject-color': subject.color } as React.CSSProperties}
-                                                >
-                                                    <ExternalLink className="h-4 w-4 hover:text-(--subject-color)" />
-                                                </Link>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                            {!subjectsToday.length ? (
+                                <p className="text-sm text-muted-foreground">Nenhum estudo marcado para hoje.</p>
+                            ) : (
+                                <div className="flex max-h-48 flex-col gap-1 overflow-y-auto">
+                                    {subjectsToday.map((subject) => (
+                                        <Link
+                                            key={subject.id}
+                                            href={`/materias/${subject.id}`}
+                                            className="group/row flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                                        >
+                                            <span className="flex min-w-0 items-center gap-2.5">
+                                                <span
+                                                    className="size-2.5 shrink-0 rounded-full"
+                                                    style={{ backgroundColor: subject.color }}
+                                                    aria-hidden="true"
+                                                />
+                                                <span className="truncate text-sm">{subject.title}</span>
+                                            </span>
+                                            <ExternalLink className="size-4 shrink-0 text-muted-foreground transition-colors group-hover/row:text-foreground" />
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </section>
 
-                <section className="grid grid-cols-1 gap-4 px-2 md:grid-cols-3">
-                    <Card className="md:col-span-2 introduction-card" style={{ animationDelay: `${3 * 150}ms` }} >
-                        <CardHeader className="flex flex-row items-center justify-between pb-2">
-                            <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                                Revisar Hoje
-                                <Badge className="w-5.5 h-5.5 p-0" variant="secondary">{reviewTodayTopics.length}</Badge>
+                <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <Card className="md:col-span-2">
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                                Revisar hoje
+                                <Badge variant="secondary">{reviewTodayTopics.length}</Badge>
                             </CardTitle>
-                            {currentDayName && <Badge variant="outline">{currentDayName}</Badge>}
                         </CardHeader>
-                        <CardContent className="max-h-60 overflow-y-auto pb-4 ">
+                        <CardContent className="max-h-72 overflow-y-auto">
                             {!reviewTodayTopics.length ? (
                                 <p className="text-sm text-muted-foreground">Nenhuma revisão para hoje nem atrasada.</p>
                             ) : (
-                                <div className="flex flex-col gap-1.5">
+                                <div className="flex flex-col gap-1">
                                     {reviewTodayTopics.map(({ topic, due }) => (
                                         <DialogDemo
                                             key={topic.id}
                                             title={topic.title}
                                             description="Informações sobre o tópico da revisão"
                                             contentBtn={
-                                                <div className="flex items-center gap-2 truncate">
-                                                    <BookOpen style={{ color: topic.subject.color }} />
-                                                    <div className="flex flex-col items-start gap-1 truncate">
-                                                        <span className="truncate">{topic.title}</span>
-                                                        <span className="text-xs text-muted-foreground truncate">{topic.subject.title}</span>
+                                                <div className="flex w-full items-center gap-3 truncate">
+                                                    <BookOpen className="size-4 shrink-0" style={{ color: topic.subject.color }} />
+                                                    <div className="flex min-w-0 flex-col items-start gap-0.5">
+                                                        <span className="max-w-full truncate text-sm">{topic.title}</span>
+                                                        <span className="max-w-full truncate text-xs text-muted-foreground">{topic.subject.title}</span>
                                                     </div>
                                                     {due.overdueDays > 0 && (
                                                         <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {due.overdueDays}d</Badge>
                                                     )}
                                                 </div>
-
                                             }
                                             disableBtns={true}
-                                            classNameBtn="flex items-center justify-start hoverComponentsStatic border-0 py-6 rounded-sm"
+                                            classNameBtn="h-auto w-full justify-start rounded-xl border-0 bg-transparent px-2.5 py-2.5 shadow-none backdrop-blur-none hover:bg-foreground/6"
                                         >
                                             <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
                                         </DialogDemo>
@@ -189,13 +173,13 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <Card className="introduction-card" style={{ animationDelay: `${3 * 150}ms` }} >
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-semibold">Calendário</CardTitle>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Calendário</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex justify-center pt-0">
+                        <CardContent className="flex justify-center">
                             <Calendar
-                                className="rounded-xl border p-3 max-w-65 w-full"
+                                className="w-full max-w-65 rounded-xl p-1"
                                 classNames={{
                                     today: "rounded-md bg-primary text-primary-foreground font-semibold",
                                 }}
@@ -203,7 +187,7 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
                 </section>
-            </section>
+            </div>
         </main>
     )
 }

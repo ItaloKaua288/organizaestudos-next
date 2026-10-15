@@ -6,7 +6,7 @@ import { DialogDemo } from "@/components/dialog-button";
 import { TopicInfoGroup } from "@/components/topic-info-group";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,8 @@ import { BookOpen, ExternalLink, Eye, FileText, Paperclip, PencilIcon, Plus, Tra
 import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
+
+const ICON_BTN = "size-7 rounded-lg border-transparent bg-transparent p-0 text-muted-foreground shadow-none hover:bg-foreground/8 hover:text-foreground";
 
 const WEEK_DAYS = [
     "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
@@ -60,11 +62,16 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
     }
 
     return (
-        <Card className={`border max-h-150 h-full flex flex-col transition-all ${isToday ? "border-primary/50 shadow-sm shadow-primary/50" : ""}`}>
-            <CardHeader>
-                <CardTitle className="truncate">{dayLabel}</CardTitle>
-                <CardDescription>{date}</CardDescription>
-                <CardAction>
+        <div className={cn("glass flex h-full max-h-150 flex-col rounded-2xl", isToday && "border border-primary ring-2 ring-primary/50")}>
+            <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-2">
+                <div className="min-w-0">
+                    <h3 className="flex items-center gap-2 truncate text-base font-semibold">
+                        <span className="truncate">{dayLabel}</span>
+                        {/* {isToday && <Badge className="shrink-0">Hoje</Badge>} */}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{date}</p>
+                </div>
+                <div className="shrink-0">
                     <DialogDemo
                         open={isAddOpen}
                         onOpenChange={setIsAddOpen}
@@ -113,24 +120,24 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                             </Field>
                         </FieldGroup>
                     </DialogDemo>
-                </CardAction>
-            </CardHeader>
+                </div>
+            </div>
 
-            <CardContent className="flex flex-col space-y-3 pt-1 pb-4 overflow-y-auto">
+            <div className="flex flex-col gap-3 overflow-y-auto px-2 pb-3">
                 {reviews && reviews.length > 0 && (
-                    <div className="border p-3 rounded-md flex flex-col gap-1 w-full max-h-40">
-                        <h3 className="truncate w-full border-b pb-1 font-semibold text-sm">Revisões</h3>
-                        <div className="overflow-y-auto flex flex-col gap-1">
+                    <div className="flex max-h-40 w-full flex-col gap-1 border-b border-border px-2 pb-3">
+                        <h4 className="truncate text-sm font-medium text-muted-foreground">Revisões</h4>
+                        <div className="flex flex-col gap-0.5 overflow-y-auto">
 
                             {reviews.map((review) => (
                                 <DialogDemo
                                     title={review.title}
                                     description="Detalhes do assunto atual"
-                                    contentBtn={<span className="flex gap-1 items-center truncate text-[12px]">
+                                    contentBtn={<span className="flex items-center gap-2 truncate text-xs">
                                         <BookOpen className="h-3.5 w-3.5 shrink-0" color={review.subject.color} />
                                         <span className="truncate ">{review.title}</span>
                                     </span>}
-                                    classNameBtn="truncate flex justify-start rounded-sm dark:bg-card bg-card border-none "
+                                    classNameBtn="flex h-auto w-full justify-start truncate rounded-lg border-transparent bg-transparent px-2 py-1.5 shadow-none hover:bg-foreground/6"
                                     disableBtns={true}
                                     key={review.id}
                                 >
@@ -141,6 +148,7 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                     </div>
                 )}
 
+                <div className="flex flex-col ">
                 {dayEvents.map((item) => (
                     <EventItem
                         key={item.id}
@@ -148,8 +156,15 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                         nextTopic={item.subject?.id ? pendingTopicsBySubject[item.subject.id] : undefined}
                     />
                 ))}
-            </CardContent>
-        </Card>
+                </div>
+
+                {dayEvents.length === 0 && !(reviews && reviews.length > 0) && (
+                    <p className="px-2 py-4 text-center text-sm text-muted-foreground">
+                        Nenhuma matéria neste dia. Use o botão Adicionar.
+                    </p>
+                )}
+            </div>
+        </div>
     )
 }
 
@@ -220,27 +235,32 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
     }
 
     return (
-        <Card className="transition-colors hover:border-primary/40 relative">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="flex flex-col gap-1 min-w-0 pr-2">
-                    <div className="flex gap-2 items-center truncate">
+        <div className="flex flex-col gap-1 rounded-lg px-2 py-2.5 transition-colors hover:bg-foreground/6 border-b">
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                    <div className="flex min-w-0 items-center gap-2">
                         <span
-                            className="w-3 h-3 rounded-full shrink-0"
+                            className="size-2.5 shrink-0 rounded-full"
                             style={{ backgroundColor: item.subject?.color || "#ccc" }}
                             aria-hidden="true"
                         />
-                        <span className="font-medium truncate text-sm">
+                        <span className="truncate text-sm font-medium">
                             {item.subject?.title || "Sem matéria"}
                         </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="pl-[18px] text-xs tabular-nums text-muted-foreground">
                         {item.start_time} - {item.end_time}
                     </span>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                    <Link href={`/materias/${item.subject?.id}`}>
-                        <ExternalLink className="h-4 w-4 hover:text-primary" />
+                <div className="flex shrink-0 items-center">
+                    <Link
+                        href={`/materias/${item.subject?.id}`}
+                        aria-label="Abrir matéria"
+                        title="Abrir matéria"
+                        className="inline-flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/8 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                    >
+                        <ExternalLink className="h-4 w-4" />
                     </Link>
                     {nextTopic && (
                         <DialogDemo
@@ -248,7 +268,9 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                             title={nextTopic.title}
                             description="Detalhes do tópico atual"
                             contentBtn={<Eye className="h-4 w-4" />}
+                            classNameBtn={ICON_BTN}
                             disableBtns={true}
+                            variantDialogBtn={"ghost"}
                         >
                             <div className="space-y-4 min-w-0">
                                 <div>
@@ -268,7 +290,7 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                                                        className="flex gap-2 items-center w-full border hoverComponentsStatic p-0.5 rounded-sm text-left cursor-pointer transition-colors"
+                                                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                                                     >
                                                         <FileText className="h-4 w-4 shrink-0" style={{ color: nextTopic.subject.color }} />
                                                         <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
@@ -289,7 +311,8 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                         description="Modifique os horários deste evento."
                         nameConfirmBtn={isSubmitting ? "Salvando..." : "Salvar"}
                         onSubmit={handleEditSubmit}
-                        classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent hover:bg-transparent hover:text-primary"
+                        classNameBtn={ICON_BTN}
+                        variantDialogBtn={"ghost"}
                         contentBtn={<PencilIcon className="h-4 w-4" />}
                     >
                         <input type="hidden" name="subject_id" value={item.subject?.id || ""} />
@@ -325,20 +348,18 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
                         </FieldGroup>
                     </DialogDemo>
 
-                    <Button variant="ghost" size="icon" className="hover:text-destructive hover:bg-transparent dark:hover:bg-transparent" onClick={handleDelete} title="Deletar">
+                    <Button variant="ghost" size="icon-sm" className="size-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={handleDelete} title="Deletar" aria-label="Deletar evento">
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
-            </CardHeader>
+            </div>
 
             {nextTopic && (
-                <CardFooter className="py-2 bg-muted/40 mt-1">
-                    <div className="flex w-full gap-2 items-center text-xs text-muted-foreground truncate">
-                        <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{nextTopic.title}</span>
-                    </div>
-                </CardFooter>
+                <div className="flex items-center gap-2 pl-[18px] text-xs text-muted-foreground">
+                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{nextTopic.title}</span>
+                </div>
             )}
-        </Card>
+        </div>
     )
 }

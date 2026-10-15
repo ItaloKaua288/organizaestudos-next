@@ -21,6 +21,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Subject } from "@/types/subject";
 import Link from "next/link";
 
+/** Botão de ícone discreto (ghost) para os diálogos da barra de ações. */
+const ICON_BTN =
+    "size-8 rounded-lg border-transparent bg-transparent p-0 text-muted-foreground shadow-none backdrop-blur-none hover:bg-foreground/8 hover:text-foreground aria-expanded:bg-foreground/8";
+
 type SubjectBoxProps = {
     subject: Subject;
     onUpdate?: () => void;
@@ -100,42 +104,42 @@ export default function SubjectBox({
 
     if (!isActive) {
         return (
-            <div className="rounded-lg border border-dashed p-4 shadow-sm bg-card">
+            <div className="glass rounded-2xl p-4 sm:p-5">
                 <header className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 opacity-60">
+                    <div className="flex min-w-0 items-center gap-2.5 opacity-70">
                         <span
-                            className="h-4 w-4 shrink-0 rounded-full"
+                            className="size-2.5 shrink-0 rounded-full"
                             style={{ backgroundColor: subject.color }}
                             aria-hidden="true"
                         />
-                        <h2 className="text-md font-bold truncate">{subject.title}</h2>
+                        <h2 className="truncate text-base font-semibold">{subject.title}</h2>
                         <Badge variant="secondary">Desativada</Badge>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex shrink-0 items-center gap-0.5">
                         <SubjectActiveToggle subjectId={subject.id} active={false} />
 
                         <DialogDemo
                             title="Deletar matéria"
                             description="Tem certeza que deseja deletar a matéria? Esta ação é irreversível."
-                            contentBtn={<Trash2 size={15} className="text-destructive" />}
-                            classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"
+                            contentBtn={<><Trash2 size={15} /><span className="sr-only">Deletar matéria</span></>}
+                            classNameBtn={`${ICON_BTN} hover:text-destructive`}
                             nameConfirmBtn="Excluir"
                             variantConfirmBtn={"destructive"}
                             onSubmit={handleSubjectFormDelete}
                         />
                     </div>
                 </header>
-                <p className="mt-2 text-sm text-muted-foreground">
-                    Matéria desativada: ela não aparece nas revisões, no cronograma, no dashboard nem nas anotações. Reative para voltar a usá-la.
+                <p className="mt-3 text-sm text-muted-foreground">
+                    Esta matéria não aparece nas revisões, no cronograma, no painel de desempenho nem nas anotações. Reative para voltar a usá-la.
                 </p>
             </div>
         );
     }
 
     return (
-        <div className="rounded-lg border p-4 shadow-sm bg-card">
-            <header className={`${isExpanded ? "mb-2" : ""} flex items-center justify-between gap-2`}>
+        <div className="glass rounded-2xl p-4 sm:p-5">
+            <header className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
                     <button
                         type="button"
@@ -143,40 +147,45 @@ export default function SubjectBox({
                         aria-expanded={isExpanded}
                         aria-label={isExpanded ? "Reduzir matéria" : "Expandir matéria"}
                         title={isExpanded ? "Reduzir" : "Expandir"}
-                        className="flex shrink-0 cursor-pointer items-center rounded-sm p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+                        className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                     >
-                        {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                        {isExpanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}
                     </button>
                     <span
-                        className="h-4 w-4 shrink-0 rounded-full"
+                        className="size-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: subject.color }}
                         aria-hidden="true"
                     />
-                    <h2 className="text-md font-bold truncate">{subject.title}</h2>
-                    {!isExpanded && <Badge variant="secondary">{topics.filter((topic) => !topic.isContainer).length}</Badge>}
+                    <h2 className="truncate text-base font-semibold">{subject.title}</h2>
+                    {!isExpanded && (
+                        <Badge variant="secondary" title="Assuntos nesta matéria">
+                            {topics.filter((topic) => !topic.isContainer).length}
+                        </Badge>
+                    )}
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex shrink-0 items-center gap-0.5">
                     <Link
-                        className="p-2 rounded-lg"
+                        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                         href={`/materias/${subject?.id}`}
-                        style={{ '--subject-color': subject.color } as React.CSSProperties}
+                        aria-label="Abrir página da matéria"
+                        title="Abrir página da matéria"
                     >
-                        <ExternalLink className="h-4 w-4 hover:text-(--subject-color)" />
+                        <ExternalLink className="h-4 w-4" />
                     </Link>
 
                     <DialogDemo
                         title="Editar a matéria"
                         description="Modifique os detalhes desta matéria."
-                        contentBtn={<PencilLine size={15} />}
-                        classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"
+                        contentBtn={<><PencilLine size={15} /><span className="sr-only">Editar matéria</span></>}
+                        classNameBtn={ICON_BTN}
                         onSubmit={handleSubjectFormSubmit}
                         open={isEditOpen}
                         onOpenChange={setIsEditOpen}
                     >
                         <FieldGroup>
                             <Field>
-                                <Label>Nome:</Label>
+                                <Label>Nome</Label>
                                 <Input
                                     name="title"
                                     defaultValue={subject.title}
@@ -184,7 +193,7 @@ export default function SubjectBox({
                                 />
                             </Field>
                             <Field>
-                                <Label>Escolha uma cor:</Label>
+                                <Label>Cor</Label>
                                 <ColorPicker value={draftColor} onChange={setDraftColor} />
                             </Field>
                         </FieldGroup>
@@ -195,8 +204,8 @@ export default function SubjectBox({
                     <DialogDemo
                         title="Deletar matéria"
                         description="Tem certeza que deseja deletar a matéria? Esta ação é irreversível."
-                        contentBtn={<Trash2 size={15} className="text-destructive" />}
-                        classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"
+                        contentBtn={<><Trash2 size={15} /><span className="sr-only">Deletar matéria</span></>}
+                        classNameBtn={`${ICON_BTN} hover:text-destructive`}
                         nameConfirmBtn="Excluir"
                         variantConfirmBtn={"destructive"}
                         onSubmit={handleSubjectFormDelete}
@@ -205,70 +214,74 @@ export default function SubjectBox({
             </header>
 
             {isExpanded && (
-            <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                {topics.map((topic, index) => {
-                    const meta = getTopicMeta(topic.id);
+                <div className="mt-3 flex flex-col">
+                    <div className="flex flex-col divide-y divide-border">
+                        {topics.map((topic, index) => {
+                            const meta = getTopicMeta(topic.id);
 
-                    return (
-                    <TopicRow
-                        key={topic.id || `topic-${index}`}
-                        topic={topic}
-                        index={index}
-                        isFirst={meta.isFirst}
-                        isLast={meta.isLast}
-                        isSubtopic={meta.isSubtopic}
-                        childCount={meta.childCount}
-                        subject={subject}
-                        isReordering={isReordering}
-                        dragProps={getDragProps(topic.id)}
-                        isDragging={draggedId === topic.id}
-                        isDragOver={overId === topic.id}
-                        onMoveUp={() => moveTopic(topic.id, "up")}
-                        onMoveDown={() => moveTopic(topic.id, "down")}
-                    />
-                    );
-                })}
-                <TopicDragGhost ghost={ghost} elementRef={ghostRef} />
-                {topics.length === 0 && (
-                    <p className="text-sm text-muted-foreground p-2 text-center">
-                        Nenhum assunto cadastrado.
-                    </p>
-                )}
-                <Field className="flex flex-row">
-                    <Input className="dark:bg-input/30 bg-input/10 " placeholder="Adicione um assunto" onChange={(e) => (setTopicTitle(e.target.value))} />
-                    <Button variant={"outline"} className={"max-w-10 dark:bg-input/30 bg-input/10 "} nativeButton={false} render={<Plus size={15} />} onClick={handleSubjectCreate}></Button>
-                </Field>
-            </div>
+                            return (
+                                <TopicRow
+                                    key={topic.id || `topic-${index}`}
+                                    topic={topic}
+                                    index={index}
+                                    isFirst={meta.isFirst}
+                                    isLast={meta.isLast}
+                                    isSubtopic={meta.isSubtopic}
+                                    childCount={meta.childCount}
+                                    subject={subject}
+                                    isReordering={isReordering}
+                                    dragProps={getDragProps(topic.id)}
+                                    isDragging={draggedId === topic.id}
+                                    isDragOver={overId === topic.id}
+                                    onMoveUp={() => moveTopic(topic.id, "up")}
+                                    onMoveDown={() => moveTopic(topic.id, "down")}
+                                />
+                            );
+                        })}
+                    </div>
+                    <TopicDragGhost ghost={ghost} elementRef={ghostRef} />
+                    {topics.length === 0 && (
+                        <p className="py-4 text-center text-sm text-muted-foreground">
+                            Nenhum assunto ainda. Adicione o primeiro abaixo.
+                        </p>
+                    )}
+                    <div className="mt-3 flex items-center gap-2">
+                        <Input className="min-w-0 flex-1" placeholder="Adicione um assunto" aria-label="Novo assunto" onChange={(e) => (setTopicTitle(e.target.value))} />
+                        <Button variant="outline" size="icon" className="shrink-0" aria-label="Adicionar assunto" onClick={handleSubjectCreate}>
+                            <Plus size={15} />
+                        </Button>
+                    </div>
+                </div>
             )}
         </div>
     );
 }
 
-
-
 export function SubjectBoxSkeleton() {
     return (
-        <div className="rounded-lg border p-4 shadow-sm bg-card">
-            <header className="mb-4 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                    <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
+        <div className="glass rounded-2xl p-4 sm:p-5">
+            <header className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                    <Skeleton className="size-2.5 shrink-0 rounded-full" />
                     <Skeleton className="h-5 w-40" />
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Skeleton className="h-5 w-5 rounded-md" />
-                    <Skeleton className="h-5 w-5 rounded-md" />
+                    <Skeleton className="size-5 rounded-md" />
+                    <Skeleton className="size-5 rounded-md" />
                 </div>
             </header>
 
-            <div className="flex flex-col gap-2">
-                <TopicRowSkeleton />
-                <TopicRowSkeleton />
-                <TopicRowSkeleton />
+            <div className="mt-3 flex flex-col">
+                <div className="flex flex-col divide-y divide-border">
+                    <TopicRowSkeleton />
+                    <TopicRowSkeleton />
+                    <TopicRowSkeleton />
+                </div>
 
-                <div className="flex flex-row gap-2 mt-1">
-                    <Input className="dark:bg-input/30 bg-input/10 " placeholder="Adicione um assunto" />
-                    <Button variant={"outline"} className={"max-w-10 dark:bg-input/30 bg-input/10"}><Plus size={15} /></Button>
+                <div className="mt-3 flex flex-row gap-2">
+                    <Input className="min-w-0 flex-1" placeholder="Adicione um assunto" aria-label="Novo assunto" disabled />
+                    <Button variant="outline" size="icon" className="shrink-0" aria-label="Adicionar assunto" disabled><Plus size={15} /></Button>
                 </div>
             </div>
         </div>
@@ -277,24 +290,13 @@ export function SubjectBoxSkeleton() {
 
 function TopicRowSkeleton() {
     return (
-        <div className="flex w-full items-center justify-between gap-2 rounded-lg border border-base-content/10 py-1 px-3 text-sm h-10.5">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex flex-col gap-0.5">
-                    <Skeleton className="h-3 w-3 rounded-full" />
-                    <Skeleton className="h-3 w-3 rounded-full" />
-                </div>
-
-                <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
-
-                <Skeleton className="h-4 w-3/4 max-w-62.5" />
-
-                <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-                    <Skeleton className="h-6 w-24 rounded-md hidden sm:block" />
-                    <Skeleton className="h-5 w-5 rounded-md" />
-                    <Skeleton className="h-5 w-5 rounded-md" />
-                    <Skeleton className="h-5 w-5 rounded-md" />
-                    <Skeleton className="h-5 w-5 rounded-md" />
-                </div>
+        <div className="flex h-11 w-full items-center gap-3 px-2">
+            <Skeleton className="size-4 shrink-0 rounded-full" />
+            <Skeleton className="h-4 w-3/4 max-w-62.5" />
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+                <Skeleton className="hidden h-5 w-20 rounded-full sm:block" />
+                <Skeleton className="size-5 rounded-md" />
+                <Skeleton className="size-5 rounded-md" />
             </div>
         </div>
     );

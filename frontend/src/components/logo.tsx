@@ -1,11 +1,11 @@
 // compact: em telas muito estreitas (< 400px) esconde o texto e deixa só o ícone, para a navbar caber.
 export const Logo = ({ compact = false }: { compact?: boolean }) => {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
       <LogoSvg />
-      <div className={compact ? "max-[350px]:hidden" : ""}>
+      <div className={compact ? "font-heading text-[0.95rem] tracking-tight max-[350px]:hidden" : "font-heading text-[0.95rem] tracking-tight"}>
         <span className="font-semibold">Organiza</span>
-        <span className="text-primary font-bold">Estudos</span>
+        <span className="font-semibold text-primary">Estudos</span>
       </div>
     </div>
   )

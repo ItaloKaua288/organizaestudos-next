@@ -53,9 +53,9 @@ export function PasswordForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 sm:p-6" aria-labelledby="password-title">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 sm:p-7" aria-labelledby="password-title">
             <div className="space-y-1">
-                <h2 id="password-title" className="text-lg font-semibold">
+                <h2 id="password-title" className="text-lg font-medium">
                     Senha
                 </h2>
                 <p className="text-sm text-muted-foreground">Para trocar, confirme a senha atual.</p>

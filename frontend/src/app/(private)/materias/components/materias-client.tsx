@@ -9,9 +9,10 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/page-header";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
-import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import { FormEvent, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -60,71 +61,81 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
     }
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <div className="flex items-center gap-3 justify-between">
-                <p className="p-2 py-4 font-medium text-sm text-muted-foreground">Gerencie suas matérias e assuntos</p>
-                <div className="flex items-center gap-1 mr-2">
-                <Button variant="outline" size="sm" onClick={expandAll} title="Expandir todas as matérias" disabled={subjects.length === 0}>
-                    <ChevronsUpDown size={15} /> <span className="max-sm:hidden">Expandir todas</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={collapseAll} title="Reduzir todas as matérias" disabled={subjects.length === 0}>
-                    <ChevronsDownUp size={15} /> <span className="max-sm:hidden">Reduzir todas</span>
-                </Button>
-                <DataTransfer />
-                <DialogDemo
-                    contentBtn="Nova Matéria"
-                    title="Nova Matéria"
-                    description="Crie uma nova matéria para organizar seus estudos."
-                    nameConfirmBtn="Criar Matéria"
-                    onSubmit={handleSubmitSubject}
-                    open={isCreateSubjectOpen}
-                    onOpenChange={setIsCreateSubjectOpen}
-                    classNameBtn=""
-                >
-                    <FieldGroup>
-                        <Field>
-                            <Label htmlFor="name-1">Nome:</Label>
-                            <Input id="name-1" name="name" placeholder="Nome da matéria" value={title} onChange={(e) => setTitle(e.target.value)} />
-                        </Field>
-                        <Field>
-                            <Label htmlFor="description-1">Escolha uma cor:</Label>
-                            <ColorPicker value={color} onChange={setColor} />
-                        </Field>
-                    </FieldGroup>
-                </DialogDemo>
-                </div>
-            </div>
+        <div className="flex flex-col">
+            <PageHeader
+                title="Matérias"
+                description="Gerencie suas matérias e assuntos."
+                actions={
+                    <>
+                        <Button variant="outline" size="sm" onClick={expandAll} title="Expandir todas as matérias" disabled={subjects.length === 0}>
+                            <ChevronsUpDown size={15} /> <span className="max-sm:hidden">Expandir todas</span>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={collapseAll} title="Reduzir todas as matérias" disabled={subjects.length === 0}>
+                            <ChevronsDownUp size={15} /> <span className="max-sm:hidden">Reduzir todas</span>
+                        </Button>
+                        <DataTransfer />
+                        <DialogDemo
+                            contentBtn={
+                                <div className="flex items-center gap-1">
+                                    <Plus className="h-4 w-4" />
+                                    <span>Nova Matéria</span>
+                                </div>}
+                            title="Nova matéria"
+                            description="Crie uma nova matéria para organizar seus estudos."
+                            nameConfirmBtn="Criar matéria"
+                            onSubmit={handleSubmitSubject}
+                            open={isCreateSubjectOpen}
+                            onOpenChange={setIsCreateSubjectOpen}
+                            classNameBtn="h-8 rounded-lg px-3 text-[0.8rem]"
+                        >
+                            <FieldGroup>
+                                <Field>
+                                    <Label htmlFor="name-1">Nome</Label>
+                                    <Input id="name-1" name="name" placeholder="Nome da matéria" value={title} onChange={(e) => setTitle(e.target.value)} />
+                                </Field>
+                                <Field>
+                                    <Label htmlFor="description-1">Cor</Label>
+                                    <ColorPicker value={color} onChange={setColor} />
+                                </Field>
+                            </FieldGroup>
+                        </DialogDemo>
+                    </>
+                }
+            />
 
-            <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {subjects.length > 0 ? (
-                    subjects.map((subject) => (
+            {subjects.length > 0 ? (
+                <div className="grid grid-cols-1  gap-4 lg:grid-cols-2">
+                    {subjects.map((subject) => (
                         <SubjectBox
                             key={subject.id}
                             subject={subject}
                             isExpanded={!collapsedIds.has(subject.id)}
                             onToggleExpanded={() => toggleSubject(subject.id)}
                         />
-                    ))
-                ) : (
-                    <p className="text-sm text-muted-foreground p-2 text-center">
-                        Nenhuma matéria cadastrada.
+                    ))}
+                </div>
+            ) : (
+                <div className="glass rounded-2xl px-6 py-12 text-center">
+                    <p className="font-medium">Você ainda não tem matérias.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Use o botão Nova matéria para criar a primeira e começar a adicionar assuntos.
                     </p>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }
 
 export function MateriasSkeleton() {
     return (
-        <div className="flex flex-col min-h-screen">
-            <div className="flex items-center gap-3 justify-between">
-                <p className="p-2 py-4 font-medium text-sm text-muted-foreground">Gerencie suas matérias e assuntos</p>
-                <Button variant={"outline"} className={"mr-2"}>Nova Matéria</Button>
-            </div>
+        <div className="flex flex-col">
+            <PageHeader
+                title="Matérias"
+                description="Gerencie suas matérias e assuntos."
+                actions={<Button variant="outline" size="sm" disabled>Nova matéria</Button>}
+            />
 
-            {/* Grid dos Cartões */}
-            <div className="px-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
                 <SubjectBoxSkeleton />
                 <SubjectBoxSkeleton />
                 <SubjectBoxSkeleton />

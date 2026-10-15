@@ -45,9 +45,9 @@ export function NameForm({ currentName }: { currentName: string }) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 sm:p-6" aria-labelledby="name-title">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5 sm:p-7" aria-labelledby="name-title">
             <div className="space-y-1">
-                <h2 id="name-title" className="text-lg font-semibold">
+                <h2 id="name-title" className="text-lg font-medium">
                     Nome
                 </h2>
                 <p className="text-sm text-muted-foreground">É assim que você aparece no seu perfil.</p>

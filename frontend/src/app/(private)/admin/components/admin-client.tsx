@@ -63,12 +63,12 @@ export function AdminClient({ initialUsers, currentUserId }: AdminClientProps) {
     const handleDeleted = (id: string) => setUsers((current) => current.filter((user) => user._id !== id));
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             <ActivityStrip users={users} now={now} />
 
-            <section aria-labelledby="admin-users-title" className="space-y-4">
+            <section aria-labelledby="admin-users-title" className="glass space-y-4 rounded-3xl p-5 sm:p-7">
                 <div className="flex items-baseline justify-between gap-4">
-                    <h2 id="admin-users-title" className="text-lg font-semibold">
+                    <h2 id="admin-users-title" className="text-lg font-medium">
                         Usuários
                     </h2>
                     <p aria-live="polite" className="text-sm text-muted-foreground">
@@ -90,10 +90,10 @@ export function AdminClient({ initialUsers, currentUserId }: AdminClientProps) {
                                 aria-pressed={active}
                                 onClick={() => setFilter(key)}
                                 className={cn(
-                                    "inline-flex h-8 items-center gap-2 rounded-full border px-3 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+                                    "inline-flex h-8 items-center gap-2 rounded-full px-3 text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
                                     active
-                                        ? "border-primary bg-primary text-primary-foreground"
-                                        : "bg-card hover:bg-muted"
+                                        ? "bg-primary text-primary-foreground"
+                                        : "bg-foreground/5 hover:bg-foreground/10"
                                 )}
                             >
                                 {label}
@@ -150,7 +150,7 @@ export function AdminClient({ initialUsers, currentUserId }: AdminClientProps) {
                 </div>
 
                 {visibleUsers.length === 0 ? (
-                    <div className="flex flex-col items-start gap-3 border-y py-8">
+                    <div className="flex flex-col items-start gap-3 border-t border-border pt-6">
                         <p className="text-sm text-muted-foreground">
                             {isFiltering
                                 ? "Nenhum usuário combina com a busca e os filtros atuais."
@@ -163,7 +163,7 @@ export function AdminClient({ initialUsers, currentUserId }: AdminClientProps) {
                         )}
                     </div>
                 ) : (
-                    <ul className="divide-y border-y">
+                    <ul className="divide-y divide-border border-y border-border">
                         {visibleUsers.map((user) => (
                             <UserRow
                                 key={user._id}

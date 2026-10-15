@@ -1,40 +1,21 @@
-import { Logo } from "@/components/logo"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-
-import { ThemeToggle } from "@/components/theme-toggle"
-import { SignupForm } from "./components/signup-form"
-
+import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { SignupForm } from "./components/signup-form";
 
 export default function SignupPage() {
-    return (
-        <>
-            <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
-                <ThemeToggle />
-            </div>
-
-            <Card className="relative w-full max-w-md shadow-lg">
-                <CardHeader className="items-center px-6 pt-7 text-center sm:px-8">
-                    <Logo />
-                    <div className="mt-5 space-y-1">
-                        <CardTitle className="text-xl">
-                            Crie sua conta
-                        </CardTitle>
-                        <CardDescription>
-                            Comece a organizar seus estudos hoje mesmo
-                        </CardDescription>
-                    </div>
-                </CardHeader>
-
-                <CardContent className="px-6 pb-7 sm:px-8">
-                    <SignupForm />
-                </CardContent>
-            </Card>
-        </>
-    )
+  return (
+    <>
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <ThemeToggle />
+      </div>
+      <div className="glass-strong introduction-Page w-full max-w-md rounded-3xl px-6 py-8 sm:px-9 sm:py-10">
+        <Logo />
+        <div className="mt-8 mb-7 space-y-1.5">
+          <h1 className="text-2xl font-semibold tracking-tight">Crie sua conta</h1>
+          <p className="text-sm text-muted-foreground">Comece a organizar seus estudos.</p>
+        </div>
+        <SignupForm />
+      </div>
+    </>
+  )
 }

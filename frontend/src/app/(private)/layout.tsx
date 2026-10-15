@@ -1,24 +1,12 @@
 import { Navbar2 } from "@/components/Navbar2";
 import { ThemeProvider } from "@/components/theme-provider";
+import { fontVariables } from "@/lib/fonts";
 import { PROFILE_COOKIE } from "@/lib/profile-cookie";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { cookies } from "next/headers";
 import { Toaster } from 'react-hot-toast';
 import "../globals.css";
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Organiza Estudos"
@@ -38,16 +26,26 @@ export default async function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
+      className={cn("h-full", "antialiased", "font-sans", fontVariables)}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col mx-auto max-w-[1920px]">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Toaster position="bottom-right" />
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              className: "glass-popover",
+              style: {
+                background: "var(--popover)",
+                color: "var(--popover-foreground)",
+                borderRadius: "1rem",
+                backdropFilter: "blur(20px)",
+              },
+            }}
+          />
+          <div aria-hidden className="ambient" />
           <Navbar2 />
-          <div className="fixed -z-10 inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[32px_32px]" />
-          <div className="min-h-18"></div>
-          <div key={profileKey} className="contents">
+          <div key={profileKey} className="mx-auto w-full max-w-7xl flex-1 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
             {children}
           </div>
         </ThemeProvider>

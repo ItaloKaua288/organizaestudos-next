@@ -17,7 +17,7 @@ interface UserRowProps {
     onDelete: (user: AdminUser) => void;
 }
 
-/** Uma linha do livro de registros: quem é, quanto já usou, quando acessou e as ações. */
+/** Uma linha da lista de usuários: quem é, quanto já usou, quando acessou e as ações. */
 export function UserRow({ user, now, isSelf, onEdit, onDelete }: UserRowProps) {
     const [expanded, setExpanded] = useState(false);
 
@@ -27,14 +27,14 @@ export function UserRow({ user, now, isSelf, onEdit, onDelete }: UserRowProps) {
     const subjects = [...user.subjects].sort((a, b) => b.topicsCount - a.topicsCount);
 
     return (
-        <li className="relative py-4">
+        <li className="relative py-4 transition-colors hover:bg-foreground/4 sm:-mx-3 sm:rounded-xl sm:px-3">
             <div className="grid gap-x-6 gap-y-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1fr)_auto] md:items-center">
                 <div className="flex min-w-0 items-center gap-3 max-md:pr-28">
                     <div
                         aria-hidden
                         className={cn(
-                            "flex size-11 shrink-0 items-center justify-center rounded-lg text-base font-semibold",
-                            user.isAdmin ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                            "flex size-11 shrink-0 items-center justify-center rounded-xl font-heading text-base font-semibold",
+                            user.isAdmin ? "bg-primary/15 text-primary" : "bg-foreground/8 text-muted-foreground"
                         )}
                     >
                         {getInitials(user.name)}
@@ -60,7 +60,7 @@ export function UserRow({ user, now, isSelf, onEdit, onDelete }: UserRowProps) {
                                 de <span className="tabular-nums">{user.topicsCount.toLocaleString("pt-BR")}</span> assuntos
                                 concluídos
                             </p>
-                            <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">
+                            <div aria-hidden className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
                                 <div className="h-full rounded-full bg-primary" style={{ width: `${percent}%` }} />
                             </div>
                         </>
@@ -119,7 +119,7 @@ export function UserRow({ user, now, isSelf, onEdit, onDelete }: UserRowProps) {
             </div>
 
             {expanded && (
-                <div id={detailsId} className="mt-4 space-y-3 rounded-xl bg-muted/50 p-4 text-sm">
+                <div id={detailsId} className="mt-4 space-y-3 rounded-xl bg-foreground/5 p-4 text-sm">
                     <p className="text-muted-foreground">
                         {count(user.profilesCount, "perfil de estudo", "perfis de estudo")}.{" "}
                         {user.totalStudyTime > 0

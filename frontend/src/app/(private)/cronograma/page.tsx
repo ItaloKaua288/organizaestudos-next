@@ -2,7 +2,7 @@ import { getCycleAction } from "@/actions/cycle.actions";
 import { getSubjectsAction } from "@/actions/subjects.actions";
 import { getTimelinesAction } from "@/actions/timeline.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
-import { ScrambleText } from "@/components/scramble-text";
+import { PageHeader } from "@/components/page-header";
 import { Topic } from "@/types/topic";
 import { cookies } from "next/headers";
 import { CycleView } from "./components/cycle-view";
@@ -27,19 +27,12 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
         const [cycle, allSubjects, allTopics] = await Promise.all([getCycleAction(), getSubjectsAction(), getTopicsAction()]);
 
         return (
-            <main className="space-y-4">
-                <header className="space-y-1">
-                    <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
-                        CICLO DE ESTUDOS
-                        {/* <ScrambleText text="CICLO DE ESTUDOS" /> */}
-                    </h1>
-                    <div className="flex flex-wrap justify-between gap-2 p-2 items-center">
-                        <p className="text-sm font-medium text-muted-foreground">
-                            Estude em sequência, sem depender de dias fixos.
-                        </p>
-                        <ViewToggle active="ciclo" />
-                    </div>
-                </header>
+            <main className="flex flex-col gap-6">
+                <PageHeader
+                    title="Ciclo de estudos"
+                    description="Estude em sequência, sem depender de dias fixos."
+                    actions={<ViewToggle active="ciclo" />}
+                />
 
                 <CycleView
                     initialCycle={cycle}
@@ -139,28 +132,21 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
     }, {});
 
     return (
-        <main className="space-y-4">
-            <header className="space-y-1">
-                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm">
-                    <ScrambleText text="CRONOGRAMA" />
-                </h1>
-                <div className="flex flex-wrap justify-between gap-2 p-2 items-center">
-                    <p className="text-sm font-medium text-muted-foreground">
-                        Gerencie seu cronograma.
-                    </p>
-                    <ViewToggle active="cronograma" />
-                </div>
-            </header>
+        <main className="flex flex-col gap-6">
+            <PageHeader
+                title="Cronograma"
+                description="Organize suas matérias ao longo da semana."
+                actions={<ViewToggle active="cronograma" />}
+            />
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 p-2 pt-0 gap-3">
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {WEEK_DAYS.map((dayLabel, index) => {
                     const isToday = currentDayName !== "" && currentDayName.toLowerCase() === dayLabel.toLowerCase();
                     const dayEvents = data.timelines.filter((t) => t.day === dayLabel) || [];
                     const dateFormatted = dayDates[index].formattedDate;
 
                     return (
-                        <section key={dayLabel} className="introduction-card "
-                            style={{ animationDelay: `${index * 150}ms` }}>
+                        <section key={dayLabel} className="min-w-0">
                             <DayCard
                                 dayLabel={dayLabel}
                                 date={dateFormatted}

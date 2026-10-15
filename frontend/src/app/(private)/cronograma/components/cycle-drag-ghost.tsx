@@ -23,14 +23,14 @@ export function CycleDragGhost({ ghost, elementRef }: { ghost: CycleDragGhostDat
                 width,
                 zIndex: 9999,
                 pointerEvents: "none",
-                transform: `translate3d(${left}px, ${top}px, 0) scale(1.02)`,
+                transform: `translate3d(${left}px, ${top}px, 0)`,
             }}
-            className="flex cursor-grabbing items-center gap-3 rounded-md border border-primary bg-card px-3 py-2 text-sm shadow-2xl"
+            className="flex cursor-grabbing items-center gap-3 glass-strong rounded-xl px-3 py-2 text-sm ring-1 ring-primary/40"
         >
-            <GripVertical size={16} className="shrink-0 text-primary" />
+            <GripVertical size={16} className="shrink-0 text-muted-foreground" />
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
             <span className="flex-1 truncate font-medium">{session.subject.title}</span>
-            <span className="shrink-0 text-muted-foreground">{formatMinutes(session.duration)}</span>
+            <span className="shrink-0 tabular-nums text-muted-foreground">{formatMinutes(session.duration)}</span>
         </div>,
         document.body
     );

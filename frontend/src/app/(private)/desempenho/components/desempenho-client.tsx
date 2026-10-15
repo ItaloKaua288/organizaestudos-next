@@ -31,9 +31,9 @@ type DesempenhoClientProps = {
 
 function Stat({ label, value }: { label: string; value: number }) {
     return (
-        <div className="rounded-lg bg-muted/60 px-3 py-2">
-            <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="text-2xl font-semibold tabular-nums">{value}</dd>
+        <div>
+            <dt className="text-sm text-muted-foreground">{label}</dt>
+            <dd className="font-heading text-2xl font-semibold tabular-nums">{value}</dd>
         </div>
     );
 }
@@ -115,8 +115,8 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
     };
 
     return (
-        <section className="space-y-4 p-2 pt-0">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+        <section className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
                     As questões são registradas ao concluir uma sessão do ciclo. Você também pode lançar por aqui.
                 </p>
@@ -126,8 +126,8 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
             </div>
 
             {/* Resumo geral */}
-            <Card className="introduction-card" style={{ animationDelay: `${1 * 150}ms` }}>
-                <CardContent className="flex flex-col gap-5 md:flex-row md:items-center md:gap-8">
+            <Card>
+                <CardContent className="flex flex-col gap-6 md:flex-row md:items-center md:gap-8">
                     <div className="flex items-center gap-5">
                         <ScoreRing percent={stats.overall.percent} empty={!hasData} />
                         <div className="md:hidden">
@@ -139,22 +139,22 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                     <div className="flex-1 space-y-3">
                         <p className="hidden text-sm font-medium md:block">
                             Desempenho geral
-                            {!hasData && <span className="font-normal text-muted-foreground"> · sem questões registradas</span>}
+                            {!hasData && <span className="font-normal text-muted-foreground"> (sem questões registradas)</span>}
                         </p>
-                        <dl className="grid grid-cols-3 gap-2">
+                        <dl className="grid grid-cols-3 gap-4">
                             <Stat label="Feitas" value={stats.overall.total} />
                             <Stat label="Acertos" value={stats.overall.correct} />
                             <Stat label="Erros" value={stats.overall.wrong} />
                         </dl>
                     </div>
 
-                    <div className="space-y-1 border-t pt-4 md:w-56 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-                        <p className="text-xs text-muted-foreground">
+                    <div className="space-y-1 border-t border-border pt-4 md:w-56 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                        <p className="text-sm text-muted-foreground">
                             {lastWeek ? `Semana de ${formatDay(lastWeek.weekStart)}` : "Última semana"}
                         </p>
                         {lastWeek ? (
                             <>
-                                <p className={cn("text-2xl font-semibold tabular-nums", getLevel(lastWeek.percent).text)}>
+                                <p className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(lastWeek.percent).text)}>
                                     {formatPercent(lastWeek.percent)}
                                 </p>
                                 <p className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -178,10 +178,10 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
                 {/* Evolução */}
-                <Card className="introduction-card lg:col-span-2 h-full" style={{ animationDelay: `${2 * 150}ms` }}>
+                <Card className="lg:col-span-2 h-full">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4" /> Evolução do % de acerto
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
                         </CardTitle>
                         <CardDescription>
                             Acertos sobre questões feitas em cada semana (últimas 12). A linha tracejada marca {LEVEL_WEAK_BELOW}%.
@@ -189,8 +189,8 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                     </CardHeader>
                     <CardContent>
                         {stats.trend.length === 0 ? (
-                            <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                                Registre questões para ver sua evolução semana a semana.
+                            <p className="py-10 text-center text-sm text-muted-foreground">
+                                Nada por aqui ainda. Registre questões para ver sua evolução semana a semana.
                             </p>
                         ) : (
                             <TrendChart points={stats.trend} />
@@ -199,10 +199,10 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                 </Card>
 
                 {/* Pontos fracos */}
-                <Card className="introduction-card h-full max-h-105 " style={{ animationDelay: `${2 * 150}ms` }}>
+                <Card className="max-h-105 h-full">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4" /> Pontos fracos
+                            <AlertTriangle className="h-4 w-4 text-muted-foreground" /> Pontos fracos
                             {weakTopics.length > 0 && <Badge variant="secondary">{weakTopics.length}</Badge>}
                         </CardTitle>
                         <CardDescription>
@@ -211,21 +211,21 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                     </CardHeader>
                     <CardContent className="overflow-auto">
                         {weakTopics.length === 0 ? (
-                            <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                            <p className="py-6 text-center text-sm text-muted-foreground">
                                 {hasData ? "Nenhum assunto fraco por enquanto." : "Os assuntos fracos aparecem aqui depois de registrar questões."}
                             </p>
                         ) : (
-                            <ul className="space-y-3">
+                            <ul className="divide-y divide-border">
                                 {weakTopics.map((topic) => {
                                     const level = getLevel(topic.percent);
                                     return (
-                                        <li key={topic.id} className="space-y-1.5">
+                                        <li key={topic.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
                                             <div className="flex items-start gap-2">
                                                 <span className="mt-1.5"><Dot color={topic.subjectColor} /></span>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="truncate text-sm font-medium">{topic.title}</p>
                                                     <p className="truncate text-xs text-muted-foreground">
-                                                        {topic.subjectTitle} · {topic.correct} de {topic.total}
+                                                        {topic.subjectTitle}, {topic.correct} de {topic.total}
                                                     </p>
                                                 </div>
                                                 <span className={cn("shrink-0 text-sm font-semibold tabular-nums", level.text)}>
@@ -242,118 +242,122 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                 </Card>
 
                 {/* Por matéria */}
-                <Card className="introduction-card lg:col-span-2" style={{ animationDelay: `${3 * 150}ms` }}>
+                <Card className="lg:col-span-2 h-full">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <ListChecks className="h-4 w-4" /> Por matéria
+                            <ListChecks className="h-4 w-4 text-muted-foreground" /> Por matéria
                         </CardTitle>
                         <CardDescription>As mais fracas vêm primeiro. Clique em uma matéria para ver os assuntos.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className="max-h-200 overflow-auto">
                         {subjects.length === 0 && (
-                            <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhuma matéria ativa.</p>
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                Nenhuma matéria ativa. Crie uma matéria para acompanhar o desempenho.
+                            </p>
                         )}
 
-                        {subjects.map((subject) => {
-                            const level = getLevel(subject.percent);
-                            const subjectHasData = subject.total > 0;
-                            const isOpen = !!expanded[subject.id];
-                            const topics = [...subject.topics].sort(weakestFirst);
+                        <div className="divide-y divide-border">
+                            {subjects.map((subject) => {
+                                const level = getLevel(subject.percent);
+                                const subjectHasData = subject.total > 0;
+                                const isOpen = !!expanded[subject.id];
+                                const topics = [...subject.topics].sort(weakestFirst);
 
-                            return (
-                                <div key={subject.id} className="overflow-hidden rounded-lg border">
-                                    <button
-                                        type="button"
-                                        onClick={() => setExpanded((prev) => ({ ...prev, [subject.id]: !prev[subject.id] }))}
-                                        aria-expanded={isOpen}
-                                        className="flex w-full cursor-pointer flex-col gap-2 px-3 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
-                                    >
-                                        <span className="flex items-center gap-2">
-                                            <Dot color={subject.color} />
-                                            <span className="min-w-0 flex-1 truncate font-medium">{subject.title}</span>
-                                            {subjectHasData ? (
+                                return (
+                                    <div key={subject.id} className="py-1 first:pt-0 last:pb-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpanded((prev) => ({ ...prev, [subject.id]: !prev[subject.id] }))}
+                                            aria-expanded={isOpen}
+                                            className="flex w-full cursor-pointer flex-col gap-2 rounded-xl px-3 py-3 text-left transition-colors duration-150 hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <Dot color={subject.color} />
+                                                <span className="min-w-0 flex-1 truncate font-medium">{subject.title}</span>
+                                                {subjectHasData ? (
+                                                    <>
+                                                        <Badge variant="outline" className="shrink-0">{level.label}</Badge>
+                                                        <span className={cn("w-14 shrink-0 text-right font-heading text-base font-semibold tabular-nums", level.text)}>
+                                                            {formatPercent(subject.percent)}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="shrink-0 text-xs text-muted-foreground">Sem questões</span>
+                                                )}
+                                                <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 motion-reduce:transition-none", isOpen && "rotate-180")} />
+                                            </span>
+                                            {subjectHasData && (
                                                 <>
-                                                    <Badge variant="outline" className="shrink-0">{level.label}</Badge>
-                                                    <span className={cn("w-14 shrink-0 text-right text-base font-semibold tabular-nums", level.text)}>
-                                                        {formatPercent(subject.percent)}
+                                                    <PercentBar percent={subject.percent} className={level.bar} label={`Acerto em ${subject.title}`} />
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {subject.correct} acertos de {subject.total} questões
                                                     </span>
                                                 </>
-                                            ) : (
-                                                <span className="shrink-0 text-xs text-muted-foreground">Sem questões</span>
                                             )}
-                                            <ChevronDown className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
-                                        </span>
-                                        {subjectHasData && (
-                                            <>
-                                                <PercentBar percent={subject.percent} className={level.bar} label={`Acerto em ${subject.title}`} />
-                                                <span className="text-xs text-muted-foreground">
-                                                    {subject.correct} acertos de {subject.total} questões
-                                                </span>
-                                            </>
-                                        )}
-                                    </button>
+                                        </button>
 
-                                    {isOpen && (
-                                        <ul className="space-y-3 border-t bg-muted/30 px-3 py-3">
-                                            {topics.length === 0 && (
-                                                <li className="text-sm text-muted-foreground">Esta matéria ainda não tem assuntos.</li>
-                                            )}
-                                            {topics.map((topic) => {
-                                                const topicLevel = getLevel(topic.percent);
-                                                const topicHasData = topic.total > 0;
-                                                return (
-                                                    <li key={topic.id} className="space-y-1.5 border-l-2 pl-3" style={{ borderColor: subject.color }}>
-                                                        <div className="flex items-center gap-2 text-sm">
-                                                            <span className="min-w-0 flex-1 truncate">{topic.title}</span>
-                                                            {topicHasData ? (
-                                                                <>
-                                                                    <span className="hidden shrink-0 text-xs tabular-nums text-muted-foreground sm:inline">
-                                                                        {topic.correct}/{topic.total}
-                                                                    </span>
-                                                                    <span className={cn("w-14 shrink-0 text-right font-semibold tabular-nums", topicLevel.text)}>
-                                                                        {formatPercent(topic.percent)}
-                                                                    </span>
-                                                                </>
-                                                            ) : (
-                                                                <span className="shrink-0 text-xs text-muted-foreground">Sem questões</span>
+                                        {isOpen && (
+                                            <ul className="space-y-3 px-3 pb-3 pt-1">
+                                                {topics.length === 0 && (
+                                                    <li className="text-sm text-muted-foreground">Esta matéria ainda não tem assuntos.</li>
+                                                )}
+                                                {topics.map((topic) => {
+                                                    const topicLevel = getLevel(topic.percent);
+                                                    const topicHasData = topic.total > 0;
+                                                    return (
+                                                        <li key={topic.id} className="space-y-1.5 border-l-2 pl-3" style={{ borderColor: subject.color }}>
+                                                            <div className="flex items-center gap-2 text-sm">
+                                                                <span className="min-w-0 flex-1 truncate">{topic.title}</span>
+                                                                {topicHasData ? (
+                                                                    <>
+                                                                        <span className="hidden shrink-0 text-xs tabular-nums text-muted-foreground sm:inline">
+                                                                            {topic.correct}/{topic.total}
+                                                                        </span>
+                                                                        <span className={cn("w-14 shrink-0 text-right font-semibold tabular-nums", topicLevel.text)}>
+                                                                            {formatPercent(topic.percent)}
+                                                                        </span>
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="shrink-0 text-xs text-muted-foreground">Sem questões</span>
+                                                                )}
+                                                            </div>
+                                                            {topicHasData && (
+                                                                <PercentBar percent={topic.percent} className={topicLevel.bar} label={`Acerto em ${topic.title}`} />
                                                             )}
-                                                        </div>
-                                                        {topicHasData && (
-                                                            <PercentBar percent={topic.percent} className={topicLevel.bar} label={`Acerto em ${topic.title}`} />
-                                                        )}
-                                                    </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    )}
-                                </div>
-                            );
-                        })}
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </CardContent>
                 </Card>
 
                 {/* Registros recentes */}
-                <Card className="introduction-card" style={{ animationDelay: `${3 * 150}ms` }}>
+                <Card className="h-full">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <History className="h-4 w-4" /> Registros recentes
+                            <History className="h-4 w-4 text-muted-foreground" /> Registros recentes
                         </CardTitle>
                         <CardDescription>Lançou errado? Remova o registro e o % é recalculado.</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="max-h-200 overflow-auto">
                         {stats.recent.length === 0 ? (
-                            <p className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                                Nenhuma questão registrada ainda.
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                Nenhuma questão registrada ainda. Use o botão Registrar questões para começar.
                             </p>
                         ) : (
-                            <ul className="divide-y">
+                            <ul className="divide-y divide-border">
                                 {stats.recent.map((log) => (
-                                    <li key={log.id} className="flex items-center gap-2 py-2">
+                                    <li key={log.id} className="flex items-center gap-2 py-2 first:pt-0 last:pb-0">
                                         <span className="mt-0.5 self-start"><Dot color={log.subjectColor} /></span>
                                         <div className="min-w-0 flex-1">
                                             <p className="truncate text-sm font-medium">{log.topicTitle}</p>
                                             <p className="truncate text-xs text-muted-foreground">
-                                                {log.subjectTitle} · {formatDateTime(log.answeredAt)}
+                                                {log.subjectTitle}, {formatDateTime(log.answeredAt)}
                                             </p>
                                         </div>
                                         <div className="shrink-0 text-right">

@@ -3,8 +3,9 @@ import { CreateNoteDialog } from "@/components/Create-note-dialog";
 import { OptionsNoteCard } from "@/components/options-note-card";
 import ProgressLabelDemo from "@/components/progress-label";
 import { ReviewSection } from "@/components/reviewSection";
-import ScrambleText from "@/components/scramble-text";
-import { SubjectActiveToggle } from "../../../../components/subject-active-toggle";
+import { SubjectActiveToggle } from "@/components/subject-active-toggle";
+import { buttonVariants } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { getTodayBR } from "@/lib/date";
 import { TOPIC_TITLE_SEPARATOR, withoutContainers } from "@/lib/topic-tree";
 import { Topic } from "@/types/topic";
 import DOMPurify from "isomorphic-dompurify";
-import { CalendarClock, CheckCircle2, Clock } from "lucide-react";
+import { CalendarClock, CheckCircle2, Clock, CornerDownLeft } from "lucide-react";
 import Link from "next/link";
 import { CreateTopicForm } from "./components/create-topic-form";
 import { TopicList } from "./components/topic-list";
@@ -32,37 +33,42 @@ export default async function DetailMateriaPage({
     const subject = await getDetailSubjectAction(id);
 
     if (!subject) {
-        return <div className="p-8 text-white">Matéria não encontrada.</div>;
+        return (
+            <main className="introduction-Page flex flex-col items-start gap-4">
+                <PageHeader title="Matéria não encontrada" description="Ela pode ter sido removida ou o link está incorreto." />
+                <Link href="/materias" className={buttonVariants({ variant: "outline" })}>
+                    <CornerDownLeft /> Voltar para matérias
+                </Link>
+            </main>
+        );
     }
 
     if (subject.active === false) {
         return (
-            <main>
-                <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card z-9 mb-8">
-                    <ScrambleText text="Detalhes da matéria" />
-                </h1>
-                <section className="flex flex-col p-2 gap-6">
-                    <Card className="border-dashed">
-                        <CardHeader className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 opacity-60">
-                                <span
-                                    className="h-7 w-7 shrink-0 rounded-full"
-                                    style={{ backgroundColor: subject.color || "#ccc" }}
-                                    aria-hidden="true"
-                                />
-                                <CardTitle className="text-2xl">{subject.title}</CardTitle>
-                                <Badge variant="secondary">Desativada</Badge>
-                            </div>
-                            <SubjectActiveToggle subjectId={subject.id} active={false} />
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                Esta matéria está desativada: assuntos, notas, revisões e cronograma ficam ocultos e não podem ser alterados. Nada foi apagado, ao reativar tudo volta como estava.
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Link href="/materias" className="text-sm underline">Voltar para matérias</Link>
-                </section>
+            <main className="introduction-Page flex flex-col gap-4">
+                <PageHeader title="Detalhes da matéria" />
+                <Card className="border-dashed">
+                    <CardHeader className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3 opacity-70">
+                            <span
+                                className="size-4 shrink-0 rounded-full"
+                                style={{ backgroundColor: subject.color || "#ccc" }}
+                                aria-hidden="true"
+                            />
+                            <CardTitle className="truncate text-2xl">{subject.title}</CardTitle>
+                            <Badge variant="secondary">Desativada</Badge>
+                        </div>
+                        <SubjectActiveToggle subjectId={subject.id} active={false} />
+                    </CardHeader>
+                    <CardContent>
+                        <p className="max-w-prose text-sm text-muted-foreground">
+                            Esta matéria está desativada: assuntos, notas, revisões e cronograma ficam ocultos e não podem ser alterados. Nada foi apagado, ao reativar tudo volta como estava.
+                        </p>
+                    </CardContent>
+                </Card>
+                <Link href="/materias" className={buttonVariants({ variant: "outline", className: "self-start" })}>
+                    <CornerDownLeft /> Voltar para matérias
+                </Link>
             </main>
         );
     }
@@ -90,8 +96,9 @@ export default async function DetailMateriaPage({
         }
     });
 
-    const activeTabStyle = "pb-3 border-b-2 border-primary text-primary font-medium text-sm transition";
-    const inactiveTabStyle = "pb-3 border-b-2 border-transparent hover:border-zinc-600 text-zinc-500 hover:text-zinc-300 font-medium text-sm transition";
+    const tabBase = "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none";
+    const activeTabStyle = `${tabBase} bg-(--glass-fill-strong) text-foreground shadow-[inset_0_1px_0_var(--glass-edge),0_0_0_1px_var(--glass-ring)]`;
+    const inactiveTabStyle = `${tabBase} text-muted-foreground hover:bg-foreground/6 hover:text-foreground`;
 
     const now = getTodayBR();
 
@@ -141,53 +148,58 @@ export default async function DetailMateriaPage({
         { title: "1° Revisão", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
         { title: "2° Revisão", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
         { title: "3° Revisão", reviewIndex: 3, icon: <Clock size={20} />, topics: topicTimes.month },
-        { title: "Concluído", icon: <CheckCircle2 size={20} className="text-green-500" />, topics: topicTimes.concluded },
+        { title: "Concluído", icon: <CheckCircle2 size={20} className="text-primary" />, topics: topicTimes.concluded },
     ];
 
     return (
-        <main>
-            <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card z-9 mb-8">
-                <ScrambleText text="Detalhes da matéria" />
-            </h1>
-            <section className="flex flex-col p-2 gap-6">
-                <Card>
-                    <CardHeader className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="h-7 w-7 shrink-0 rounded-full"
-                                style={{ backgroundColor: subject.color || "#ccc" }}
-                                aria-hidden="true"
-                            />
-                            <CardTitle className="text-2xl">{subject.title}</CardTitle>
-                        </div>
-                    </CardHeader>
+        <main className="introduction-Page flex flex-col">
+            <PageHeader
+                title={
+                    <span className="flex items-center gap-3">
+                        <span
+                            className="size-4 shrink-0 rounded-full"
+                            style={{ backgroundColor: subject.color || "#ccc" }}
+                            aria-hidden="true"
+                        />
+                        <span className="min-w-0 truncate">{subject.title}</span>
+                    </span>
+                }
+                description="Assuntos, notas e revisões desta matéria."
+                actions={
+                    <Link href="/materias" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                        <CornerDownLeft /> Matérias
+                    </Link>
+                }
+            />
+            <section className="flex flex-col gap-6">
+                <Card size="sm">
                     <CardContent>
                         <ProgressLabelDemo label="Progresso de conclusão" value={Number(progressPercentage.toFixed(2))} description="dos assuntos concluídos" />
                     </CardContent>
                 </Card>
 
-                <div className="flex gap-8 border-b-2">
-                    <Link href="?tab=assuntos" className={tab === 'assuntos' ? activeTabStyle : inactiveTabStyle}>
-                        Assuntos <Badge className="px-1 py-2.5" variant="secondary">{totalTopics}</Badge>
+                <nav aria-label="Seções da matéria" className="glass flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl p-1">
+                    <Link href="?tab=assuntos" aria-current={tab === 'assuntos' ? "page" : undefined} className={tab === 'assuntos' ? activeTabStyle : inactiveTabStyle}>
+                        Assuntos <Badge variant="secondary">{totalTopics}</Badge>
                     </Link>
-                    <Link href="?tab=notas" className={tab === 'notas' ? activeTabStyle : inactiveTabStyle}>
-                        Notas <Badge className="px-1 py-2.5" variant="secondary">{subject.notes?.length}</Badge>
+                    <Link href="?tab=notas" aria-current={tab === 'notas' ? "page" : undefined} className={tab === 'notas' ? activeTabStyle : inactiveTabStyle}>
+                        Notas <Badge variant="secondary">{subject.notes?.length ?? 0}</Badge>
                     </Link>
-                    <Link href="?tab=revisoes" className={tab === 'revisoes' ? activeTabStyle : inactiveTabStyle}>
-                        Revisões <Badge className="px-1 py-2.5" variant="secondary">{allReviews.filter(r => !r.concluded && r.status).length}</Badge>
+                    <Link href="?tab=revisoes" aria-current={tab === 'revisoes' ? "page" : undefined} className={tab === 'revisoes' ? activeTabStyle : inactiveTabStyle}>
+                        Revisões <Badge variant="secondary">{allReviews.filter(r => !r.concluded && r.status).length}</Badge>
                     </Link>
-                </div>
+                </nav>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                     {tab === 'assuntos' && (
-                        < div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card p-2 rounded-lg border col-span-1 md:col-span-3">
+                        <div className="glass col-span-1 rounded-2xl p-3 md:col-span-3">
                             <TopicList sortedTopics={sortedTopics} subject={subject} />
                             <CreateTopicForm subjectId={subject.id} />
                         </div>
                     )}
 
                     {tab === 'notas' && (
-                        < div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-4 col-span-1 md:col-span-3">
+                        <div className="animate-in fade-in duration-300 space-y-4 col-span-1 md:col-span-3">
                             <div className="flex items-center justify-end mb-4">
                                 <CreateNoteDialog subjectId={id} />
                             </div>
@@ -198,8 +210,8 @@ export default async function DetailMateriaPage({
 
                                         return (
                                             <Card key={note.id} className="flex flex-col justify-between">
-                                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 gap-3">
-                                                    <CardTitle className="truncate text-base font-semibold" title={note.title}>
+                                                <CardHeader className="flex flex-row items-center justify-between space-y-0 gap-3">
+                                                    <CardTitle className="truncate" title={note.title}>
                                                         {note.title}
                                                     </CardTitle>
                                                     <OptionsNoteCard key={note.id} subjectId={subject.id} note={note}></OptionsNoteCard>
@@ -213,14 +225,14 @@ export default async function DetailMateriaPage({
                                         )
                                     })
                                 ) : (
-                                    <p className="text-sm text-zinc-500 col-span-1 md:col-span-3">Nenhuma nota encontrada para esta matéria.</p>
+                                    <p className="glass col-span-1 rounded-2xl px-6 py-12 text-center text-sm text-muted-foreground md:col-span-2">Nenhuma nota nesta matéria. Use Nova nota para criar a primeira.</p>
                                 )}
                             </div>
                         </div>
                     )}
 
                     {tab === 'revisoes' && (
-                        < div className="animate-in fade-in slide-in-from-bottom-2 duration-300 w-full flex flex-col gap-3 col-span-1 md:col-span-3">
+                        <div className="animate-in fade-in duration-300 w-full flex flex-col gap-3 col-span-1 md:col-span-3">
                             {sections.map((sec, index) => (
                                 <ReviewSection
                                     key={index}
@@ -235,31 +247,31 @@ export default async function DetailMateriaPage({
                     }
 
                     <div className="flex flex-col gap-4 col-span-1 md:pr-2">
-                        <Card className="introduction-card w-full" style={{ animationDelay: `${1 * 150}ms` }} >
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-base font-semibold flex items-center justify-between gap-2">Cronograma <CalendarClock /></CardTitle>
-                                <span className="text-xs text-input">Dias da semana em que a matéria está vinculada no cronograma</span>
+                        <Card className="w-full" size="sm">
+                            <CardHeader>
+                                <CardTitle className="flex items-center justify-between gap-2">Cronograma <CalendarClock className="size-4 text-muted-foreground" /></CardTitle>
+                                <p className="text-xs text-muted-foreground">Dias da semana em que a matéria aparece no cronograma.</p>
                             </CardHeader>
-                            <CardContent className="flex gap-2 justify-center pt-0 flex-wrap">
-                                {timelineDays ? (
+                            <CardContent className="flex flex-wrap gap-1.5">
+                                {timelineDays && timelineDays.length > 0 ? (
                                     <>
                                         {timelineDays.map((day) => (
-                                            <Badge key={day} className="p-3.5" variant={"secondary"}>{day}</Badge>
+                                            <Badge key={day} variant="secondary">{day}</Badge>
                                         ))}
                                     </>
 
                                 ) : (
-                                    <p>Sem dias vinculados.</p>
+                                    <p className="text-sm text-muted-foreground">Sem dias vinculados.</p>
                                 )}
                             </CardContent>
                         </Card>
-                        <Card className="introduction-card w-full" style={{ animationDelay: `${2 * 150}ms` }} >
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-base font-semibold">Calendário</CardTitle>
+                        <Card className="w-full" size="sm">
+                            <CardHeader>
+                                <CardTitle>Calendário</CardTitle>
                             </CardHeader>
-                            <CardContent className="flex justify-center pt-0">
+                            <CardContent className="flex justify-center">
                                 <Calendar
-                                    className="rounded-xl border p-3 max-w-65 w-full"
+                                    className="w-full max-w-65 rounded-xl p-1"
                                     classNames={{
                                         today: "rounded-md bg-primary text-primary-foreground font-semibold",
                                     }}

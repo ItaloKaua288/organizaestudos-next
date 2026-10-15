@@ -148,7 +148,7 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
                 </DialogHeader>
 
                 <div className="pt-4 flex items-center gap-2">
-                    <label htmlFor="sessions-per-day" className="text-sm font-medium">Matérias por dia:</label>
+                    <label htmlFor="sessions-per-day" className="text-sm font-medium">Matérias por dia</label>
                     <Input
                         id="sessions-per-day"
                         type="number"
@@ -163,10 +163,10 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
                     <span className="text-xs text-muted-foreground">0 = sem divisão por dia</span>
                 </div>
 
-                <div className="py-4 flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
+                <div className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto py-4 pr-1">
                     {rows.map((row, index) => (
                         <div key={row.key} className="flex items-center gap-2">
-                            <span className="w-5 shrink-0 text-center text-xs font-semibold text-muted-foreground">{index + 1}</span>
+                            <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{index + 1}</span>
 
                             <Select
                                 value={row.subject_id || null}
@@ -219,7 +219,7 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
                     ))}
 
                     {rows.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">Nenhuma sessão. Adicione uma matéria.</p>
+                        <p className="text-sm text-muted-foreground text-center py-4">Nenhuma sessão no ciclo. Adicione uma matéria para começar.</p>
                     )}
 
                     <div className="flex flex-wrap gap-2 pt-2">

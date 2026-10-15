@@ -43,7 +43,7 @@ function CheckField({
     onChange: (checked: boolean) => void;
 }) {
     return (
-        <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 has-disabled:cursor-not-allowed has-disabled:opacity-60 has-focus-visible:border-ring has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-foreground/5 p-3 transition-colors hover:bg-foreground/8 has-disabled:cursor-not-allowed has-disabled:opacity-60 has-focus-visible:ring-3 has-focus-visible:ring-ring/40">
             <input
                 type="checkbox"
                 checked={checked}

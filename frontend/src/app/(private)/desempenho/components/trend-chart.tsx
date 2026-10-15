@@ -39,9 +39,9 @@ export function TrendChart({ points }: TrendChartProps) {
                         {Y_TICKS.map((tick) => (
                             <line key={tick} x1={0} x2={100} y1={yOf(tick)} y2={yOf(tick)} vectorEffect="non-scaling-stroke" className="stroke-border" strokeWidth={1} />
                         ))}
-                        <line x1={0} x2={100} y1={yOf(LEVEL_WEAK_BELOW)} y2={yOf(LEVEL_WEAK_BELOW)} vectorEffect="non-scaling-stroke" className="stroke-red-500/60" strokeWidth={1} strokeDasharray="4 4" />
-                        {count > 1 && <path d={area} className="fill-chart-3/10" />}
-                        {count > 1 && <path d={line} fill="none" vectorEffect="non-scaling-stroke" className="stroke-chart-3" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
+                        <line x1={0} x2={100} y1={yOf(LEVEL_WEAK_BELOW)} y2={yOf(LEVEL_WEAK_BELOW)} vectorEffect="non-scaling-stroke" className="stroke-destructive/60" strokeWidth={1} strokeDasharray="4 4" />
+                        {count > 1 && <path d={area} className="fill-primary/10" />}
+                        {count > 1 && <path d={line} fill="none" vectorEffect="non-scaling-stroke" className="stroke-primary" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
                     </svg>
 
                     {Y_TICKS.map((tick) => (
@@ -73,8 +73,8 @@ export function TrendChart({ points }: TrendChartProps) {
                         >
                             <span
                                 className={cn(
-                                    "block h-3 w-3 rounded-full border-2 border-background bg-chart-3 transition-transform group-hover:scale-125 group-focus-visible:ring-2 group-focus-visible:ring-ring",
-                                    activeIndex === index && "scale-125"
+                                    "block h-3 w-3 rounded-full border-2 border-background bg-primary transition-shadow duration-150 group-hover:ring-4 group-hover:ring-primary/25 group-focus-visible:ring-4 group-focus-visible:ring-primary/40 motion-reduce:transition-none",
+                                    activeIndex === index && "ring-4 ring-primary/25"
                                 )}
                             />
                         </button>
@@ -84,7 +84,7 @@ export function TrendChart({ points }: TrendChartProps) {
                         <div
                             role="status"
                             className={cn(
-                                "pointer-events-none absolute z-10 w-max rounded-lg bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md ring-1 ring-foreground/10",
+                                "pointer-events-none absolute z-10 w-max glass-popover rounded-xl px-3 py-2 text-xs text-popover-foreground",
                                 active.percent > 70 ? "mt-4" : "-mt-4",
                                 xOf(activeIndex, count) < 20 ? "" : xOf(activeIndex, count) > 80 ? "-translate-x-full" : "-translate-x-1/2",
                                 active.percent > 70 ? "" : "-translate-y-full"
@@ -101,7 +101,7 @@ export function TrendChart({ points }: TrendChartProps) {
             </div>
 
             <details className="text-sm">
-                <summary className="w-fit cursor-pointer text-muted-foreground hover:text-foreground">Ver em tabela</summary>
+                <summary className="w-fit cursor-pointer rounded-md text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">Ver em tabela</summary>
                 <table className="mt-2 w-full max-w-md text-left tabular-nums">
                     <thead className="text-xs text-muted-foreground">
                         <tr>
@@ -113,7 +113,7 @@ export function TrendChart({ points }: TrendChartProps) {
                     </thead>
                     <tbody>
                         {points.map((point) => (
-                            <tr key={point.weekStart} className="border-t">
+                            <tr key={point.weekStart} className="border-t border-border">
                                 <td className="py-1 pr-2">{formatDay(point.weekStart)}</td>
                                 <td className="py-1 pr-2">{point.total}</td>
                                 <td className="py-1 pr-2">{point.correct}</td>

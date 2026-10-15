@@ -1,8 +1,8 @@
 import { getTopicsAction } from "@/actions/topics.actions";
 import { ReviewSection, ReviewSectionSkeleton } from "@/components/reviewSection";
-import { ScrambleText } from "@/components/scramble-text";
+import { PageHeader } from "@/components/page-header";
 import { Topic } from "@/types/topic";
-import { AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 import { Suspense } from "react";
 
 async function RevisaoContent() {
@@ -10,9 +10,11 @@ async function RevisaoContent() {
 
     if (topics.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-destructive gap-2">
-                <AlertCircle size={32} />
-                <p className="font-medium">Não foi possível carregar suas revisões.</p>
+            <div className="glass flex flex-col items-center gap-1 rounded-2xl px-6 py-12 text-center">
+                <p className="font-medium">Nenhuma revisão por aqui ainda</p>
+                <p className="max-w-sm text-sm text-muted-foreground">
+                    Conclua um assunto em uma matéria e ele entra no ciclo de revisões. Se você já concluiu e nada aparece, recarregue a página.
+                </p>
             </div>
         );
     }
@@ -59,14 +61,11 @@ async function RevisaoContent() {
         { title: "1° Revisão", reviewIndex: 1, icon: <Clock size={20} />, topics: topicTimes.day },
         { title: "2° Revisão", reviewIndex: 2, icon: <Clock size={20} />, topics: topicTimes.week },
         { title: "3° Revisão", reviewIndex: 3, icon: <Clock size={20} />, topics: topicTimes.month },
-        { title: "Concluído", icon: <CheckCircle2 size={20} className="text-green-500" />, topics: topicTimes.concluded },
+        { title: "Concluído", icon: <CheckCircle2 size={20} className="text-primary" />, topics: topicTimes.concluded },
     ];
 
     return (
-        <div className="flex flex-col gap-3">
-            <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
-                Visualize suas revisões. Começam em 1° Revisão, 2° Revisão e 3° Revisão e a próxima data se ajusta conforme você avalia (Muito difícil, difícil, bom ou fácil).
-            </p>
+        <div className="flex flex-col gap-4">
             {sections.map((sec, index) => (
                 <ReviewSection
                     key={index}
@@ -82,27 +81,20 @@ async function RevisaoContent() {
 
 export default function RevisaoPage() {
     return (
-        <div className="flex flex-col gap-1 min-h-screen pb-10 ">
-            <header>
-                <h1 className="px-2 text-xl font-bold shadow-sm bg-card py-4">
-                    <ScrambleText text="REVISÕES" />
-                </h1>
-            </header>
-            <section className="introduction-Page">
-
-                <Suspense
-                    fallback={
-                        <div className="flex flex-col gap-3">
-                            <ReviewSectionSkeleton />
-                        </div>
-                    }
-                >
-                    <div className="reverse-introduction-page">
-                        <RevisaoContent />
+        <div>
+            <PageHeader
+                title="Revisões"
+                description="Acompanhe a 1ª, 2ª e 3ª revisão de cada assunto concluído. A próxima data se ajusta conforme você avalia: muito difícil, difícil, bom ou fácil."
+            />
+            <Suspense
+                fallback={
+                    <div className="flex flex-col gap-4">
+                        <ReviewSectionSkeleton />
                     </div>
-                </Suspense>
-
-            </section>
+                }
+            >
+                <RevisaoContent />
+            </Suspense>
         </div>
     );
 }

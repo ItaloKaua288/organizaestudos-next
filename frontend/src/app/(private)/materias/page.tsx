@@ -1,6 +1,5 @@
 import { getSubjectsAction } from "@/actions/subjects.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
-import { ScrambleText } from "@/components/scramble-text";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
 import { Suspense } from "react";
@@ -34,15 +33,10 @@ async function MateriasContent() {
 
 export default function MateriasPage() {
     return (
-        <>
-            <h1 className="px-2 py-4 text-xl font-bold shadow-sm bg-card z-9"><ScrambleText text="MATÉRIAS" /></h1>
-            <section className="introduction-Page">
-                <Suspense fallback={<MateriasSkeleton />}>
-                    <div className="reverse-introduction-page">
-                        <MateriasContent />
-                    </div>
-                </Suspense>
-            </section>
-        </>
+        <section className="introduction-Page">
+            <Suspense fallback={<MateriasSkeleton />}>
+                <MateriasContent />
+            </Suspense>
+        </section>
     );
 }

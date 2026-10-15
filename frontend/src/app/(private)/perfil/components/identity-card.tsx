@@ -23,7 +23,7 @@ function getInitials(name: string) {
 }
 
 /**
- * Cartão do candidato: identifica o usuário e mostra, na faixa de barras,
+ * Cartão de identidade: identifica o usuário e mostra, na faixa de progresso,
  * quanto dos assuntos cadastrados já foi concluído.
  */
 export function IdentityCard({ account }: { account: Account }) {
@@ -32,60 +32,44 @@ export function IdentityCard({ account }: { account: Account }) {
     const percent = hasTopics ? (stats.concludedTopics / stats.topics) * 100 : 0;
 
     return (
-        <section
-            aria-labelledby="identity-name"
-            className="relative flex flex-col overflow-hidden rounded-2xl bg-stone-800 dark:bg-ring text-background shadow-sm"
-        >
-            <div className="space-y-5 p-5 sm:p-6">
+        <section aria-labelledby="identity-name" className="glass-strong flex flex-col gap-6 rounded-3xl p-5 sm:p-7">
+            <div className="flex items-center gap-4">
                 <div
                     aria-hidden
-                    className="flex size-20 shrink-0 items-center justify-center rounded-xl bg-primary text-3xl font-semibold text-primary-foreground sm:size-24 sm:text-4xl"
+                    className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary/15 font-heading text-2xl font-semibold text-primary"
                 >
                     {getInitials(account.name)}
                 </div>
-                <h2
-                    id="identity-name"
-                    className="wrap-anywhere text-2xl leading-tight font-semibold tracking-tight sm:text-3xl"
-                >
+                <h2 id="identity-name" className="min-w-0 text-2xl leading-tight font-semibold wrap-anywhere">
                     {account.name}
                 </h2>
             </div>
 
-            <dl className="grid grid-cols-2 gap-4 px-5 pb-6 text-sm sm:px-6">
+            <dl className="grid grid-cols-2 gap-4 text-sm">
                 <div className="space-y-0.5">
-                    <dt className="text-background/60">Membro desde</dt>
+                    <dt className="text-muted-foreground">Membro desde</dt>
                     <dd className="font-medium">{formatDate(account.createdAt)}</dd>
                 </div>
                 <div className="space-y-0.5">
-                    <dt className="text-background/60">Último acesso</dt>
+                    <dt className="text-muted-foreground">Último acesso</dt>
                     <dd className="font-medium">{formatDate(account.lastLogin, true)}</dd>
                 </div>
             </dl>
 
-            {/* Parte de baixo ancorada no fim: quando o cartão estica até a altura do resumo, a faixa fica na base. */}
-            <div className="mt-auto">
-                {/* Picote do cartão: linha tracejada com os dois recortes laterais. */}
-                <div aria-hidden className="relative">
-                    <div className="mx-5 border-t border-dashed border-background/25 sm:mx-6" />
-                    <span className="absolute top-1/2 -left-3 size-6 -translate-y-1/2 rounded-full bg-background" />
-                    <span className="absolute top-1/2 -right-3 size-6 -translate-y-1/2 rounded-full bg-background" />
-                </div>
-
-                <div className="space-y-3 p-5 sm:p-6">
-                    <ProgressTicks
-                        percent={percent}
-                        label={
-                            hasTopics
-                                ? `${stats.concludedTopics} de ${stats.topics} assuntos concluídos (${Math.round(percent)}%)`
-                                : "Nenhum assunto cadastrado"
-                        }
-                    />
-                    <p className="text-sm text-background/70">
-                        {hasTopics
-                            ? `${stats.concludedTopics} de ${stats.topics} assuntos concluídos`
-                            : "Cadastre assuntos nas suas matérias para acompanhar o progresso."}
-                    </p>
-                </div>
+            <div className="mt-auto space-y-3 border-t border-border pt-5">
+                <ProgressTicks
+                    percent={percent}
+                    label={
+                        hasTopics
+                            ? `${stats.concludedTopics} de ${stats.topics} assuntos concluídos (${Math.round(percent)}%)`
+                            : "Nenhum assunto cadastrado"
+                    }
+                />
+                <p className="text-sm text-muted-foreground">
+                    {hasTopics
+                        ? `${stats.concludedTopics} de ${stats.topics} assuntos concluídos`
+                        : "Cadastre assuntos nas suas matérias para acompanhar o progresso."}
+                </p>
             </div>
         </section>
     );

@@ -2,7 +2,6 @@
 
 import { createTopicAction } from "@/actions/topics.actions"
 import { Button } from "@/components/ui/button"
-import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Loader2, Plus } from "lucide-react"
 import { useActionState, useRef } from "react"
@@ -34,23 +33,26 @@ export function CreateTopicForm({ subjectId }: { subjectId: string }) {
 
     return (
         <form action={formAction} ref={formRef}>
-            <Field className="flex flex-row gap-2 mt-4">
+            <div className="mt-3 flex items-center gap-2">
                 <Input
                     name="title"
                     required
-                    className="dark:bg-input/30 bg-input/10"
-                    placeholder="Adicione um assunto"
+                    className="h-9 min-w-0 flex-1"
+                    aria-label="Novo assunto"
+                    placeholder="Novo assunto"
                     disabled={isPending}
                 />
                 <Button
                     type="submit"
                     variant="outline"
-                    className="max-w-10 dark:bg-input/30 bg-input/10"
+                    size="icon"
+                    className="shrink-0"
+                    aria-label="Adicionar assunto"
                     disabled={isPending}
                 >
                     {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus size={15} />}
                 </Button>
-            </Field>
+            </div>
         </form>
     )
 }

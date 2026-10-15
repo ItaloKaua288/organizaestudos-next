@@ -4,8 +4,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
     Sheet,
     SheetContent,
+    SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
 import { CalendarClock, Captions, ChartColumn, CircleUser, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
@@ -23,6 +25,15 @@ const ThemeToggle = dynamic(
         ssr: false,
     }
 );
+
+const NAV_LINKS = [
+    { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/materias", label: "Matérias", icon: Captions },
+    { href: "/revisoes", label: "Revisões", icon: RotateCw },
+    { href: "/notas", label: "Notas", icon: NotepadText },
+    { href: "/cronograma", label: "Cronograma", icon: CalendarClock },
+    { href: "/desempenho", label: "Desempenho", icon: ChartColumn },
+] as const;
 
 export function Navbar2() {
     const router = useRouter();
@@ -60,214 +71,149 @@ export function Navbar2() {
         }
     };
 
+    const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+
     return (
-        <header className="bg-muted fixed top-0 left-0 right-0 w-full z-50 border-b">
-            <div className="relative mx-auto flex items-center justify-between gap-2 py-5 px-2 sm:gap-8">
+        <header className="fixed inset-x-0 top-3 z-50 px-3 sm:px-6">
+            <div className="glass-strong mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 rounded-2xl pr-2 pl-4">
 
                 {/* Logo */}
-                <div className="shrink-0 transition-opacity hover:opacity-80">
-                    <div className="flex items-center gap-3">
-                        <Link className="hover:text-primary hover:scale-105 transition-all" href="/">
-                            <Logo compact />
+                <Link
+                    href="/"
+                    aria-label="Organiza Estudos, ir para o início"
+                    className="shrink-0 rounded-lg transition-opacity hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                >
+                    <Logo compact />
+                </Link>
+
+                {/* Navegação (desktop) */}
+                <nav aria-label="Principal" className="flex items-center gap-0.5 max-xl:hidden">
+                    {NAV_LINKS.map(({ href, label }) => (
+                        <Link
+                            key={href}
+                            href={href}
+                            aria-current={isActive(href) ? "page" : undefined}
+                            className={cn(
+                                "rounded-xl px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
+                                isActive(href)
+                                    ? "bg-foreground/10 text-foreground"
+                                    : "text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
+                            )}
+                        >
+                            {label}
                         </Link>
-                    </div>
-                </div>
-
-                {/* Desktop Navigation */}
-                <nav className=" absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-6 font-medium max-xl:hidden ">
-                    <Link
-                        href="/"
-                        className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
-                    >
-                        Dashboard
-                    </Link>
-
-                    <Link
-                        href="/materias"
-                        className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/materias" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
-                    >
-                        Matérias
-                    </Link>
-
-                    <Link
-                        href="/revisoes"
-                        className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/revisoes" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
-                    >
-                        Revisões
-                    </Link>
-
-                    <Link
-                        href="/notas"
-                        className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/notas" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
-                    >
-                        Notas
-                    </Link>
-
-                    <Link
-                        href="/cronograma"
-                        className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/cronograma" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
-                    >
-                        Cronograma
-                    </Link>
-                    <Link
-                        href="/desempenho"
-                        className={`transition-all duration-300 ease-in-out hover:text-primary ${pathname === "/desempenho" ? "text-primary text-lg" : "text-muted-foreground text-base"}`}
-                    >
-                        Desempenho
-                    </Link>
-
-                    
+                    ))}
                 </nav>
 
-                {/* Actions & Mobile Menu */}
-                <div className="flex items-center gap-1.5 sm:gap-2">
-
-                    <div className="flex items-center gap-1.5 sm:gap-3">
-                        {!isLoading && !isAuthenticated && (
-                            <>
-                                <Button
-                                    className="hidden sm:inline-flex"
-                                    variant="outline"
-                                    onClick={() => router.push("/login")}
-                                >
-                                    Entrar
-                                </Button>
-                                <Button className="hidden sm:inline-flex">Cadastrar-se</Button>
-                            </>
-                        )}
-
-                        {!isLoading && isAuthenticated && (
-                            <Button variant="outline" onClick={handleLogout} className="max-xl:hidden">
-                                Sair
+                {/* Ações e menu mobile */}
+                <div className="flex items-center gap-1.5">
+                    {!isLoading && !isAuthenticated && (
+                        <>
+                            <Button
+                                className="hidden sm:inline-flex"
+                                variant="outline"
+                                onClick={() => router.push("/login")}
+                            >
+                                Entrar
                             </Button>
-                        )}
+                            <Button className="hidden sm:inline-flex" onClick={() => router.push("/signup")}>Cadastrar-se</Button>
+                        </>
+                    )}
 
-                        {!isLoading && isAuthenticated && <GlobalSearch />}
+                    {!isLoading && isAuthenticated && <GlobalSearch />}
 
-                        {!isLoading && isAuthenticated && <ProfileSwitcher />}
+                    {!isLoading && isAuthenticated && <ProfileSwitcher />}
 
-                        {!isLoading && isAuthenticated && isAdmin && (
-                            <Link
-                                href="/admin"
-                                title="Admin"
-                                aria-label="Admin"
-                                className={`${buttonVariants({ variant: "outline", size: "icon" })} max-xl:hidden ${pathname === "/admin" ? "border-primary text-primary" : ""}`}
-                            >
-                                <ShieldCheck />
-                            </Link>
-                        )}
+                    {!isLoading && isAuthenticated && isAdmin && (
+                        <Link
+                            href="/admin"
+                            title="Admin"
+                            aria-label="Admin"
+                            className={cn(
+                                buttonVariants({ variant: "ghost", size: "icon" }),
+                                "max-xl:hidden",
+                                pathname === "/admin" && "bg-foreground/10 text-primary"
+                            )}
+                        >
+                            <ShieldCheck />
+                        </Link>
+                    )}
 
-                        {!isLoading && isAuthenticated && (
-                            <Link
-                                href="/perfil"
-                                title="Meu perfil"
-                                aria-label="Meu perfil"
-                                className={`${buttonVariants({ variant: "outline", size: "icon" })} max-xl:hidden ${pathname === "/perfil" ? "border-primary text-primary" : ""}`}
-                            >
-                                <CircleUser />
-                            </Link>
-                        )}
+                    {!isLoading && isAuthenticated && (
+                        <Link
+                            href="/perfil"
+                            title="Meu perfil"
+                            aria-label="Meu perfil"
+                            className={cn(
+                                buttonVariants({ variant: "ghost", size: "icon" }),
+                                "max-xl:hidden",
+                                pathname === "/perfil" && "bg-foreground/10 text-primary"
+                            )}
+                        >
+                            <CircleUser />
+                        </Link>
+                    )}
 
-                        <ThemeToggle size="icon" variant="outline" />
+                    <ThemeToggle size="icon" variant="ghost" />
 
-                    </div>
+                    {!isLoading && isAuthenticated && (
+                        <Button variant="outline" onClick={handleLogout} className="ml-1 max-xl:hidden">
+                            Sair
+                        </Button>
+                    )}
 
-                    {/* Mobile Menu */}
+                    {/* Menu mobile */}
                     <Sheet>
                         <SheetTrigger render={
-                            <Button variant="outline" size="icon" className="xl:hidden" />
+                            <Button variant="ghost" size="icon" className="xl:hidden" />
                         }>
                             <Menu className="h-5 w-5" />
-                            <span className="sr-only">Toggle Menu</span>
+                            <span className="sr-only">Abrir menu</span>
                         </SheetTrigger>
 
-                        <SheetContent side="right" className="flex flex-col gap-6 pt-2.5 px-2">
-                            <div className="transition-opacity hover:opacity-80">
-                                <div className="flex items-center gap-3">
-                                    <Link className="hover:text-primary hover:scale-105 transition-all" href="/">
-                                        <Logo />
-                                    </Link>
-                                </div>
-                            </div>
-                            {/* Condicionais aplicadas nos links Mobile */}
-                            <nav className="flex flex-col gap-2 text-lg font-medium">
-                                <Link
-                                    href="/"
-                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
-                                >
-                                    <LayoutDashboard /> Dashboard
-                                </Link>
+                        <SheetContent side="right" className="flex flex-col gap-6 px-4 pt-5 pb-4">
+                            <SheetTitle className="sr-only">Menu</SheetTitle>
+                            <Link className="w-fit" href="/">
+                                <Logo />
+                            </Link>
 
-                                <Link
-                                    href="/materias"
-                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/materias" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
-                                >
-                                    <Captions /> Matérias
-                                </Link>
-
-                                <Link
-                                    href="/revisoes"
-                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/revisoes" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
-                                >
-                                    <RotateCw /> Revisões
-                                </Link>
-
-                                <Link
-                                    href="/notas"
-                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/notas" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
-                                >
-                                    <NotepadText /> Notas
-                                </Link>
-
-                                <Link
-                                    href="/cronograma"
-                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/cronograma" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
-                                >
-                                    <CalendarClock /> Cronograma
-                                </Link>
-                                <Link
-                                    href="/desempenho"
-                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/desempenho" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
-                                >
-                                    <ChartColumn /> Desempenho
-                                </Link>
-                                <Link
-                                    href="/perfil"
-                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/perfil" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
-                                >
-                                    <CircleUser /> Perfil
-                                </Link>
-                                {!isLoading && isAuthenticated && isAdmin && (
+                            <nav aria-label="Principal" className="flex flex-col gap-1 text-base font-medium">
+                                {[
+                                    ...NAV_LINKS,
+                                    { href: "/perfil", label: "Perfil", icon: CircleUser },
+                                    ...(!isLoading && isAuthenticated && isAdmin
+                                        ? [{ href: "/admin", label: "Admin", icon: ShieldCheck }]
+                                        : []),
+                                ].map(({ href, label, icon: Icon }) => (
                                     <Link
-                                        href="/admin"
-                                        className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/admin" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
+                                        key={href}
+                                        href={href}
+                                        aria-current={isActive(href) ? "page" : undefined}
+                                        className={cn(
+                                            "flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors",
+                                            isActive(href)
+                                                ? "bg-primary/15 text-primary"
+                                                : "text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
+                                        )}
                                     >
-                                        <ShieldCheck /> Admin
+                                        <Icon className="size-4.5" /> {label}
                                     </Link>
-                                )}
+                                ))}
                             </nav>
+
                             {!isLoading && isAuthenticated && (
-                                <Button variant="outline" onClick={handleLogout} className="mt-auto gap-1">
+                                <Button variant="outline" onClick={handleLogout} className="mt-auto gap-1.5">
                                     <LogOut size={16} /> Sair
                                 </Button>
                             )}
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                {!isLoading && !isAuthenticated && (
-                                    <>
-                                        <Button
-                                            className="hidden sm:inline-flex"
-                                            variant="outline"
-                                            onClick={() => router.push("/login")}
-                                        >
-                                            Entrar
-                                        </Button>
-                                        <Button className="hidden sm:inline-flex">Cadastrar-se</Button>
-                                    </>
-                                )}
-                            </div>
+                            {!isLoading && !isAuthenticated && (
+                                <div className="mt-auto flex flex-col gap-2">
+                                    <Button variant="outline" onClick={() => router.push("/login")}>Entrar</Button>
+                                    <Button onClick={() => router.push("/signup")}>Cadastrar-se</Button>
+                                </div>
+                            )}
                         </SheetContent>
                     </Sheet>
-
                 </div>
             </div>
         </header>

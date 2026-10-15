@@ -59,26 +59,26 @@ export function TopicDetailDialog({ open, onOpenChange, subject, topic }: TopicD
                 {subject && (
                     <div className="space-y-4 min-w-0 py-2">
                         <div className="flex items-center gap-2 text-sm">
-                            <span className="font-semibold">Matéria:</span>
+                            <span className="text-muted-foreground">Matéria</span>
                             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: subject.color }} />
                             <span className="truncate">{subject.title}</span>
                         </div>
 
                         {topic && (
                             <div>
-                                <span className="text-sm font-semibold flex items-center gap-1 mb-2">
-                                    <Paperclip className="h-4 w-4" /> Anexos: <Badge variant="secondary">{attachments.length}</Badge>
+                                <span className="mb-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+                                    <Paperclip className="h-4 w-4" /> Anexos <Badge variant="secondary">{attachments.length}</Badge>
                                 </span>
                                 {attachments.length === 0 ? (
                                     <p className="text-sm text-muted-foreground">Sem anexos.</p>
                                 ) : (
-                                    <div className="flex flex-col gap-2 min-w-0">
+                                    <div className="flex min-w-0 flex-col gap-0.5">
                                         {attachments.map((attachment) => (
                                             <button
                                                 key={attachment.id}
                                                 type="button"
                                                 onClick={() => attachment.public_id && handleAttachmentOpen(attachment.public_id)}
-                                                className="flex gap-2 items-center w-full min-w-0 border hoverComponentsStatic p-0.5 rounded-sm text-left text-sm cursor-pointer transition-colors"
+                                                className="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                                             >
                                                 <FileText className="h-4 w-4 shrink-0" style={{ color: subject.color }} />
                                                 <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
@@ -89,7 +89,7 @@ export function TopicDetailDialog({ open, onOpenChange, subject, topic }: TopicD
                             </div>
                         )}
 
-                        <Link href={`/materias/${subject.id}`} className="inline-block text-sm text-primary hover:underline">
+                        <Link href={`/materias/${subject.id}`} className="inline-block rounded-md text-sm font-medium text-primary hover:underline focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
                             Abrir matéria
                         </Link>
                     </div>

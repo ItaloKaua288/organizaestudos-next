@@ -1,39 +1,30 @@
 import { getSubjectsAction } from "@/actions/subjects.actions";
-import { ScrambleText } from "@/components/scramble-text";
+import { PageHeader } from "@/components/page-header";
 import { RedirectButton } from "./components/button-redirect";
 
 export default async function NotasPage() {
     const allSubjects = (await getSubjectsAction()).filter((subject) => subject.active !== false)
 
     return (
-        <div className="space-y-4">
-            <header className=" relative space-y-1 z-9">
-                <h1 className="bg-card py-4 px-2 text-xl font-bold shadow-sm ">
-                    <ScrambleText text="ANOTAÇÕES" />
-                </h1>
-            </header>
+        <div className="introduction-Page flex flex-col">
+            <PageHeader title="Anotações" description="Escolha uma matéria para ver e criar notas." />
 
-            <section className=" z-5">
-
+            <section>
                 {allSubjects.length === 0 ? (
-                    <p className="p-2 text-sm text-muted-foreground">
-                        Nenhuma matéria encontrada.
-                    </p>
+                    <div className="glass rounded-2xl px-6 py-12 text-center">
+                        <p className="font-medium">Nenhuma matéria encontrada</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Crie uma matéria para começar a anotar.</p>
+                    </div>
                 ) : (
-                    <>
-                        <p className="p-2 py-4 font-medium text-sm text-muted-foreground pt-0">
-                            Visualize suas notas.
-                        </p>
-                        <div className="grid grid-cols-1 gap-2 p-2 pt-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                            {allSubjects.map((subject, index) => (
-                                <RedirectButton
-                                    key={subject.id}
-                                    subject={subject}
-                                    index={index}
-                                />
-                            ))}
-                        </div>
-                    </>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        {allSubjects.map((subject, index) => (
+                            <RedirectButton
+                                key={subject.id}
+                                subject={subject}
+                                index={index}
+                            />
+                        ))}
+                    </div>
                 )}
             </section>
         </div>

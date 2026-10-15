@@ -28,10 +28,10 @@ interface ReviewItemProps {
 
 // Avaliação ao concluir uma revisão: errou volta antes, acertou espaça mais.
 const PERFORMANCE_OPTIONS: { value: ReviewPerformance; label: string; hint: string; className: string }[] = [
-    { value: "ERROU", label: "Muito difícil ", hint: "Revisar de novo em breve", className: "hover:border-destructive hover:text-destructive" },
-    { value: "DIFICIL", label: "Difícil", hint: "Voltar um pouco antes", className: "hover:border-orange-500 hover:text-orange-500" },
-    { value: "BOM", label: "Bom", hint: "Intervalo padrão", className: "hover:border-primary hover:text-primary" },
-    { value: "FACIL", label: "Fácil", hint: "Espaçar mais", className: "hover:border-green-500 hover:text-green-500" },
+    { value: "ERROU", label: "Muito difícil", hint: "Revisar de novo em breve", className: "hover:bg-destructive/10 hover:text-destructive" },
+    { value: "DIFICIL", label: "Difícil", hint: "Voltar um pouco antes", className: "hover:bg-foreground/8" },
+    { value: "BOM", label: "Bom", hint: "Intervalo padrão", className: "hover:bg-primary/10 hover:text-primary" },
+    { value: "FACIL", label: "Fácil", hint: "Espaçar mais", className: "hover:bg-foreground/8" },
 ];
 
 const formatShortDate = (value: string) =>
@@ -64,9 +64,9 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
         } else if (diffDays === 0) {
             return <Badge variant="default">Hoje</Badge>;
         } else if (diffDays === 1) {
-            return <div className="text-xs text-muted-foreground">Amanhã</div>;
+            return <span className="text-xs text-muted-foreground">Amanhã</span>;
         } else {
-            return <div className="text-xs text-muted-foreground">Em {diffDays} dias</div>;
+            return <span className="text-xs text-muted-foreground">Em {diffDays} dias</span>;
         }
     };
 
@@ -99,25 +99,25 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
     };
 
     return (
-        <div className="w-full block">
+        <div className="block w-full">
             <DialogDemo
                 variant="label"
                 title={item.title}
                 description="Informações sobre o tópico da revisão"
                 disableBtns={true}
                 contentBtn={
-                    <div className="hoverComponents flex flex-wrap items-center justify-between w-full gap-3 border border-base-content/10 bg-base-200/30 p-2 rounded-md hover:bg-base-200/60 transition-all">
+                    <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl px-3 py-3 transition-colors duration-150 hover:bg-foreground/6 border-b">
                         <div className="flex-1 min-w-0 text-sm flex items-center gap-2.5">
                             <span
-                                className="w-3.5 h-3.5 rounded-full shrink-0 shadow-sm"
+                                className="h-2.5 w-2.5 shrink-0 rounded-full"
                                 style={{ backgroundColor: item.subject.color }}
                                 aria-hidden="true"
                             />
                             <div className="flex flex-col flex-1 min-w-0">
-                                <span className="truncate text-start font-medium text-base-content">
+                                <span className="truncate text-start font-medium text-foreground">
                                     {item.title}
                                 </span>
-                                <span className="truncate text-start text-xs text-base-content/60 mt-0.5 opacity-50">
+                                <span className="mt-0.5 truncate text-start text-xs text-muted-foreground">
                                     {item.subject.title}
                                 </span>
                             </div>
@@ -129,15 +129,15 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                 <Button
                                     variant="secondary"
                                     size="sm"
-                                    className="shrink-0 ml-2"
+                                    className="shrink-0"
                                     onClick={(e) => { e.stopPropagation(); setIsRating((v) => !v); }}
                                     disabled={isPending}
                                     aria-expanded={isRating}
                                 >
                                     {isPending ? (
-                                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
                                     ) : (
-                                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
                                     )}
                                     {isPending ? "Salvando..." : "Feito"}
                                 </Button>
@@ -157,10 +157,10 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                             title={option.hint}
                                             disabled={isPending}
                                             onClick={(e) => handleConclude(e, option.value)}
-                                            className={cn("flex-col h-auto py-1.5 gap-0", option.className)}
+                                            className={cn("h-auto flex-col gap-0 py-1.5", option.className)}
                                         >
                                             <span className="font-medium">{option.label}</span>
-                                            <span className="text-[10px] font-normal text-muted-foreground">{option.hint}</span>
+                                            <span className="text-xs font-normal text-muted-foreground">{option.hint}</span>
                                         </Button>
                                     ))}
                                 </div>
@@ -216,11 +216,11 @@ function OrganizeMonthButton() {
             description="As revisões de 30 dias serão distribuídas de hoje até daqui a 30 dias, com o menor número possível de revisões por dia, mantendo a ordem atual."
             contentBtn={
                 <>
-                    <CalendarRange className="w-3.5 h-3.5 mr-1" />
+                    <CalendarRange className="mr-1 h-3.5 w-3.5" />
                     Organizar
                 </>
             }
-            classNameBtn="h-7 text-xs"
+            classNameBtn="h-8 text-xs"
             nameConfirmBtn={isPending ? "Organizando..." : "Organizar"}
             open={isOpen}
             onOpenChange={setIsOpen}
@@ -236,79 +236,66 @@ export function ReviewSection({ title, icon, reviewIndex, topics }: ReviewSectio
     const hasTopics = topics && topics.length > 0;
 
     return (
-        <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden shadow-sm bg-card">
-            <div className="flex gap-2 items-center mb-3 font-semibold text-base-content">
-                {icon}
-                <h2 className="text-lg">{title}</h2>
+        <section className="glass rounded-2xl p-4 sm:p-5">
+            <div className="mb-2 flex items-center gap-2.5">
+                <span className="text-muted-foreground">{icon}</span>
+                <h2 className="text-lg font-semibold">{title}</h2>
                 <div className="ml-auto flex items-center gap-2">
                     {reviewIndex === 3 && hasTopics && <OrganizeMonthButton />}
-                    <span className="text-xs bg-base-200 text-base-content/80 px-2.5 py-0.5 rounded-full font-medium">
-                        {topics?.length || 0}
-                    </span>
+                    <Badge variant="secondary">{topics?.length || 0}</Badge>
                 </div>
             </div>
 
             {!hasTopics ? (
-                <p className="text-xs text-base-content/50 italic py-3 text-center">
-                    Nenhuma revisão para este período.
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhuma revisão neste período. Quando houver, ela aparece aqui.
                 </p>
             ) : (
-                <div className="flex flex-col gap-3 w-full">
-                    {topics.map((item, index) => {
-                        return (
-                            <ReviewItem
-                                key={item.id || index}
-                                item={item}
-                                reviewIndex={reviewIndex}
-                            />
-                        )
-                    })}
+                <div className="flex w-full flex-col ">
+                    {topics.map((item, index) => (
+                        <div key={item.id || index} className="py-1 first:pt-0 last:pb-0">
+                            <ReviewItem item={item} reviewIndex={reviewIndex} />
+                        </div>
+                    ))}
                 </div>
             )}
-        </div>
+        </section>
     );
 }
 
 export function ReviewSectionSkeleton() {
     const sections = [
-        { title: "1° Revisão", reviewIndex: 1, icon: <Clock size={20} /> },
-        { title: "2° Revisão", reviewIndex: 2, icon: <Clock size={20} /> },
-        { title: "3° Revisão", reviewIndex: 3, icon: <Clock size={20} /> },
-        { title: "Concluído", icon: <CheckCircle2 size={20} className="text-green-500" /> },
+        { title: "1° Revisão", icon: <Clock size={20} /> },
+        { title: "2° Revisão", icon: <Clock size={20} /> },
+        { title: "3° Revisão", icon: <Clock size={20} /> },
+        { title: "Concluído", icon: <CheckCircle2 size={20} /> },
     ];
 
     return (
         <>
-            <p className="p-2 py-4 pb-1 font-medium text-sm text-muted-foreground ">
-                Visualize suas revisões. Começam em 1° Revisão, 2° Revisão e 3° Revisão e a próxima data se ajusta conforme você avalia (Muito difícil, difícil, bom ou fácil).
-            </p>
             {sections.map((sec, index) => (
-                <div className="p-4 mx-2 border border-base-content/10 rounded-lg overflow-hidden shadow-sm bg-card" key={index}>
-                    <div className="flex gap-2 items-center mb-3 font-semibold text-base-content">
-                        {sec.icon}
-                        <h2 className="text-lg">{sec.title}</h2>
-                        <span className="text-xs bg-base-200 text-base-content/80 px-2.5 py-0.5 rounded-full ml-auto font-medium">
+                <section className="glass rounded-2xl p-4 sm:p-5" key={index}>
+                    <div className="mb-2 flex items-center gap-2.5">
+                        <span className="text-muted-foreground">{sec.icon}</span>
+                        <h2 className="text-lg font-semibold">{sec.title}</h2>
+                        <span className="ml-auto">
                             <Spinner />
                         </span>
                     </div>
 
-                    <div className="flex flex-col gap-3 w-full">
+                    <div className="flex w-full flex-col divide-y divide-border">
                         {Array.from({ length: 3 }).map((_, index) => (
-                            <div
-                                key={index}
-                                className="flex gap-2 p-3 items-center border border-base-content/5 rounded-md"
-                            >
-                                <Skeleton className="h-4 w-4 rounded-full" />
-                                <div className="flex flex-col gap-1 w-full">
+                            <div key={index} className="flex items-center gap-3 px-3 py-3">
+                                <Skeleton className="h-2.5 w-2.5 rounded-full" />
+                                <div className="flex w-full flex-col gap-1.5">
                                     <Skeleton className="h-4 w-3/4" />
                                     <Skeleton className="h-3 w-1/2" />
                                 </div>
                             </div>
                         ))}
                     </div>
-                </div>
+                </section>
             ))}
         </>
-
     );
 }

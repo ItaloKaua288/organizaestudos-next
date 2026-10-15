@@ -25,7 +25,7 @@ export function ScoreRing({ percent, empty = false }: ScoreRingProps) {
             aria-label={empty ? "Sem questões registradas" : `Desempenho geral: ${formatPercent(percent)}, ${level.label}`}
         >
             <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="-rotate-90">
-                <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" strokeWidth={STROKE} className="stroke-muted" />
+                <circle cx={SIZE / 2} cy={SIZE / 2} r={RADIUS} fill="none" strokeWidth={STROKE} className="stroke-foreground/10" />
                 {!empty && (
                     <circle
                         cx={SIZE / 2}
@@ -36,16 +36,16 @@ export function ScoreRing({ percent, empty = false }: ScoreRingProps) {
                         strokeLinecap="round"
                         strokeDasharray={CIRCUMFERENCE}
                         strokeDashoffset={CIRCUMFERENCE * (1 - value / 100)}
-                        className={cn(level.stroke, "transition-[stroke-dashoffset]")}
+                        className={cn(level.stroke, "transition-[stroke-dashoffset] duration-150 motion-reduce:transition-none")}
                     />
                 )}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
                 {empty ? (
-                    <span className="text-2xl font-semibold text-muted-foreground">—</span>
+                    <span className="font-heading text-2xl font-semibold text-muted-foreground">—</span>
                 ) : (
                     <>
-                        <span className={cn("text-3xl font-semibold tabular-nums", level.text)}>{formatPercent(percent)}</span>
+                        <span className={cn("font-heading text-3xl font-semibold tabular-nums", level.text)}>{formatPercent(percent)}</span>
                         <span className="text-xs text-muted-foreground">{level.label}</span>
                     </>
                 )}

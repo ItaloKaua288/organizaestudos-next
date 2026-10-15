@@ -18,11 +18,11 @@ export function PercentBar({ percent, className, label }: PercentBarProps) {
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={value}
-            className="relative h-2 w-full overflow-hidden rounded-full bg-muted"
+            className="relative h-1.5 w-full overflow-hidden rounded-full bg-foreground/10"
         >
-            <div className={cn("h-full rounded-full transition-[width]", className)} style={{ width: `${value}%` }} />
+            <div className={cn("h-full rounded-full transition-[width] duration-150 motion-reduce:transition-none", className)} style={{ width: `${value}%` }} />
             {[LEVEL_WEAK_BELOW, LEVEL_STRONG_FROM].map((mark) => (
-                <span key={mark} aria-hidden className="absolute inset-y-0 w-px bg-background/80" style={{ left: `${mark}%` }} />
+                <span key={mark} aria-hidden className="absolute inset-y-0 w-px bg-background/70" style={{ left: `${mark}%` }} />
             ))}
         </div>
     );

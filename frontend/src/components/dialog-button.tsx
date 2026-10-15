@@ -20,6 +20,7 @@ type DialogDemoProps = {
   variantConfirmBtn?: "link" | "default" | "outline" | "secondary" | "ghost" | "destructive" | null | undefined;
   children?: React.ReactNode;
   variant?: "button" | "label";
+  variantDialogBtn?: "link" | "default" | "outline" | "secondary" | "ghost" | "destructive" | null | undefined;
   disableBtns?: boolean;
   onSubmit?: (e: React.FormEvent) => void;
   open?: boolean;
@@ -37,6 +38,7 @@ export function DialogDemo({
   variantConfirmBtn, 
   children, 
   variant = "button", 
+  variantDialogBtn ="outline",
   onSubmit, 
   open, 
   onOpenChange 
@@ -44,7 +46,7 @@ export function DialogDemo({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {variant === "button" ? (
-        <DialogTrigger render={<Button variant="outline" className={`${classNameBtn}`}>{contentBtn || "Open Dialog"}</Button>}></DialogTrigger>
+        <DialogTrigger render={<Button variant={variantDialogBtn} className={`${classNameBtn}`}>{contentBtn || "Open Dialog"}</Button>}></DialogTrigger>
       ) : (
         <DialogTrigger className="w-full" nativeButton={false} render={
           <span className="w-full h-auto min-h-0 block p-0 cursor-pointer">

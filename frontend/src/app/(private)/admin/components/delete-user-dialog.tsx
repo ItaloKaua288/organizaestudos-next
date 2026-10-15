@@ -72,7 +72,7 @@ export function DeleteUserDialog({ user, onClose, onDeleted }: DeleteUserDialogP
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-2 rounded-lg bg-muted/50 p-3 text-sm">
+                    <div className="space-y-2 rounded-xl bg-foreground/5 p-3 text-sm">
                         <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
                             <li>{count(user.subjectsCount, "matéria", "matérias")}</li>
                             <li>{count(user.topicsCount, "assunto", "assuntos")}</li>
@@ -87,7 +87,7 @@ export function DeleteUserDialog({ user, onClose, onDeleted }: DeleteUserDialogP
 
                     <div className="space-y-2">
                         <Label htmlFor="admin-delete-confirm">Digite o e-mail da conta para confirmar</Label>
-                        <p className="rounded-md bg-muted px-2.5 py-1.5 text-sm font-medium wrap-anywhere">{user.email}</p>
+                        <p className="rounded-lg bg-foreground/8 px-2.5 py-1.5 text-sm font-medium wrap-anywhere">{user.email}</p>
                         <Input
                             id="admin-delete-confirm"
                             value={confirmation}

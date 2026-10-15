@@ -21,12 +21,13 @@ export function SearchNotes() {
     }, 300)
 
     return (
-        <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="relative w-full sm:w-60">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
                 type="search"
-                placeholder="Buscar Nota..."
-                className="pl-8"
+                placeholder="Buscar nota"
+                aria-label="Buscar nota"
+                className="h-8 rounded-lg pl-9 text-[0.8rem]"
                 defaultValue={searchParams.get("q")?.toString()}
                 onChange={(e) => handleSearch(e.target.value)}
             />
