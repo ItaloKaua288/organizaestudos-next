@@ -215,7 +215,7 @@ export default function SubjectBox({
 
             {isExpanded && (
                 <div className="mt-3 flex flex-col">
-                    <div className="flex flex-col divide-y divide-border">
+                    <div className="flex flex-col gap-1">
                         {topics.map((topic, index) => {
                             const meta = getTopicMeta(topic.id);
 
