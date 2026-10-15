@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
     Sheet,
     SheetContent,
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, ChartColumn, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, CircleUser, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -144,6 +144,17 @@ export function Navbar2() {
 
                         {!isLoading && isAuthenticated && <ProfileSwitcher />}
 
+                        {!isLoading && isAuthenticated && (
+                            <Link
+                                href="/perfil"
+                                title="Meu perfil"
+                                aria-label="Meu perfil"
+                                className={`${buttonVariants({ variant: "outline", size: "icon" })} max-xl:hidden ${pathname === "/perfil" ? "border-primary text-primary" : ""}`}
+                            >
+                                <CircleUser />
+                            </Link>
+                        )}
+
                         <ThemeToggle size="icon" variant="outline" />
 
                     </div>
@@ -206,6 +217,12 @@ export function Navbar2() {
                                     className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/desempenho" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
                                 >
                                     <ChartColumn /> Desempenho
+                                </Link>
+                                <Link
+                                    href="/perfil"
+                                    className={`transition-all duration-300 ease-in-out border rounded-sm hover:bg-primary hover:text-primary-foreground flex gap-1 items-center ${pathname === "/perfil" ? "bg-primary text-primary-foreground p-4" : "text-muted-foreground p-2"}`}
+                                >
+                                    <CircleUser /> Perfil
                                 </Link>
                             </nav>
                             {!isLoading && isAuthenticated && (
