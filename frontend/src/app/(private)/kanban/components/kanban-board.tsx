@@ -268,11 +268,22 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
                 sensors={sensors}
                 collisionDetection={detectCollisions}
                 accessibility={{ announcements }}
+                // Rolagem automática mais lenta: no celular as colunas são largas e o padrão passava direto da coluna do meio.
+                autoScroll={{ acceleration: 4, threshold: { x: 0.18, y: 0.2 } }}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragCancel={() => setActiveId(null)}
             >
-                <div className="-mx-4 flex snap-x snap-mandatory items-start gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0">
+                {/*
+                  * Durante o arrasto o snap fica desligado: com `snap-mandatory`, cada passo da rolagem automática
+                  * era "puxado" para a próxima coluna e o card ia direto para a última. Ao soltar, o snap volta.
+                  */}
+                <div
+                    className={cn(
+                        "-mx-4 flex items-start gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0",
+                        activeId === null ? "snap-x snap-mandatory" : "snap-none"
+                    )}
+                >
                     {topicsByStatus.map(({ column, topics: columnTopics }) => (
                         <div key={column.status} className="w-[86%] shrink-0 snap-center sm:w-[60%] lg:w-auto">
                             <KanbanColumn
