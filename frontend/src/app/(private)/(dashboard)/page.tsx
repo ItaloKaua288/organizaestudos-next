@@ -1,10 +1,9 @@
 import { getSubjectsAction } from "@/actions/subjects.actions";
 import { getTimelinesAction } from "@/actions/timeline.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
-import { DialogDemo } from "@/components/dialog-button";
 import ProgressLabelDemo from "@/components/progress-label";
 import { PageHeader } from "@/components/page-header";
-import { TopicInfoGroup } from "@/components/topic-info-group";
+import { TopicSheetTrigger } from "@/components/topic-sheet-trigger";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,27 +145,22 @@ export default async function DashboardPage() {
                             ) : (
                                 <div className="flex flex-col gap-1">
                                     {reviewTodayTopics.map(({ topic, due }) => (
-                                        <DialogDemo
+                                        <TopicSheetTrigger
                                             key={topic.id}
-                                            title={topic.title}
-                                            description="Informações sobre o tópico da revisão"
-                                            contentBtn={
-                                                <div className="flex w-full items-center gap-3 truncate">
-                                                    <BookOpen className="size-4 shrink-0" style={{ color: topic.subject.color }} />
-                                                    <div className="flex min-w-0 flex-col items-start gap-0.5">
-                                                        <span className="max-w-full truncate text-sm">{topic.title}</span>
-                                                        <span className="max-w-full truncate text-xs text-muted-foreground">{topic.subject.title}</span>
-                                                    </div>
-                                                    {due.overdueDays > 0 && (
-                                                        <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {due.overdueDays}d</Badge>
-                                                    )}
-                                                </div>
-                                            }
-                                            disableBtns={true}
-                                            classNameBtn="h-auto w-full justify-start rounded-xl border-0 bg-transparent px-2.5 py-2.5 shadow-none backdrop-blur-none hover:bg-foreground/6"
+                                            topic={topic}
+                                            className="h-auto w-full justify-start rounded-xl border-0 bg-transparent px-2.5 py-2.5 shadow-none backdrop-blur-none hover:bg-foreground/6"
                                         >
-                                            <TopicInfoGroup subject={topic.subject.title} color={topic.subject.color} topic={topic} hasAttachments={!!topic.attachments?.length} />
-                                        </DialogDemo>
+                                            <div className="flex w-full items-center gap-3 truncate">
+                                                <BookOpen className="size-4 shrink-0" style={{ color: topic.subject.color }} />
+                                                <div className="flex min-w-0 flex-col items-start gap-0.5">
+                                                    <span className="max-w-full truncate text-sm">{topic.title}</span>
+                                                    <span className="max-w-full truncate text-xs text-muted-foreground">{topic.subject.title}</span>
+                                                </div>
+                                                {due.overdueDays > 0 && (
+                                                    <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {due.overdueDays}d</Badge>
+                                                )}
+                                            </div>
+                                        </TopicSheetTrigger>
                                     ))}
                                 </div>
                             )}

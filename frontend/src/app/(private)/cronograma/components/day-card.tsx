@@ -1,13 +1,10 @@
 "use client"
 
 import { createTimelineAction, deleteTimelineAction, updateTimelineAction } from "@/actions/timeline.actions";
-import { openTopicAttachmentAction } from "@/actions/topics.actions";
 import { DialogDemo } from "@/components/dialog-button";
-import { TopicInfoGroup } from "@/components/topic-info-group";
-import { Badge } from "@/components/ui/badge";
+import { KanbanTopicSheet } from "@/app/(private)/kanban/components/kanban-topic-sheet";
+import { TopicSheetTrigger, useTopicStatusChange } from "@/components/topic-sheet-trigger";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { downloadTopicAttachment } from "@/lib/download-attachment";
 import { cn } from "@/lib/utils";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -16,7 +13,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Subject } from "@/types/subject";
 import { Timeline } from "@/types/timeline";
 import { Topic } from "@/types/topic";
-import { BookOpen, Download, ExternalLink, FileText, Paperclip, PencilIcon, Plus, Trash2 } from "lucide-react";
+import { BookOpen, ExternalLink, PencilIcon, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -132,19 +129,16 @@ export function DayCard({ dayLabel, date, isToday, dayEvents, pendingTopicsBySub
                         <div className="flex flex-col gap-0.5 overflow-y-auto">
 
                             {reviews.map((review) => (
-                                <DialogDemo
-                                    title={review.title}
-                                    description="Detalhes do assunto atual"
-                                    contentBtn={<span className="flex items-center gap-2 truncate text-xs">
+                                <TopicSheetTrigger
+                                    key={review.id}
+                                    topic={review}
+                                    className="flex h-auto w-full justify-start truncate rounded-lg border-transparent bg-transparent px-2 py-1.5 shadow-none hover:bg-foreground/6"
+                                >
+                                    <span className="flex items-center gap-2 truncate text-xs">
                                         <BookOpen className="h-3.5 w-3.5 shrink-0" color={review.subject.color} />
                                         <span className="truncate ">{review.title}</span>
-                                    </span>}
-                                    classNameBtn="flex h-auto w-full justify-start truncate rounded-lg border-transparent bg-transparent px-2 py-1.5 shadow-none hover:bg-foreground/6"
-                                    disableBtns={true}
-                                    key={review.id}
-                                >
-                                    <TopicInfoGroup subject={review.subject.title} topic={review} color={review.subject.color} hasAttachments={review.attachments && review.attachments.length > 0}></TopicInfoGroup>
-                                </DialogDemo>
+                                    </span>
+                                </TopicSheetTrigger>
                             ))}
                         </div>
                     </div>
@@ -174,36 +168,7 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
-    const hasAttachments = nextTopic?.attachments && nextTopic.attachments.length > 0;
-
-    const handleTopicAttachmentOpen = async (attachmentPublicId: string) => {
-        if (!nextTopic) return;
-        const newTab = window.open("about:blank", "_blank");
-
-        try {
-            toast.loading("Abrindo anexo...", { id: "open-attachment" });
-            const formData = new FormData();
-            formData.append("topicId", nextTopic.id);
-            formData.append("public_id", attachmentPublicId);
-
-            const blob = (await openTopicAttachmentAction(formData)).blob;
-
-            if (blob && newTab) {
-                const url = URL.createObjectURL(blob);
-
-                newTab.location.href = url;
-                toast.success("Anexo aberto", { id: "open-attachment" });
-
-                setTimeout(() => URL.revokeObjectURL(url), 10000);
-            } else {
-                if (newTab) newTab.close();
-                toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
-            }
-        } catch {
-            if (newTab) newTab.close();
-            toast.error("Falha ao abrir o anexo", { id: "open-attachment" });
-        }
-    };
+    const changeTopicStatus = useTopicStatusChange();
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -351,53 +316,7 @@ function EventItem({ item, nextTopic }: { item: Timeline, nextTopic?: Topic }) {
         </div>
 
         {nextTopic && (
-            <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
-                <DialogContent className="w-[95vw] sm:max-w-sm max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
-                    <DialogHeader className="shrink-0 pr-8">
-                        <DialogTitle>{nextTopic.title}</DialogTitle>
-                        <DialogDescription>Detalhes do tópico atual</DialogDescription>
-                    </DialogHeader>
-                    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-1 py-2">
-                        <div>
-                            <span className="text-sm font-semibold">Matéria: </span>
-                            <span className="text-sm">{nextTopic.subject.title}</span>
-                        </div>
-                        <div>
-                            <span className="mb-2 flex items-center gap-1 text-sm font-semibold">
-                                <Paperclip className="h-4 w-4" /> Anexos: <Badge variant={"secondary"}>{nextTopic.attachments.length}</Badge>
-                            </span>
-                            {!hasAttachments ? (
-                                <p className="text-sm text-muted-foreground">Sem anexos.</p>
-                            ) : (
-                                <div className="flex min-w-0 flex-col gap-1">
-                                    {nextTopic.attachments!.map((attachment) => (
-                                        <div key={attachment.id} className="flex w-full min-w-0 items-center gap-1 text-sm">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleTopicAttachmentOpen(attachment.public_id!)}
-                                                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-                                            >
-                                                <FileText className="h-4 w-4 shrink-0" style={{ color: nextTopic.subject.color }} />
-                                                <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
-                                            </button>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                className={ICON_BTN}
-                                                title="Baixar anexo"
-                                                aria-label={`Baixar ${attachment.name}`}
-                                                onClick={() => downloadTopicAttachment(nextTopic.id, attachment.public_id!, attachment.name)}
-                                            >
-                                                <Download className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <KanbanTopicSheet topic={nextTopic} open={isInfoOpen} onOpenChange={setIsInfoOpen} onMove={changeTopicStatus} manage />
         )}
         </>
     )

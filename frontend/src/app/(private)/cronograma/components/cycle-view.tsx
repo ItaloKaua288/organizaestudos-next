@@ -9,9 +9,8 @@ import {
     skipCycleSessionAction,
     startCycleSessionAction,
 } from "@/actions/cycle.actions";
-import { DialogDemo } from "@/components/dialog-button";
 import { QuestionLogDialog } from "@/components/question-log-dialog";
-import { TopicInfoGroup } from "@/components/topic-info-group";
+import { TopicSheetTrigger } from "@/components/topic-sheet-trigger";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,23 +132,18 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                 ) : (
                     <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-2">
                         {todayReviews.map(({ topic, number, overdueDays }) => (
-                            <DialogDemo
+                            <TopicSheetTrigger
                                 key={topic.id}
-                                title={topic.title}
-                                description="Detalhes do assunto da revisão"
-                                contentBtn={
-                                    <span className="flex w-full items-center gap-2 truncate text-sm">
-                                        <BookOpen className="h-3.5 w-3.5 shrink-0" color={topic.subject.color} />
-                                        <span className="truncate">{topic.title}</span>
-                                        {overdueDays > 0 && <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {overdueDays}d</Badge>}
-                                        <Badge variant="outline" className={overdueDays > 0 ? "shrink-0" : "ml-auto shrink-0"}>{number}ª revisão</Badge>
-                                    </span>
-                                }
-                                classNameBtn="flex h-auto w-full justify-start truncate rounded-xl border-transparent bg-transparent px-3 py-2 shadow-none hover:bg-foreground/6"
-                                disableBtns={true}
+                                topic={topic}
+                                className="flex h-auto w-full justify-start truncate rounded-xl border-transparent bg-transparent px-3 py-2 shadow-none hover:bg-foreground/6"
                             >
-                                <TopicInfoGroup subject={topic.subject.title} topic={topic} color={topic.subject.color} hasAttachments={topic.attachments && topic.attachments.length > 0} />
-                            </DialogDemo>
+                                <span className="flex w-full items-center gap-2 truncate text-sm">
+                                    <BookOpen className="h-3.5 w-3.5 shrink-0" color={topic.subject.color} />
+                                    <span className="truncate">{topic.title}</span>
+                                    {overdueDays > 0 && <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {overdueDays}d</Badge>}
+                                    <Badge variant="outline" className={overdueDays > 0 ? "shrink-0" : "ml-auto shrink-0"}>{number}ª revisão</Badge>
+                                </span>
+                            </TopicSheetTrigger>
                         ))}
                     </div>
                 )}
