@@ -68,3 +68,57 @@ export function sortByReviewUrgency(topics: Topic[]): Topic[] {
         .sort((a, b) => (a.key === b.key ? a.index - b.index : a.key < b.key ? -1 : 1))
         .map(({ topic }) => topic);
 }
+
+export type ReviewStep = {
+    number: 1 | 2 | 3;
+    /** Intervalo previsto desde a conclusão do assunto. */
+    interval: string;
+    /** Data da revisão já formatada (ex.: "qui., 22 de out."). null = sem data. */
+    dateText: string | null;
+    concluded: boolean;
+    tone: ReviewTone;
+    /** Situação em linguagem simples: "Feita", "Hoje", "Atrasada há 2 dias"... */
+    relative: string;
+};
+
+const REVIEW_INTERVALS = ["1 dia", "7 dias", "30 dias"] as const;
+
+function formatReviewDay(day: number): string {
+    const date = new Date(day * DAY_MS);
+    const sameYear = date.getUTCFullYear() === new Date(todayDayNumberBR() * DAY_MS).getUTCFullYear();
+
+    return new Intl.DateTimeFormat("pt-BR", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        ...(sameYear ? {} : { year: "numeric" }),
+        timeZone: "UTC",
+    }).format(date);
+}
+
+/** As 3 revisões de um assunto, uma a uma, prontas para a trilha do painel de detalhes. */
+export function getReviewTimeline(topic: Topic): ReviewStep[] {
+    const entries = [topic.reviews?.first, topic.reviews?.second, topic.reviews?.third];
+    const today = todayDayNumberBR();
+
+    return entries.map((review, index) => {
+        const number = (index + 1) as 1 | 2 | 3;
+        const interval = REVIEW_INTERVALS[index];
+        const day = review?.date ? reviewDayNumber(review.date) : null;
+        const dateText = day === null ? null : formatReviewDay(day);
+
+        if (review?.concluded) return { number, interval, dateText, concluded: true, tone: "done", relative: "Feita" };
+        if (day === null) return { number, interval, dateText, concluded: false, tone: "upcoming", relative: "Sem data" };
+
+        const diff = day - today;
+
+        if (diff < 0) {
+            const late = Math.abs(diff);
+            return { number, interval, dateText, concluded: false, tone: "late", relative: `Atrasada há ${late} ${late === 1 ? "dia" : "dias"}` };
+        }
+        if (diff === 0) return { number, interval, dateText, concluded: false, tone: "today", relative: "Hoje" };
+        if (diff === 1) return { number, interval, dateText, concluded: false, tone: "upcoming", relative: "Amanhã" };
+
+        return { number, interval, dateText, concluded: false, tone: "upcoming", relative: `Em ${diff} dias` };
+    });
+}

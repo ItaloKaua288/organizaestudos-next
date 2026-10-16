@@ -19,9 +19,10 @@ type KanbanColumnProps = {
     headerExtra?: ReactNode;
     onShowMore: (status: TopicStatus) => void;
     onMove: (topic: Topic, to: TopicStatus) => void;
+    onOpen: (topic: Topic) => void;
 };
 
-export function KanbanColumn({ config, topics, visibleCount, isDragActive, headerExtra, onShowMore, onMove }: KanbanColumnProps) {
+export function KanbanColumn({ config, topics, visibleCount, isDragActive, headerExtra, onShowMore, onMove, onOpen }: KanbanColumnProps) {
     const { setNodeRef, isOver } = useDroppable({ id: config.status });
     const Icon = config.icon;
     const visible = topics.slice(0, visibleCount);
@@ -64,7 +65,7 @@ export function KanbanColumn({ config, topics, visibleCount, isDragActive, heade
                         {config.empty}
                     </p>
                 ) : (
-                    visible.map((topic) => <KanbanCard key={topic.id} topic={topic} onMove={onMove} />)
+                    visible.map((topic) => <KanbanCard key={topic.id} topic={topic} onMove={onMove} onOpen={onOpen} />)
                 )}
 
                 {hidden > 0 && (

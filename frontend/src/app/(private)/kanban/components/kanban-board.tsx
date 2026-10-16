@@ -35,6 +35,7 @@ import { KanbanCardContent } from "./kanban-card";
 import { KanbanColumn } from "./kanban-column";
 import { ORDER_COOKIE, orderTopicsBySubject, type KanbanOrderMode, type SubjectOrders } from "./kanban-order";
 import { KanbanOrderToggle } from "./kanban-order-toggle";
+import { KanbanTopicSheet } from "./kanban-topic-sheet";
 import { COLUMN_PAGE_SIZE, getColumn, KANBAN_COLUMNS, KANBAN_STATUSES } from "./kanban-config";
 import {
     getClearedReviews,
@@ -93,6 +94,9 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
     const [limits, setLimits] = useState<Record<string, number>>({});
     const [confirm, setConfirm] = useState<PendingMove | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
+    // O painel guarda só o id: o assunto é lido do quadro, então a troca de coluna aparece nele na hora.
+    const [detailId, setDetailId] = useState<string | null>(null);
+    const [detailOpen, setDetailOpen] = useState(false);
     const reducedMotion = usePrefersReducedMotion();
     const isClient = useIsClient();
 
@@ -181,6 +185,19 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
         }
 
         moveTopic(topic, to);
+    }
+
+    const detailTopic = detailId ? boardTopics.find((topic) => topic.id === detailId) ?? null : null;
+
+    function openDetail(topic: Topic) {
+        setDetailId(topic.id);
+        setDetailOpen(true);
+    }
+
+    function moveFromDetail(topic: Topic, to: TopicStatus) {
+        // A confirmação é um diálogo próprio: fecha o painel antes para os dois não disputarem o foco.
+        if (topic.status === "CONCLUIDO" && to !== topic.status && getReviewSummary(topic).done > 0) setDetailOpen(false);
+        requestMove(topic, to);
     }
 
     function handleDragStart(event: DragStartEvent) {
@@ -298,6 +315,7 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
                                 }
                                 onShowMore={handleShowMore}
                                 onMove={requestMove}
+                                onOpen={openDetail}
                             />
                         </div>
                     ))}
@@ -315,6 +333,8 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
                         document.body
                     )}
             </DndContext>
+
+            <KanbanTopicSheet topic={detailTopic} open={detailOpen && detailTopic !== null} onOpenChange={setDetailOpen} onMove={moveFromDetail} />
 
             <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <DialogContent>

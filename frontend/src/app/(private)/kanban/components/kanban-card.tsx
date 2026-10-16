@@ -20,10 +20,12 @@ type KanbanCardContentProps = {
     /** Cópia que acompanha o ponteiro durante o arrasto: sem botões e levemente inclinada. */
     overlay?: boolean;
     onMove?: (topic: Topic, to: TopicStatus) => void;
+    /** Abre o painel de detalhes do assunto (clique no card ou Enter no título). */
+    onOpen?: (topic: Topic) => void;
 };
 
 /** Visual do card. Fica separado do arrastável para o DragOverlay desenhar a mesma coisa. */
-export function KanbanCardContent({ topic, overlay = false, onMove }: KanbanCardContentProps) {
+export function KanbanCardContent({ topic, overlay = false, onMove, onOpen }: KanbanCardContentProps) {
     const columnIndex = KANBAN_COLUMNS.findIndex((column) => column.status === topic.status);
     const previous = columnIndex > 0 ? KANBAN_COLUMNS[columnIndex - 1] : null;
     const next = columnIndex >= 0 && columnIndex < KANBAN_COLUMNS.length - 1 ? KANBAN_COLUMNS[columnIndex + 1] : null;
@@ -34,6 +36,7 @@ export function KanbanCardContent({ topic, overlay = false, onMove }: KanbanCard
 
     return (
         <article
+            onClick={!overlay && onOpen ? () => onOpen(topic) : undefined}
             className={cn(
                 "relative rounded-xl bg-(--glass-fill-strong) py-2 pr-2 pl-4 text-sm ring-1 ring-(--glass-ring) shadow-[inset_0_1px_0_var(--glass-edge)]",
                 overlay
@@ -54,7 +57,11 @@ export function KanbanCardContent({ topic, overlay = false, onMove }: KanbanCard
                 </p>
 
                 {!overlay && onMove && (
-                    <div className="flex shrink-0 items-center gap-0.5 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within/card:opacity-100 [@media(hover:hover)]:group-hover/card:opacity-100">
+                    // O clique nos botões de mover não deve abrir o painel de detalhes.
+                    <div
+                        onClick={(event) => event.stopPropagation()}
+                        className="flex shrink-0 items-center gap-0.5 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within/card:opacity-100 [@media(hover:hover)]:group-hover/card:opacity-100"
+                    >
                         {previous && (
                             <Button
                                 variant="ghost"
@@ -83,7 +90,18 @@ export function KanbanCardContent({ topic, overlay = false, onMove }: KanbanCard
                 )}
             </div>
 
-            <p className="pr-1 text-sm leading-snug font-medium wrap-break-word">{title}</p>
+            {!overlay && onOpen ? (
+                // Botão de verdade: é por ele que teclado e leitor de tela abrem os detalhes (o card inteiro também é clicável).
+                <button
+                    type="button"
+                    aria-label={`Ver detalhes de “${title}”`}
+                    className="block w-full cursor-[inherit] rounded-sm pr-1 text-left text-sm leading-snug font-medium wrap-break-word outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                >
+                    {title}
+                </button>
+            ) : (
+                <p className="pr-1 text-sm leading-snug font-medium wrap-break-word">{title}</p>
+            )}
 
             {review && (
                 <div className="mt-1.5 flex items-center gap-2 text-xs">
@@ -105,6 +123,7 @@ export function KanbanCardContent({ topic, overlay = false, onMove }: KanbanCard
 type KanbanCardProps = {
     topic: Topic;
     onMove: (topic: Topic, to: TopicStatus) => void;
+    onOpen: (topic: Topic) => void;
 };
 
 /**
@@ -112,7 +131,7 @@ type KanbanCardProps = {
  * alguns pixels (ou segurar o dedo), então os botões de mover continuam clicáveis.
  * Pelo teclado, a troca de coluna é feita com os botões de seta do próprio card.
  */
-export function KanbanCard({ topic, onMove }: KanbanCardProps) {
+export function KanbanCard({ topic, onMove, onOpen }: KanbanCardProps) {
     const { setNodeRef, listeners, isDragging } = useDraggable({ id: topic.id });
 
     return (
@@ -121,7 +140,7 @@ export function KanbanCard({ topic, onMove }: KanbanCardProps) {
             {...listeners}
             className={cn("touch-manipulation select-none [-webkit-touch-callout:none]", isDragging && "opacity-30")}
         >
-            <KanbanCardContent topic={topic} onMove={onMove} />
+            <KanbanCardContent topic={topic} onMove={onMove} onOpen={onOpen} />
         </div>
     );
 }
