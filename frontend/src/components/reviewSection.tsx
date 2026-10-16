@@ -2,13 +2,14 @@
 
 import { changeReviewStatus, redistributeMonthlyReviewsAction, ReviewPerformance } from "@/actions/review.actions";
 import { DialogDemo } from "@/components/dialog-button";
-import { TopicInfoGroup } from "@/components/topic-info-group";
+import { updateTopicAction } from "@/actions/topics.actions";
+import { KanbanTopicSheet } from "@/app/(private)/kanban/components/kanban-topic-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { getTodayBR } from "@/lib/date";
-import { Topic } from "@/types/topic";
+import { Topic, TopicStatus } from "@/types/topic";
 import { CalendarRange, CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useTransition } from "react";
@@ -40,7 +41,7 @@ const formatShortDate = (value: string) =>
 function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
     const [isPending, startTransition] = useTransition();
     const [isRating, setIsRating] = useState(false);
-    const hasAttachments = Boolean(item.attachments && item.attachments.length > 0);
+    const [isInfoOpen, setIsInfoOpen] = useState(false);
     const isConcludedSection = !reviewIndex;
 
     const getReviewTimeStatus = () => {
@@ -98,84 +99,111 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
         });
     };
 
+    // Clique na linha abre os detalhes; botões e a avaliação da revisão seguem com o próprio comportamento.
+    const handleRowClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        if (!e.currentTarget.contains(target)) return;
+        const interactive = target.closest("button, a, select, input, label");
+        if (interactive && !interactive.hasAttribute("data-topic-open")) return;
+        setIsInfoOpen(true);
+    };
+
+    const handleStatusChange = async (topic: Topic, newStatus: TopicStatus) => {
+        if (newStatus === topic.status) return;
+
+        const hasProgress = [topic.reviews?.first, topic.reviews?.second, topic.reviews?.third].some((review) => review?.concluded);
+        if (topic.status === "CONCLUIDO" && hasProgress && !window.confirm("Ao tirar o assunto de Concluído, as datas e o progresso das revisões são apagados. Continuar?")) return;
+
+        const toastId = "update-status-topic";
+
+        try {
+            toast.loading("Atualizando status do assunto...", { id: toastId });
+            const formData = new FormData();
+            formData.append("topicId", topic.id);
+            formData.append("title", topic.title);
+            formData.append("link", topic.link || "");
+            formData.append("review1", topic.reviews.first.date);
+            formData.append("status", newStatus);
+            await updateTopicAction(formData);
+            toast.success("Status do assunto atualizado!", { id: toastId });
+        } catch {
+            toast.error("Falha ao atualizar o status.", { id: toastId });
+        }
+    };
+
     return (
         <div className="block w-full">
-            <DialogDemo
-                variant="label"
-                title={item.title}
-                description="Informações sobre o tópico da revisão"
-                disableBtns={true}
-                contentBtn={
-                    <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-xl px-3 py-3 transition-colors duration-150 hover:bg-foreground/6 border-b">
+                    <div
+                        onClick={handleRowClick}
+                        className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-xl border-b px-3 py-3 transition-colors duration-150 hover:bg-foreground/6"
+                    >
                         <div className="flex-1 min-w-0 text-sm flex items-center gap-2.5">
-                            <span
-                                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                style={{ backgroundColor: item.subject.color }}
-                                aria-hidden="true"
-                            />
-                            <div className="flex flex-col flex-1 min-w-0">
-                                <span className="truncate text-start font-medium text-foreground">
-                                    {item.title}
-                                </span>
-                                <span className="mt-0.5 truncate text-start text-xs text-muted-foreground">
-                                    {item.subject.title}
-                                </span>
-                            </div>
+                    <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: item.subject.color }}
+                        aria-hidden="true"
+                    />
+                    <div className="flex flex-col flex-1 min-w-0">
+                        <button
+                            type="button"
+                            data-topic-open=""
+                            aria-haspopup="dialog"
+                            aria-label={`Ver informações de ${item.title}`}
+                            className="cursor-pointer truncate rounded-md text-start font-medium text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                        >
+                            {item.title}
+                        </button>
+                        <span className="mt-0.5 truncate text-start text-xs text-muted-foreground">
+                            {item.subject.title}
+                        </span>
+                    </div>
                         </div>
 
                         {!isConcludedSection && (
-                            <>
-                                {getReviewTimeStatus()}
-                                <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    className="shrink-0"
-                                    onClick={(e) => { e.stopPropagation(); setIsRating((v) => !v); }}
-                                    disabled={isPending}
-                                    aria-expanded={isRating}
-                                >
-                                    {isPending ? (
-                                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
-                                    ) : (
-                                        <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                                    )}
-                                    {isPending ? "Salvando..." : "Feito"}
-                                </Button>
-                            </>
+                    <>
+                        {getReviewTimeStatus()}
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={(e) => { e.stopPropagation(); setIsRating((v) => !v); }}
+                            disabled={isPending}
+                            aria-expanded={isRating}
+                        >
+                            {isPending ? (
+                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
+                            ) : (
+                                <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                            )}
+                            {isPending ? "Salvando..." : "Feito"}
+                        </Button>
+                    </>
                         )}
 
                         {!isConcludedSection && isRating && (
-                            <div className="w-full flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                <span className="text-xs text-muted-foreground">Como foi essa revisão? Isso ajusta a data da próxima.</span>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                                    {PERFORMANCE_OPTIONS.map((option) => (
-                                        <Button
-                                            key={option.value}
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            title={option.hint}
-                                            disabled={isPending}
-                                            onClick={(e) => handleConclude(e, option.value)}
-                                            className={cn("h-auto flex-col gap-0 py-1.5", option.className)}
-                                        >
-                                            <span className="font-medium">{option.label}</span>
-                                            <span className="text-xs font-normal text-muted-foreground">{option.hint}</span>
-                                        </Button>
-                                    ))}
-                                </div>
-                            </div>
+                    <div className="w-full flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <span className="text-xs text-muted-foreground">Como foi essa revisão? Isso ajusta a data da próxima.</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                            {PERFORMANCE_OPTIONS.map((option) => (
+                                <Button
+                                    key={option.value}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    title={option.hint}
+                                    disabled={isPending}
+                                    onClick={(e) => handleConclude(e, option.value)}
+                                    className={cn("h-auto flex-col gap-0 py-1.5", option.className)}
+                                >
+                                    <span className="font-medium">{option.label}</span>
+                                    <span className="text-xs font-normal text-muted-foreground">{option.hint}</span>
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
                         )}
                     </div>
-                }
-            >
-                <TopicInfoGroup
-                    subject={item.subject.title}
-                    color={item.subject.color}
-                    topic={item}
-                    hasAttachments={hasAttachments}
-                />
-            </DialogDemo>
+            <KanbanTopicSheet topic={item} open={isInfoOpen} onOpenChange={setIsInfoOpen} onMove={handleStatusChange} manage />
         </div>
     );
 }

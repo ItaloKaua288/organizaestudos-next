@@ -1,13 +1,15 @@
 "use client";
 
-import { openTopicAttachmentAction } from "@/actions/topics.actions";
+import { changeReviewStatus } from "@/actions/review.actions";
+import { deleteAttachAction, openTopicAttachmentAction } from "@/actions/topics.actions";
 import { getQuestionStatsAction } from "@/actions/questions.actions";
 import { buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { downloadTopicAttachment } from "@/lib/download-attachment";
 import { cn } from "@/lib/utils";
 import type { QuestionTopicStat } from "@/types/question";
 import type { Topic, TopicStatus } from "@/types/topic";
-import { BookText, Check, ExternalLink, FileText, Link2, NotebookPen } from "lucide-react";
+import { BookText, Check, Download, ExternalLink, FileText, Link2, NotebookPen, RotateCw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -34,20 +36,36 @@ type KanbanTopicSheetProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onMove: (topic: Topic, to: TopicStatus) => void;
+    /**
+     * Além de ver, permite desfazer revisões e baixar/excluir anexos. No quadro fica desligado.
+     */
+    manage?: boolean;
+    /** Quando o painel abre dentro da própria página da matéria: esconde o atalho "Abrir matéria". */
+    onSubjectPage?: boolean;
 };
 
-export function KanbanTopicSheet({ topic, open, onOpenChange, onMove }: KanbanTopicSheetProps) {
+export function KanbanTopicSheet({ topic, open, onOpenChange, onMove, manage = false, onSubjectPage = false }: KanbanTopicSheetProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             {/* Centralizado na tela; o cabeçalho e o rodapé ficam fixos e só o miolo rola. */}
             <DialogContent className="flex flex-col gap-0 overflow-hidden rounded-3xl p-0 sm:max-w-lg">
-                {topic && <TopicDetail key={topic.id} topic={topic} onMove={onMove} />}
+                {topic && <TopicDetail key={topic.id} topic={topic} onMove={onMove} manage={manage} onSubjectPage={onSubjectPage} />}
             </DialogContent>
         </Dialog>
     );
 }
 
-function TopicDetail({ topic, onMove }: { topic: Topic; onMove: (topic: Topic, to: TopicStatus) => void }) {
+function TopicDetail({
+    topic,
+    onMove,
+    manage,
+    onSubjectPage,
+}: {
+    topic: Topic;
+    onMove: (topic: Topic, to: TopicStatus) => void;
+    manage: boolean;
+    onSubjectPage: boolean;
+}) {
     const title = getOwnTitle(topic);
     const subject = topic.subject;
 
@@ -69,16 +87,18 @@ function TopicDetail({ topic, onMove }: { topic: Topic; onMove: (topic: Topic, t
             </DialogHeader>
 
             <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-5 py-5">
-                <ReviewsSection topic={topic} />
-                <MaterialSection topic={topic} />
+                <ReviewsSection topic={topic} manage={manage} />
+                <MaterialSection topic={topic} manage={manage} onSubjectPage={onSubjectPage} />
                 <QuestionsSection topicId={topic.id} />
             </div>
 
             <footer className="flex shrink-0 flex-wrap gap-2 border-t px-5 py-4">
-                <Link href={`/materias/${subject.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                    <BookText aria-hidden />
-                    Abrir matéria
-                </Link>
+                {!onSubjectPage && (
+                    <Link href={`/materias/${subject.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                        <BookText aria-hidden />
+                        Abrir matéria
+                    </Link>
+                )}
                 <Link href={`/notas/${subject.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
                     <NotebookPen aria-hidden />
                     Anotações da matéria
@@ -127,7 +147,24 @@ function SectionTitle({ children, aside }: { children: React.ReactNode; aside?: 
     );
 }
 
-function ReviewsSection({ topic }: { topic: Topic }) {
+function ReviewsSection({ topic, manage }: { topic: Topic; manage: boolean }) {
+    const [undoing, setUndoing] = useState<number | null>(null);
+
+    async function undoReview(number: number) {
+        const toastId = "undo-review";
+        setUndoing(number);
+
+        try {
+            toast.loading("Desfazendo revisão...", { id: toastId });
+            await changeReviewStatus(topic.id, `review${number}`, false);
+            toast.success("Revisão desfeita!", { id: toastId });
+        } catch {
+            toast.error("Falha ao desfazer a revisão.", { id: toastId });
+        } finally {
+            setUndoing(null);
+        }
+    }
+
     if (topic.status !== "CONCLUIDO") {
         return (
             <section>
@@ -165,10 +202,23 @@ function ReviewsSection({ topic }: { topic: Topic }) {
                                 <p className="text-sm font-medium">{step.number}ª revisão</p>
                                 <p className="shrink-0 text-xs text-muted-foreground">após {step.interval}</p>
                             </div>
-                            <p className={cn("text-xs", TEXT_STYLE[step.tone])}>
-                                {step.relative}
-                                {step.dateText && !step.concluded ? `, ${step.dateText}` : ""}
-                            </p>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className={cn("text-xs", TEXT_STYLE[step.tone])}>
+                                    {step.relative}
+                                    {step.dateText && !step.concluded ? `, ${step.dateText}` : ""}
+                                </p>
+                                {manage && step.concluded && (
+                                    <button
+                                        type="button"
+                                        disabled={undoing !== null}
+                                        onClick={() => undoReview(step.number)}
+                                        className="-my-1 inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors outline-none hover:bg-foreground/6 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <RotateCw className={cn("size-3", undoing === step.number && "animate-spin")} aria-hidden />
+                                        Desfazer
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </li>
                 ))}
@@ -195,7 +245,7 @@ function parseSafeUrl(value: string | null | undefined): URL | null {
     }
 }
 
-function MaterialSection({ topic }: { topic: Topic }) {
+function MaterialSection({ topic, manage, onSubjectPage }: { topic: Topic; manage: boolean; onSubjectPage: boolean }) {
     const url = parseSafeUrl(topic.link);
     const attachments = topic.attachments ?? [];
     const empty = !url && attachments.length === 0;
@@ -227,6 +277,23 @@ function MaterialSection({ topic }: { topic: Topic }) {
         }
     }
 
+    async function deleteAttachment(publicId: string) {
+        const toastId = "delete-attachment";
+
+        try {
+            toast.loading("Excluindo anexo...", { id: toastId });
+            const formData = new FormData();
+            formData.append("topicId", topic.id);
+            formData.append("public_id", publicId);
+            formData.append("subject_id", topic.subject.id);
+
+            await deleteAttachAction(formData);
+            toast.success("Anexo excluído!", { id: toastId });
+        } catch {
+            toast.error("Falha ao excluir o anexo.", { id: toastId });
+        }
+    }
+
     return (
         <section>
             <SectionTitle aside={attachments.length > 0 ? `${attachments.length} ${attachments.length === 1 ? "anexo" : "anexos"}` : undefined}>
@@ -235,11 +302,17 @@ function MaterialSection({ topic }: { topic: Topic }) {
 
             {empty ? (
                 <p className="text-sm text-balance text-muted-foreground">
-                    Nenhum link ou anexo neste assunto. Você pode adicioná-los em{" "}
-                    <Link href={`/materias/${topic.subject.id}`} className="rounded-sm font-medium text-primary hover:underline focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
-                        Matérias
-                    </Link>
-                    .
+                    {onSubjectPage ? (
+                        "Nenhum link ou anexo neste assunto. Use o clipe da linha para anexar um PDF ou edite o assunto para adicionar um link."
+                    ) : (
+                        <>
+                            Nenhum link ou anexo neste assunto. Você pode adicioná-los em{" "}
+                            <Link href={`/materias/${topic.subject.id}`} className="rounded-sm font-medium text-primary hover:underline focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
+                                Matérias
+                            </Link>
+                            .
+                        </>
+                    )}
                 </p>
             ) : (
                 <div className="-mx-2 flex min-w-0 flex-col gap-0.5">
@@ -261,16 +334,40 @@ function MaterialSection({ topic }: { topic: Topic }) {
                     )}
 
                     {attachments.map((attachment) => (
-                        <button
-                            key={attachment.id}
-                            type="button"
-                            disabled={!attachment.public_id}
-                            onClick={() => attachment.public_id && openAttachment(attachment.public_id)}
-                            className="flex w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors outline-none hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <FileText className="size-4 shrink-0" style={{ color: topic.subject.color }} aria-hidden />
-                            <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
-                        </button>
+                        <div key={attachment.id} className="flex min-w-0 items-center gap-0.5">
+                            <button
+                                type="button"
+                                disabled={!attachment.public_id}
+                                onClick={() => attachment.public_id && openAttachment(attachment.public_id)}
+                                className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm transition-colors outline-none hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <FileText className="size-4 shrink-0" style={{ color: topic.subject.color }} aria-hidden />
+                                <span className="min-w-0 flex-1 truncate">{attachment.name}</span>
+                            </button>
+
+                            {manage && attachment.public_id && (
+                                <>
+                                    <button
+                                        type="button"
+                                        title="Baixar anexo"
+                                        aria-label={`Baixar ${attachment.name}`}
+                                        onClick={() => downloadTopicAttachment(topic.id, attachment.public_id!, attachment.name)}
+                                        className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-foreground/6 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+                                    >
+                                        <Download className="size-4" aria-hidden />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        title="Excluir anexo"
+                                        aria-label={`Excluir ${attachment.name}`}
+                                        onClick={() => deleteAttachment(attachment.public_id!)}
+                                        className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-3 focus-visible:ring-ring/40"
+                                    >
+                                        <Trash2 className="size-4" aria-hidden />
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     ))}
                 </div>
             )}

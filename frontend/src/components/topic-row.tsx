@@ -1,8 +1,7 @@
 "use client";
 
 import { DialogDemo } from "@/components/dialog-button";
-import { TopicInfoGroup } from "@/components/topic-info-group";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { KanbanTopicSheet } from "@/app/(private)/kanban/components/kanban-topic-sheet";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -526,22 +525,16 @@ export function TopicRow({
             )}
 
             {!isContainer && (
-                <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
-                    <DialogContent className="w-[95vw] sm:max-w-sm max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
-                        <DialogHeader className="shrink-0 pr-8">
-                            <DialogTitle>{topic.title}</DialogTitle>
-                            <DialogDescription>Informações do assunto</DialogDescription>
-                        </DialogHeader>
-                        <div className="min-h-0 flex-1 overflow-y-auto px-1 py-2">
-                            <TopicInfoGroup
-                                subject={subject.title}
-                                topic={topic}
-                                color={subject.color}
-                                hasAttachments={hasAttachments}
-                            />
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <KanbanTopicSheet
+                    topic={topic}
+                    open={isInfoOpen}
+                    onOpenChange={setIsInfoOpen}
+                    onMove={(current, to) => {
+                        if (current.status !== to) handleTopicStatusChange(current, to);
+                    }}
+                    manage
+                    onSubjectPage
+                />
             )}
         </div>
     );
