@@ -25,6 +25,8 @@ type DialogDemoProps = {
   onSubmit?: (e: React.FormEvent) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Classes extras do corpo do diálogo (por exemplo, para deixá-lo mais largo). */
+  contentClassName?: string;
 };
 
 export function DialogDemo({ 
@@ -41,7 +43,8 @@ export function DialogDemo({
   variantDialogBtn ="outline",
   onSubmit, 
   open, 
-  onOpenChange 
+  onOpenChange,
+  contentClassName
 }: DialogDemoProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -60,7 +63,7 @@ export function DialogDemo({
         2. w-[95vw] sm:max-w-sm: Garante margens laterais em telas muito pequenas
         3. flex flex-col: Transforma o Dialog em uma coluna flexível
       */}
-      <DialogContent className="w-[95vw] sm:max-w-sm max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden">
+      <DialogContent className={`w-[95vw] sm:max-w-sm max-h-[90dvh] flex flex-col p-4 sm:p-6 overflow-hidden ${contentClassName ?? ""}`}>
         
         {/* O Form precisa ocupar a altura inteira do modal e também ser uma coluna flexível */}
         <form className="flex flex-col flex-1 min-h-0 min-w-0" onSubmit={onSubmit}>

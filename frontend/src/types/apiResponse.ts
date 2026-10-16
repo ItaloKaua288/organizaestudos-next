@@ -72,6 +72,18 @@ export interface ApiNote {
     content: string
     isPinned: boolean
     subject_id: ApiSubject
+    tags?: string[]
+    attachments?: {
+        _id: string
+        name: string
+        url: string
+        public_id: string
+        mimeType?: string
+        size?: number
+    }[]
+    backlinks?: { id: string, title: string, subjectId: string }[]
+    createdAt?: string
+    updatedAt?: string
 }
 
 export interface NoteApiResponse {

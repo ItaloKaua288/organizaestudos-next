@@ -3,6 +3,10 @@
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+import { useState } from "react";
+import { NoteLink } from "@/lib/note-link-extension";
+import { NoteLinkPicker } from "@/components/note-link-picker";
+import "@/components/notes.css";
 import {
   Bold,
   Italic,
@@ -11,6 +15,7 @@ import {
   List,
   ListOrdered,
   Code,
+  Link2,
   Undo,
   Redo
 } from "lucide-react";
@@ -19,9 +24,12 @@ import { Separator } from "@/components/ui/separator";
 
 interface ToolbarProps {
   editor: Editor | null;
+  noteLinksEnabled: boolean;
+  linkPanelOpen: boolean;
+  onToggleLinkPanel: () => void;
 }
 
-const Toolbar = ({ editor }: ToolbarProps) => {
+const Toolbar = ({ editor, noteLinksEnabled, linkPanelOpen, onToggleLinkPanel }: ToolbarProps) => {
   if (!editor) {
     return null;
   }
@@ -91,6 +99,22 @@ const Toolbar = ({ editor }: ToolbarProps) => {
         <Code className="h-4 w-4" />
       </Toggle>
 
+      {noteLinksEnabled ? (
+        <>
+          <Separator orientation="vertical" className="mx-1 h-6" />
+
+          <Toggle
+            size="sm"
+            pressed={linkPanelOpen || editor.isActive("noteLink")}
+            onPressedChange={onToggleLinkPanel}
+            aria-label="Linkar para outra nota"
+            title="Linkar para outra nota"
+          >
+            <Link2 className="h-4 w-4" />
+          </Toggle>
+        </>
+      ) : null}
+
       <Separator orientation="vertical" className="mx-1 h-6" />
 
 
@@ -117,9 +141,15 @@ const Toolbar = ({ editor }: ToolbarProps) => {
 interface RichTextEditorProps {
   value: string;
   onChange: (content: string) => void;
+  /** Nota que está sendo editada: ela não aparece na lista de destinos de link. */
+  currentNoteId?: string;
+  /** Mostra o botão de link para outra nota. Padrão: ligado. */
+  enableNoteLinks?: boolean;
 }
 
-export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, currentNoteId, enableNoteLinks = true }: RichTextEditorProps) {
+  const [linkPanelOpen, setLinkPanelOpen] = useState(false);
+
   const editor = useEditor({
     immediatelyRender: true,
     extensions: [
@@ -139,6 +169,7 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
           },
         },
       }),
+      NoteLink,
     ],
     content: value,
     editorProps: {
@@ -154,7 +185,19 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
   return (
     <div className="w-full">
-      <Toolbar editor={editor} />
+      <Toolbar
+        editor={editor}
+        noteLinksEnabled={enableNoteLinks}
+        linkPanelOpen={linkPanelOpen}
+        onToggleLinkPanel={() => setLinkPanelOpen((open) => !open)}
+      />
+      {enableNoteLinks && linkPanelOpen && editor ? (
+        <NoteLinkPicker
+          editor={editor}
+          currentNoteId={currentNoteId}
+          onClose={() => setLinkPanelOpen(false)}
+        />
+      ) : null}
       <EditorContent editor={editor} />
     </div>
   );

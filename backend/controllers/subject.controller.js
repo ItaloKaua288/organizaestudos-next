@@ -5,6 +5,7 @@ import TimeLine from "../models/timeLine.model.js";
 import Topic from "../models/topic.model.js";
 import { subjectScope } from "../middleware/profile.js";
 import cloudinary from '../utils/cloudinary.js';
+import { deleteNotesWithAttachments } from "../utils/noteAttachments.js";
 
 export const createSubject = async (req, res) => {
     let { title, color } = req.body;
@@ -68,7 +69,7 @@ export const deleteSubject = async (req, res) => {
             }
         }
 
-        await Note.deleteMany({ subject_id: id });
+        await deleteNotesWithAttachments({ subject_id: id });
         await TimeLine.deleteMany({ subject_id: id });
         await QuestionLog.deleteMany({ subject_id: id });
         await Topic.deleteMany({ subject_id: id });

@@ -60,7 +60,7 @@ export const globalSearch = async (req, res) => {
             Note.find({
                 user_id: req.userId,
                 subject_id: { $in: subjectIds },
-                $or: [{ title: regex }, { content: regex }],
+                $or: [{ title: regex }, { content: regex }, { tags: regex }],
             })
                 .select("title content subject_id")
                 .sort({ updatedAt: -1 })

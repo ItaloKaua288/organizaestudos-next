@@ -111,6 +111,17 @@ export async function getDetailSubjectAction(subject_id: string) {
                 content: note.content,
                 is_pined: note.isPinned,
                 subject: subjectInfo,
+                tags: note.tags ?? [],
+                attachments: (note.attachments ?? []).map((file) => ({
+                    id: file._id,
+                    name: file.name,
+                    url: file.url,
+                    public_id: file.public_id,
+                    mimeType: file.mimeType ?? "application/pdf",
+                    size: file.size ?? 0,
+                })),
+                created_at: note.createdAt,
+                updated_at: note.updatedAt,
             })),
             timelines: data.timelines.map((timeline) => ({
                 id: timeline._id,

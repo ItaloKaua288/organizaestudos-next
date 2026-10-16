@@ -8,6 +8,7 @@ import Subject from "../models/subject.model.js";
 import TimeLine from "../models/timeLine.model.js";
 import Topic from "../models/topic.model.js";
 import cloudinary from "../utils/cloudinary.js";
+import { deleteNotesWithAttachments } from "../utils/noteAttachments.js";
 
 const MAX_PROFILES = 20;
 
@@ -123,7 +124,7 @@ export const deleteProfile = async (req, res) => {
         const cycle = await StudyCycle.findOneAndDelete({ user_id: req.userId, profile_id: profile._id });
         if (cycle) await CycleHistory.deleteMany({ cycle_id: cycle._id });
 
-        await Note.deleteMany({ subject_id: { $in: subjectIds } });
+        await deleteNotesWithAttachments({ subject_id: { $in: subjectIds } });
         await TimeLine.deleteMany({ subject_id: { $in: subjectIds } });
         await QuestionLog.deleteMany({ subject_id: { $in: subjectIds } });
         await Topic.deleteMany({ subject_id: { $in: subjectIds } });

@@ -9,6 +9,7 @@ import QuestionLog from '../models/questionLog.model.js';
 import StudyCycle from '../models/studyCycle.model.js';
 import CycleHistory from '../models/cycleHistory.model.js';
 import cloudinary from '../utils/cloudinary.js';
+import { deleteNotesWithAttachments } from "../utils/noteAttachments.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_NAME_LENGTH = 60;
@@ -351,7 +352,7 @@ export const deleteUserAdmin = async (req, res) => {
         // Sem isto, notas, questões, ciclo e histórico do usuário ficariam órfãos no banco.
         // (O cronograma semanal é apagado pelo gatilho do model de usuário.)
         await Promise.all([
-            Note.deleteMany({ user_id: id }),
+            deleteNotesWithAttachments({ user_id: id }),
             QuestionLog.deleteMany({ user_id: id }),
             StudyCycle.deleteMany({ user_id: id }),
             CycleHistory.deleteMany({ user_id: id }),
