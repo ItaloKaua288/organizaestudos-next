@@ -360,6 +360,7 @@ export function TopicRow({
                                 className={`${STATUS_SELECT} w-9 appearance-none px-0 text-center md:hidden`}
                             >
                                 <option value="PENDENTE">✖</option>
+                                <option value="ESTUDANDO">…</option>
                                 <option value="CONCLUIDO">✔</option>
                             </select>
 
@@ -371,6 +372,7 @@ export function TopicRow({
                                 className={`${STATUS_SELECT} mr-1 px-2.5 max-md:hidden`}
                             >
                                 <option value="PENDENTE">Pendente</option>
+                                <option value="ESTUDANDO">Estudando</option>
                                 <option value="CONCLUIDO">Concluído</option>
                             </select>
 

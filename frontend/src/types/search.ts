@@ -7,7 +7,7 @@ export interface SearchSubjectResult {
 export interface SearchTopicResult {
     id: string;
     title: string;
-    status: "CONCLUIDO" | "PENDENTE";
+    status: "CONCLUIDO" | "ESTUDANDO" | "PENDENTE";
     isSubtopic: boolean;
     subjectId: string;
     subjectTitle: string;

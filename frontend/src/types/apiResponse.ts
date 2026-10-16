@@ -34,7 +34,7 @@ export type Attachment = {
 interface ApiTopic {
     _id: string
     title: string
-    status: "PENDENTE" | "CONCLUIDO"
+    status: "PENDENTE" | "ESTUDANDO" | "CONCLUIDO"
     subject_id: ApiSubject
     order: number
     parent_id?: string | null

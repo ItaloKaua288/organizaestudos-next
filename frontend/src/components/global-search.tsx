@@ -157,7 +157,7 @@ export function GlobalSearch() {
                                         onNavigate={close}
                                         color={topic.subjectColor}
                                         title={topic.title}
-                                        subtitle={`${topic.isSubtopic ? "Subassunto · " : ""}${topic.subjectTitle} · ${topic.status === "CONCLUIDO" ? "Concluído" : "Pendente"}`}
+                                        subtitle={`${topic.isSubtopic ? "Subassunto · " : ""}${topic.subjectTitle} · ${topic.status === "CONCLUIDO" ? "Concluído" : topic.status === "ESTUDANDO" ? "Estudando" : "Pendente"}`}
                                     />
                                 ))}
                             </ResultGroup>

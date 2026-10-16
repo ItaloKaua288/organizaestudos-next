@@ -28,7 +28,7 @@ export function sortTopicsHierarchically<T extends TreeNode>(topics: T[]): T[] {
 type ContainerNode = {
     id: string;
     parentId?: string | null;
-    status: "CONCLUIDO" | "PENDENTE";
+    status: "CONCLUIDO" | "ESTUDANDO" | "PENDENTE";
     isContainer?: boolean;
     subtopicsTotal?: number;
     subtopicsDone?: number;

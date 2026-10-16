@@ -4,7 +4,7 @@ import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
 import { fixEncoding } from "@/lib/text";
 import { markContainers, sortTopicsHierarchically, TOPIC_TITLE_SEPARATOR, withoutContainers } from "@/lib/topic-tree";
 import { TopicsApiResponse } from "@/types/apiResponse";
-import { Topic } from "@/types/topic";
+import { Topic, TopicStatus } from "@/types/topic";
 import { revalidatePath, updateTag } from "next/cache";
 import z from "zod";
 
@@ -29,6 +29,7 @@ function revalidateSubjectPages(subject?: unknown) {
     revalidatePath("/materias");
     revalidatePath("/materias/[id]", "page");
     revalidatePath("/cronograma");
+    revalidatePath("/kanban");
     revalidatePath("/revisoes");
     revalidatePath("/");
 
@@ -196,7 +197,7 @@ const updateTopicSchema = z.object({
     review1: z.string(),
     status: z.preprocess(
         (value) => value === "null" ? null : value,
-        z.enum(["CONCLUIDO", "PENDENTE"]).nullable()
+        z.enum(["CONCLUIDO", "ESTUDANDO", "PENDENTE"]).nullable()
     )
 })
 
@@ -538,6 +539,50 @@ export async function reorderTopicsAction(subjectId: string, orderedTopicIds: st
         return { success: true, message: "Ordem atualizada com sucesso!" };
     } catch (error) {
         console.error("Erro interno ao reordenar assuntos:", error);
+        return { success: false, message: "Ocorreu um erro inesperado." };
+    }
+}
+
+const moveTopicStatusSchema = z.object({
+    topicId: z.string().min(1, "O ID do assunto é obrigatório!"),
+    status: z.enum(["PENDENTE", "ESTUDANDO", "CONCLUIDO"]),
+});
+
+/**
+ * Muda só o status do assunto (usado pelo Kanban).
+ * A API cuida das revisões: CONCLUIDO agenda 1, 7 e 30 dias; qualquer outro status apaga as datas
+ * e o progresso das revisões.
+ */
+export async function moveTopicStatusAction(topicId: string, status: TopicStatus) {
+    try {
+        const validatedData = moveTopicStatusSchema.safeParse({ topicId, status });
+
+        if (!validatedData.success) {
+            console.error("Erro de validação:", z.flattenError(validatedData.error));
+            return { success: false, message: "Dados inválidos para mover o assunto." };
+        }
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/topics/${validatedData.data.topicId}`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify({ status: validatedData.data.status })
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, message: errorData.message || "Falha da API ao mover o assunto." };
+        }
+
+        const subjectId = (await res.json()).topic?.subject_id;
+
+        revalidateSubjectPages(subjectId);
+
+        return { success: true, message: "Assunto movido com sucesso!" };
+    } catch (error) {
+        console.error("Erro interno ao mover assunto:", error);
         return { success: false, message: "Ocorreu um erro inesperado." };
     }
 }

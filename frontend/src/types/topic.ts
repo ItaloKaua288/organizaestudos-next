@@ -2,12 +2,13 @@ import { Attachment } from "./apiResponse";
 import { Subject } from "./subject";
 
 
-export type TopicStatus = 'PENDENTE' | 'CONCLUIDO';
+/** PENDENTE = a estudar · ESTUDANDO = em andamento · CONCLUIDO = estudado (entra no ciclo de revisões). */
+export type TopicStatus = 'PENDENTE' | 'ESTUDANDO' | 'CONCLUIDO';
 
 export interface Topic {
     id: string;
     title: string;
-    status: 'CONCLUIDO' | 'PENDENTE';
+    status: TopicStatus;
     subject: Subject;
     order: number;
     /** Id do assunto pai quando este item é um subassunto (apenas 1 nível). null = assunto principal. */

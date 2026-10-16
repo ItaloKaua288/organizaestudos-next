@@ -10,7 +10,7 @@ export type DueReview = {
 };
 
 // Número do dia (calendário) de hoje no fuso de São Paulo.
-function todayDayNumberBR(): number {
+export function todayDayNumberBR(): number {
     const [year, month, day] = new Intl.DateTimeFormat("en-CA", {
         timeZone: "America/Sao_Paulo",
         year: "numeric",
@@ -22,7 +22,7 @@ function todayDayNumberBR(): number {
 }
 
 // As datas de revisão são guardadas como a data de calendário (UTC) do dia da revisão.
-function reviewDayNumber(value: string | Date): number | null {
+export function reviewDayNumber(value: string | Date): number | null {
     const date = new Date(value);
     if (isNaN(date.getTime())) return null;
 

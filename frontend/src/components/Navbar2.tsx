@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, ChartColumn, CircleUser, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, CircleUser, Kanban, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -32,6 +32,7 @@ const NAV_LINKS = [
     { href: "/revisoes", label: "Revisões", icon: RotateCw },
     { href: "/notas", label: "Notas", icon: NotepadText },
     { href: "/cronograma", label: "Cronograma", icon: CalendarClock },
+    { href: "/kanban", label: "Kanban", icon: Kanban },
     { href: "/desempenho", label: "Desempenho", icon: ChartColumn },
 ] as const;
 

@@ -32,7 +32,7 @@ export default async function DashboardPage() {
         timeline: timelineRes,
     };
 
-    const pendingTopics = data.topics.filter((t) => t.status === "PENDENTE");
+    const pendingTopics = data.topics.filter((t) => t.status !== "CONCLUIDO");
     const concludedTopics = data.topics.filter((t) => t.status === "CONCLUIDO");
 
     // Revisões de hoje + atrasadas (as mais atrasadas primeiro).
