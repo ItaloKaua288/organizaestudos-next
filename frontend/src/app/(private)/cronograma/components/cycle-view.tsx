@@ -21,11 +21,13 @@ import { Cycle, CycleActionResult, CycleSession } from "@/types/cycle";
 import { QuestionEntryInput, QuestionTopicOption } from "@/types/question";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
-import { BookOpen, Check, ChevronDown, ChevronUp, GripVertical, History, Pencil, Play, Plus, RotateCcw, RotateCw, SkipForward, Trash2, X } from "lucide-react";
+import { DndContext } from "@dnd-kit/core";
+import { BookOpen, Check, ChevronDown, ChevronUp, History, Pencil, Play, Plus, RotateCcw, RotateCw, SkipForward, Trash2, X } from "lucide-react";
 import { Fragment, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { CycleDragGhost } from "./cycle-drag-ghost";
 import { CycleEditor } from "./cycle-editor";
+import { CycleSessionRow } from "./cycle-session-row";
 import { formatMinutes, TodayReview } from "./cycle-utils";
 import { TopicDetailDialog } from "./topic-detail-dialog";
 import { useCycleReorder } from "./use-cycle-reorder";
@@ -39,13 +41,6 @@ type CycleViewProps = {
     topicsBySubject: Record<string, QuestionTopicOption[]>;
     /** Revisões que vencem hoje. */
     todayReviews: TodayReview[];
-};
-
-const STATUS_LABEL: Record<CycleSession["status"], string> = {
-    PENDENTE: "Pendente",
-    EM_ANDAMENTO: "Em andamento",
-    CONCLUIDA: "Concluída",
-    PULADA: "Pulada",
 };
 
 const UPCOMING_LIMIT = 4;
@@ -121,7 +116,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
         }
     };
 
-    const { draggedId, overId, ghost, ghostRef, getDragProps } = useCycleReorder(cycle?.sessions ?? [], handleReorder, isBusy);
+    const { activeSession, dndProps } = useCycleReorder(cycle?.sessions ?? [], handleReorder);
 
     const reviewsSection = (
         <Card>
@@ -384,74 +379,35 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     <CardDescription>A ordem abaixo é a ordem do ciclo. Segure a alça e arraste para reordenar.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                    <ol className="space-y-0.5">
-                        {cycle.sessions.map((session, index) => {
-                            // Com "matérias por dia" > 0, cada grupo ganha um título e uma linha separadora.
-                            const perDay = cycle.sessionsPerDay;
-                            const startsDay = perDay > 0 && index % perDay === 0;
-                            const isCurrent = session.id === cycle.currentSessionId;
-                            const dragProps = getDragProps(session.id);
-                            return (
-                                <Fragment key={session.id}>
-                                    {startsDay && (
-                                        <li
-                                            role="presentation"
-                                            className={cn("flex items-center gap-2 px-3 pb-1 pt-2 text-sm font-medium text-muted-foreground", index > 0 && "mt-2 border-t border-border pt-4")}
-                                        >
-                                            Dia {index / perDay + 1}
-                                        </li>
-                                    )}
-                                    <li
-                                        {...dragProps.rowProps}
-                                        aria-current={isCurrent ? "step" : undefined}
-                                        className={cn(
-                                            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-foreground/6",
-                                            isCurrent && "bg-primary/8 ring-1 ring-primary/30",
-                                            session.inactive && "opacity-50",
-                                            draggedId === session.id && "opacity-40",
-                                            overId === session.id && draggedId !== session.id && "ring-2 ring-primary"
+                    <DndContext {...dndProps}>
+                        <ol className="space-y-0.5">
+                            {cycle.sessions.map((session, index) => {
+                                // Com "matérias por dia" > 0, cada grupo ganha um título e uma linha separadora.
+                                const perDay = cycle.sessionsPerDay;
+                                const startsDay = perDay > 0 && index % perDay === 0;
+                                return (
+                                    <Fragment key={session.id}>
+                                        {startsDay && (
+                                            <li
+                                                role="presentation"
+                                                className={cn("flex items-center gap-2 px-3 pb-1 pt-2 text-sm font-medium text-muted-foreground", index > 0 && "mt-2 border-t border-border pt-4")}
+                                            >
+                                                Dia {index / perDay + 1}
+                                            </li>
                                         )}
-                                    >
-                                        <span
-                                            {...dragProps.handleProps}
-                                            title="Segure e arraste para mudar a ordem"
-                                            aria-label="Arrastar para reordenar"
-                                            className={cn(
-                                                "flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-foreground",
-                                                isBusy ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"
-                                            )}
-                                        >
-                                            <GripVertical size={16} />
-                                        </span>
-                                        <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{index + 1}</span>
-                                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
-                                        <button
-                                            type="button"
-                                            disabled={session.inactive}
-                                            onClick={() => setDetailSubject(session.subject)}
-                                            title="Ver assunto a ser estudado"
-                                            className={cn(
-                                                "flex-1 truncate rounded-md text-left font-medium transition-colors enabled:cursor-pointer enabled:hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
-                                                session.status === "CONCLUIDA" && "line-through text-muted-foreground"
-                                            )}
-                                        >
-                                            {session.subject.title}
-                                        </button>
-                                        <span className="shrink-0 tabular-nums text-muted-foreground">{formatMinutes(session.duration)}</span>
-                                        {session.inactive ? (
-                                            <Badge variant="outline">{session.removed ? "Removida" : "Desativada"}</Badge>
-                                        ) : isCurrent ? (
-                                            <Badge>{session.status === "EM_ANDAMENTO" ? "Em andamento" : "Atual"}</Badge>
-                                        ) : (
-                                            <Badge variant={session.status === "CONCLUIDA" ? "secondary" : "outline"}>
-                                                {STATUS_LABEL[session.status]}
-                                            </Badge>
-                                        )}
-                                    </li>
-                                </Fragment>
-                            );
-                        })}
-                    </ol>
+                                        <CycleSessionRow
+                                            session={session}
+                                            index={index}
+                                            isCurrent={session.id === cycle.currentSessionId}
+                                            isBusy={isBusy}
+                                            onOpenDetail={setDetailSubject}
+                                        />
+                                    </Fragment>
+                                );
+                            })}
+                        </ol>
+                        <CycleDragGhost session={activeSession} />
+                    </DndContext>
 
                     <p className="flex items-center gap-2 px-3 pt-3 text-xs text-muted-foreground">
                         <RotateCcw className="h-3.5 w-3.5 shrink-0" />
@@ -495,8 +451,6 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     </CardContent>
                 )}
             </Card>
-
-            <CycleDragGhost ghost={ghost} elementRef={ghostRef} />
 
             {current && (
                 <QuestionLogDialog

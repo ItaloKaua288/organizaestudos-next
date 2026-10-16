@@ -13,12 +13,13 @@ import toast from "react-hot-toast";
 import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.actions";
 import { createTopicAction } from "@/actions/topics.actions";
 import { SubjectActiveToggle } from "../../../../components/subject-active-toggle";
-import { TopicDragGhost, TopicRow } from "@/components/topic-row";
+import { TopicDragOverlay, TopicRow } from "@/components/topic-row";
 import { useTopicReorder } from "@/hooks/use-topic-reorder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Subject } from "@/types/subject";
+import { DndContext } from "@dnd-kit/core";
 import Link from "next/link";
 
 /** Botão de ícone discreto (ghost) para os diálogos da barra de ações. */
@@ -99,7 +100,7 @@ export default function SubjectBox({
         }
     }
 
-    const { topics, moveTopic, getTopicMeta, isReordering, draggedId, overId, ghost, ghostRef, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
+    const { topics, moveTopic, getTopicMeta, isReordering, activeTopic, dndProps, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
     const isActive = subject.active !== false;
 
     if (!isActive) {
@@ -215,31 +216,31 @@ export default function SubjectBox({
 
             {isExpanded && (
                 <div className="mt-3 flex flex-col">
-                    <div className="flex flex-col gap-1">
-                        {topics.map((topic, index) => {
-                            const meta = getTopicMeta(topic.id);
+                    <DndContext {...dndProps}>
+                        <div className="flex flex-col gap-1">
+                            {topics.map((topic, index) => {
+                                const meta = getTopicMeta(topic.id);
 
-                            return (
-                                <TopicRow
-                                    key={topic.id || `topic-${index}`}
-                                    topic={topic}
-                                    index={index}
-                                    isFirst={meta.isFirst}
-                                    isLast={meta.isLast}
-                                    isSubtopic={meta.isSubtopic}
-                                    childCount={meta.childCount}
-                                    subject={subject}
-                                    isReordering={isReordering}
-                                    dragProps={getDragProps(topic.id)}
-                                    isDragging={draggedId === topic.id}
-                                    isDragOver={overId === topic.id}
-                                    onMoveUp={() => moveTopic(topic.id, "up")}
-                                    onMoveDown={() => moveTopic(topic.id, "down")}
-                                />
-                            );
-                        })}
-                    </div>
-                    <TopicDragGhost ghost={ghost} elementRef={ghostRef} />
+                                return (
+                                    <TopicRow
+                                        key={topic.id || `topic-${index}`}
+                                        topic={topic}
+                                        index={index}
+                                        isFirst={meta.isFirst}
+                                        isLast={meta.isLast}
+                                        isSubtopic={meta.isSubtopic}
+                                        childCount={meta.childCount}
+                                        subject={subject}
+                                        isReordering={isReordering}
+                                        dragProps={getDragProps(topic.id)}
+                                        onMoveUp={() => moveTopic(topic.id, "up")}
+                                        onMoveDown={() => moveTopic(topic.id, "down")}
+                                    />
+                                );
+                            })}
+                        </div>
+                        <TopicDragOverlay topic={activeTopic} />
+                    </DndContext>
                     {topics.length === 0 && (
                         <p className="py-4 text-center text-sm text-muted-foreground">
                             Nenhum assunto ainda. Adicione o primeiro abaixo.

@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, ChevronDown, ChevronRight, Clock, Download, FileText, FolderOpen, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
-import { RefObject, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useState } from "react";
 import toast from "react-hot-toast";
 
 import { createTopicAction, deleteTopicAction, openTopicAttachmentAction, sendattachmentPDFAction, updateTopicAction } from "@/actions/topics.actions";
-import { TopicDragGhostData, TopicDragProps } from "@/hooks/use-topic-reorder";
+import { TopicDragProps } from "@/hooks/use-topic-reorder";
+import { BodyDragOverlay } from "@/lib/drag-kit";
 import { downloadTopicAttachment } from "@/lib/download-attachment";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { Subject } from "@/types/subject";
 import { Topic, TopicStatus } from "@/types/topic";
 
@@ -33,44 +34,27 @@ function formatDateForInput(dateSource: string | Date | null): string {
     }
 }
 
-/** Cópia flutuante do assunto que aparece "na mão" enquanto ele é arrastado. */
-export function TopicDragGhost({
-    ghost,
-    elementRef,
-}: {
-    ghost: TopicDragGhostData | null;
-    elementRef: RefObject<HTMLDivElement | null>;
-}) {
-    if (!ghost) return null;
-
-    const { topic, width, left, top } = ghost;
-
-    // Portal no <body>: evita que um pai com transform/animação quebre o position: fixed.
-    return createPortal(
-        <div
-            ref={elementRef}
-            style={{
-                position: "fixed",
-                left: 0,
-                top: 0,
-                width,
-                zIndex: 9999,
-                pointerEvents: "none",
-                transform: `translate3d(${left}px, ${top}px, 0) scale(1.02)`,
-            }}
-            className="glass-strong flex cursor-grabbing items-center gap-3 rounded-xl px-3 py-2 text-sm ring-1 ring-primary/50"
-        >
-            <GripVertical size={16} className="shrink-0 text-primary" />
-            {topic.isContainer ? (
-                <FolderOpen size={15} className="shrink-0 text-muted-foreground" />
-            ) : topic.status === "CONCLUIDO" ? (
-                <CheckCircle2 size={15} className="shrink-0 text-primary" />
-            ) : (
-                <Clock size={15} className="shrink-0 text-muted-foreground" />
-            )}
-            <span className="truncate font-medium">{topic.title}</span>
-        </div>,
-        document.body
+/**
+ * Cópia flutuante do assunto que acompanha o ponteiro enquanto ele é arrastado.
+ * Deve ficar dentro do <DndContext> da lista.
+ */
+export function TopicDragOverlay({ topic }: { topic: Topic | null }) {
+    return (
+        <BodyDragOverlay>
+            {topic ? (
+                <div className="glass-strong flex w-full rotate-[1.5deg] cursor-grabbing items-center gap-3 rounded-xl px-3 py-2 text-sm ring-1 ring-primary/60 shadow-[0_20px_44px_-14px_var(--glass-shadow)]">
+                    <GripVertical size={16} className="shrink-0 text-primary" />
+                    {topic.isContainer ? (
+                        <FolderOpen size={15} className="shrink-0 text-muted-foreground" />
+                    ) : topic.status === "CONCLUIDO" ? (
+                        <CheckCircle2 size={15} className="shrink-0 text-primary" />
+                    ) : (
+                        <Clock size={15} className="shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="truncate font-medium">{topic.title}</span>
+                </div>
+            ) : null}
+        </BodyDragOverlay>
     );
 }
 
@@ -98,9 +82,8 @@ type TopicRowProps = {
     onMoveUp?: () => void;
     onMoveDown?: () => void;
     isReordering?: boolean;
+    /** Sem isto a linha não é arrastável (não mostra a alça). */
     dragProps?: TopicDragProps;
-    isDragging?: boolean;
-    isDragOver?: boolean;
     /** true quando o item é um subassunto (aparece recuado e não aceita subassuntos). */
     isSubtopic?: boolean;
     /** Quantos subassuntos este assunto tem (usado no aviso ao excluir). */
@@ -117,11 +100,26 @@ export function TopicRow({
     onMoveDown,
     isReordering = false,
     dragProps,
-    isDragging = false,
-    isDragOver = false,
     isSubtopic = false,
     childCount = 0,
 }: TopicRowProps) {
+    // A linha é, ao mesmo tempo, o item arrastado e o alvo onde outro item pode ser solto.
+    // Só a alça (o ícone de seis pontos) inicia o arrasto, então botões e links da linha seguem normais.
+    const {
+        setNodeRef: setDragRef,
+        setActivatorNodeRef,
+        listeners,
+        isDragging,
+    } = useDraggable({ id: topic.id, disabled: !dragProps || dragProps.disabled });
+    const { setNodeRef: setDropRef, isOver } = useDroppable({ id: topic.id, disabled: !dragProps || dragProps.dropDisabled });
+    const setRowRef = useCallback(
+        (node: HTMLElement | null) => {
+            setDragRef(node);
+            setDropRef(node);
+        },
+        [setDragRef, setDropRef]
+    );
+
     // Assunto com subassuntos: só organiza (sem status, revisões, anexos, link ou questões próprias).
     const isContainer = !!topic.isContainer;
     const hasAttachments = !isContainer && topic.attachments && topic.attachments.length > 0;
@@ -297,13 +295,14 @@ export function TopicRow({
             }
         >
             <div
-                {...dragProps?.rowProps}
+                ref={setRowRef}
                 onClick={handleRowClick}
-                className={`border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isContainer ? "" : "cursor-pointer"} ${isDragging ? "opacity-40" : ""} ${isDragOver && !isDragging ? "ring-2 ring-primary" : ""}`}
+                className={`border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isContainer ? "" : "cursor-pointer"} ${isDragging ? "opacity-40" : ""} ${isOver && !isDragging ? "ring-2 ring-primary" : ""}`}
             >
                 {dragProps && (
                     <span
-                        {...dragProps.handleProps}
+                        ref={setActivatorNodeRef}
+                        {...listeners}
                         title="Arraste para mudar a ordem"
                         aria-label="Arrastar para reordenar"
                         className={`flex shrink-0 touch-none select-none items-center text-muted-foreground transition-colors hover:text-primary ${isReordering ? "cursor-not-allowed opacity-40" : "cursor-grab active:cursor-grabbing"}`}
