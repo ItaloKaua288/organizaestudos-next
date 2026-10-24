@@ -195,9 +195,8 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
     }
 
     function moveFromDetail(topic: Topic, to: TopicStatus) {
-        // A confirmação é um diálogo próprio: fecha o painel antes para os dois não disputarem o foco.
-        if (topic.status === "CONCLUIDO" && to !== topic.status && getReviewSummary(topic).done > 0) setDetailOpen(false);
-        requestMove(topic, to);
+        // O próprio painel já pediu a confirmação da troca, então move direto.
+        if (topic.status !== to) moveTopic(topic, to);
     }
 
     function handleDragStart(event: DragStartEvent) {

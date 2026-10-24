@@ -3,8 +3,8 @@
 import { changeReviewStatus } from "@/actions/review.actions";
 import { deleteAttachAction, openTopicAttachmentAction } from "@/actions/topics.actions";
 import { getQuestionStatsAction } from "@/actions/questions.actions";
-import { buttonVariants } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadTopicAttachment } from "@/lib/download-attachment";
 import { cn } from "@/lib/utils";
 import type { QuestionTopicStat } from "@/types/question";
@@ -13,7 +13,7 @@ import { BookText, Check, Download, ExternalLink, FileText, Link2, NotebookPen, 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { KANBAN_COLUMNS } from "./kanban-config";
+import { getColumn, KANBAN_COLUMNS } from "./kanban-config";
 import { getOwnTitle, getReviewTimeline, type ReviewTone } from "./kanban-utils";
 
 const NODE_STYLE: Record<ReviewTone, string> = {
@@ -108,33 +108,72 @@ function TopicDetail({
     );
 }
 
-/** Mesma troca de coluna do quadro, agora a um toque do painel. */
+/** Mesma troca de coluna do quadro, agora a um toque do painel. Toda troca pede confirmação antes de ser aplicada. */
 function StatusControl({ topic, onMove }: { topic: Topic; onMove: (topic: Topic, to: TopicStatus) => void }) {
-    return (
-        <div role="group" aria-label="Situação do assunto" className="grid grid-cols-3 gap-1 rounded-xl bg-foreground/6 p-1">
-            {KANBAN_COLUMNS.map((column) => {
-                const selected = column.status === topic.status;
-                const Icon = column.icon;
+    const [pendingStatus, setPendingStatus] = useState<TopicStatus | null>(null);
+    const [confirmOpen, setConfirmOpen] = useState(false);
 
-                return (
-                    <button
-                        key={column.status}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => onMove(topic, column.status)}
-                        className={cn(
-                            "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-xs transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
-                            selected
-                                ? cn("font-medium shadow-[inset_0_1px_0_var(--glass-edge)] ring-1 ring-(--glass-ring)", column.tone)
-                                : "text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
-                        )}
-                    >
-                        <Icon className="size-3.5 shrink-0" aria-hidden />
-                        <span className="truncate">{column.title}</span>
-                    </button>
-                );
-            })}
-        </div>
+    // Guarda o destino mesmo depois de fechar o aviso, para o texto não sumir durante a animação.
+    const target = pendingStatus ? getColumn(pendingStatus) : null;
+    const current = getColumn(topic.status);
+    const losesProgress = topic.status === "CONCLUIDO" && getReviewTimeline(topic).some((step) => step.concluded);
+
+    function request(status: TopicStatus) {
+        if (status === topic.status) return;
+        setPendingStatus(status);
+        setConfirmOpen(true);
+    }
+
+    function confirm() {
+        setConfirmOpen(false);
+        if (pendingStatus) onMove(topic, pendingStatus);
+    }
+
+    return (
+        <>
+            <div role="group" aria-label="Situação do assunto" className="grid grid-cols-3 gap-1 rounded-xl bg-foreground/6 p-1">
+                {KANBAN_COLUMNS.map((column) => {
+                    const selected = column.status === topic.status;
+                    const Icon = column.icon;
+
+                    return (
+                        <button
+                            key={column.status}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => request(column.status)}
+                            className={cn(
+                                "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2 text-xs transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                                selected
+                                    ? cn("font-medium shadow-[inset_0_1px_0_var(--glass-edge)] ring-1 ring-(--glass-ring)", column.tone)
+                                    : "text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
+                            )}
+                        >
+                            <Icon className="size-3.5 shrink-0" aria-hidden />
+                            <span className="truncate">{column.title}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <DialogContent showCloseButton={false}>
+                    <DialogHeader>
+                        <DialogTitle>Mudar para {target?.title}?</DialogTitle>
+                        <DialogDescription>
+                            {`“${getOwnTitle(topic)}” está em ${current.title}. Deseja mesmo trocar o status para ${target?.title}?`}
+                            {losesProgress && " As datas e o progresso das revisões feitas serão apagados."}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={confirm}>Confirmar</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

@@ -7,19 +7,10 @@ import type { Topic, TopicStatus } from "@/types/topic";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-/** Troca o status do assunto (mesma ação do quadro). Pede confirmação ao tirar de Concluído, pois isso apaga as revisões. */
+/** Troca o status do assunto (mesma ação do quadro). A confirmação é pedida pelo próprio painel. */
 export function useTopicStatusChange() {
     return async function changeTopicStatus(topic: Topic, newStatus: TopicStatus) {
         if (newStatus === topic.status) return;
-
-        const hasProgress = [topic.reviews?.first, topic.reviews?.second, topic.reviews?.third].some((review) => review?.concluded);
-        if (
-            topic.status === "CONCLUIDO" &&
-            hasProgress &&
-            !window.confirm("Ao tirar o assunto de Concluído, as datas e o progresso das revisões são apagados. Continuar?")
-        ) {
-            return;
-        }
 
         const toastId = "update-status-topic";
 
