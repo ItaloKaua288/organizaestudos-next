@@ -125,6 +125,8 @@ export function TopicRow({
     const [editedTitle, setEditedTitle] = useState(topic.title);
     const [editedLink, setEditedLink] = useState((topic as Topic).link || '');
     const [editedFirstReviewDate, setEditedFirstReviewDate] = useState('');
+    // Data que o campo mostrou ao abrir: só se ela mudar as revisões são reagendadas.
+    const [initialFirstReviewDate, setInitialFirstReviewDate] = useState('');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(true);
@@ -186,7 +188,8 @@ export function TopicRow({
             formData.append("topicId", topic.id)
             formData.append("title", editedTitle)
             formData.append("link", editedLink)
-            formData.append("review1", editedFirstReviewDate)
+            // Data intacta: não envia, para não reagendar as revisões (nem desfazer reagendamentos já feitos).
+            formData.append("review1", editedFirstReviewDate !== initialFirstReviewDate ? editedFirstReviewDate : "")
             formData.append("status", "null")
             await updateTopicAction(formData);
             toast.success("Assunto editado!", { id: "edit-topic" });
@@ -203,7 +206,9 @@ export function TopicRow({
             setEditedTitle(topic.title);
             setEditedLink((topic as Topic).link || '');
             const firstReviewDate = topic.status === 'CONCLUIDO' ? new Date((topic as Topic).reviews?.first?.date) : null;
-            setEditedFirstReviewDate(formatDateForInput(firstReviewDate));
+            const formattedDate = formatDateForInput(firstReviewDate);
+            setEditedFirstReviewDate(formattedDate);
+            setInitialFirstReviewDate(formattedDate);
         }
         setIsEditDialogOpen(open);
     };
@@ -284,8 +289,8 @@ export function TopicRow({
         // Subassunto fica recuado com uma linha lateral, para ficar claro de qual assunto ele faz parte.
         <div
             className={`flex flex-col ${isSubtopic
-                    ? "ml-4 border-l-2 pl-2 sm:ml-8 sm:pl-3 border-dotted"
-                    : ""
+                ? "ml-4 border-l-2 pl-2 sm:ml-8 sm:pl-3 border-dotted"
+                : ""
                 }`}
             style={
                 isSubtopic
