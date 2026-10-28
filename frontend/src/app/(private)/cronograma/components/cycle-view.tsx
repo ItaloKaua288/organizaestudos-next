@@ -200,10 +200,10 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
 
     const currentTopic = current ? pendingTopicsBySubject[current.subject.id] : undefined;
 
-    // Conclui a sessão atual; com `questions`, também grava as questões feitas por assunto.
+    // Conclui a sessão atual (e o assunto pendente mostrado nela); com `questions`, também grava as questões feitas por assunto.
     const completeCurrent = async (questions?: QuestionEntryInput[]) => {
         if (!current) return;
-        const result = await run(() => completeCycleSessionAction(current.id, cycle.lap, questions), "Concluindo sessão...");
+        const result = await run(() => completeCycleSessionAction(current.id, cycle.lap, questions, currentTopic?.id), "Concluindo sessão...");
         // Mantém o diálogo aberto só quando houve erro de validação, para o estudante corrigir os números.
         if (result && (result.success || result.stale)) setIsQuestionsOpen(false);
     };
@@ -451,7 +451,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     open={isQuestionsOpen}
                     onOpenChange={setIsQuestionsOpen}
                     title="Concluir sessão"
-                    description={`Quantas questões você fez e acertou em ${current.subject.title}? Isso gera seu % de acerto por assunto e por matéria. Se não fez questões, conclua sem registrar.`}
+                    description={`Quantas questões você fez e acertou em ${current.subject.title}? Isso gera seu % de acerto por assunto e por matéria. Se não fez questões, conclua sem registrar.${currentTopic ? ` O assunto "${currentTopic.title}" será marcado como concluído.` : ""}`}
                     groups={[{ id: current.subject.id, title: current.subject.title, color: current.subject.color, topics: topicsBySubject[current.subject.id] ?? [] }]}
                     defaultTopicId={currentTopic?.id}
                     submitLabel="Concluir e registrar"

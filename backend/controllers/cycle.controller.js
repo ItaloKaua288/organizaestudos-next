@@ -3,8 +3,10 @@ import StudyCycle from "../models/studyCycle.model.js";
 import CycleHistory from "../models/cycleHistory.model.js";
 import Subject from "../models/subject.model.js";
 import QuestionLog from "../models/questionLog.model.js";
+import Topic from "../models/topic.model.js";
 import { subjectScope } from "../middleware/profile.js";
 import { parseQuestionEntries } from "./questionLog.controller.js";
+import { getTodayBR } from "../utils/date.js";
 
 /*
  * REGRAS DO CICLO DE ESTUDOS
@@ -23,6 +25,9 @@ import { parseQuestionEntries } from "./questionLog.controller.js";
  * - Questões: ao concluir, o corpo pode trazer `questions: [{ topic_id, total, correct }]` (assuntos da
  *   matéria da sessão). Elas viram registros de QuestionLog, base do % de acerto por assunto/matéria.
  *   Tudo é validado ANTES de avançar o ciclo, e só é gravado se a sessão foi contabilizada agora.
+ * - Assunto: ao concluir, o corpo também pode trazer `topic_id` (o assunto pendente mostrado na sessão).
+ *   Se ele for da matéria da sessão, não for organizador (com subassuntos) e ainda não estiver
+ *   concluído, vira CONCLUIDO e agenda as revisões (mesma regra de PUT /topics/:id). Pular não conclui.
  * - Idempotência: concluir/pular exigem { sessionId, lap } da sessão atual. Um clique duplicado
  *   encontra outra sessão como atual e vira no-op (409 com o estado atual). Além disso há
  *   optimisticConcurrency no ciclo e índice único no histórico (ciclo + volta + sessão).
@@ -323,6 +328,40 @@ export const cancelSession = async (req, res) => {
     }
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Marca o assunto da sessão como CONCLUIDO e agenda as revisões (24h, 7 dias e 30 dias),
+// seguindo a mesma regra de updateTopic. Nunca lança: uma falha aqui não pode desfazer a sessão
+// já contabilizada. Retorna o título do assunto concluído ou null quando nada foi alterado.
+const concludeSessionTopic = async (topicId, subjectId) => {
+    if (!isId(topicId)) return null;
+
+    try {
+        const topic = await Topic.findOne({ _id: topicId, subject_id: subjectId });
+        if (!topic || topic.status === "CONCLUIDO") return null;
+
+        // Assunto com subassuntos é só organizador: não tem status nem revisões próprias.
+        if (await Topic.exists({ parent_id: topic._id })) return null;
+
+        const today = getTodayBR();
+        topic.status = "CONCLUIDO";
+        topic.review1 = new Date(today.getTime() + 1 * DAY_MS);
+        topic.review2 = new Date(today.getTime() + 7 * DAY_MS);
+        topic.review3 = new Date(today.getTime() + 30 * DAY_MS);
+        topic.review1_concluded = false;
+        topic.review2_concluded = false;
+        topic.review3_concluded = false;
+        topic.review3_interval = 30;
+        topic.reviewLog = [];
+        await topic.save();
+
+        return topic.title;
+    } catch (e) {
+        console.log("error in concludeSessionTopic ", e);
+        return null;
+    }
+};
+
 const finishSession = (status, successMessage, label) => async (req, res) => {
     try {
         const loaded = await loadCycle(req, res);
@@ -336,6 +375,7 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
         const subject = subjectMap.get(String(session.subject_id));
         const finishedAt = new Date();
         const startedAt = session.startedAt; // capturado antes: uma nova volta zera startedAt
+        let concludedTopicTitle = null;
 
         // Questões feitas na sessão (opcional, só ao concluir). Validadas antes de mexer no ciclo.
         let questionEntries = [];
@@ -382,11 +422,20 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
                     answeredAt: finishedAt,
                 })));
             }
+
+            // Só chega aqui se a sessão foi contabilizada agora (duplicata cai no catch abaixo).
+            if (status === "CONCLUIDA") {
+                concludedTopicTitle = await concludeSessionTopic(req.body?.topic_id, session.subject_id);
+            }
         } catch (e) {
             if (e?.code !== 11000) throw e; // já registrada nesta volta (as questões não são gravadas de novo)
         }
 
-        return await respond(res, 200, cycle, subjectMap, { message: successMessage });
+        const message = concludedTopicTitle
+            ? `${successMessage} Assunto "${concludedTopicTitle}" marcado como concluído.`
+            : successMessage;
+
+        return await respond(res, 200, cycle, subjectMap, { message, topicConcluded: concludedTopicTitle !== null });
     } catch (error) {
         if (error?.name === "VersionError") {
             // Outro clique/aba já avançou o ciclo: devolve a posição atual sem contabilizar de novo.

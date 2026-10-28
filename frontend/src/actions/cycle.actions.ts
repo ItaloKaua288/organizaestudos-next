@@ -3,7 +3,7 @@
 import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
 import { Cycle, CycleActionResult, CycleSessionInput } from "@/types/cycle";
 import { QuestionEntryInput } from "@/types/question";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 async function cycleRequest(method: "GET" | "POST" | "PUT" | "DELETE", path: string, body?: unknown) {
     const baseUrl = await getBaseUrl();
@@ -71,16 +71,37 @@ export async function startCycleSessionAction(sessionId: string, lap: number) {
     return runCycleAction("POST", "/sessions/start", { sessionId, lap }, "Falha ao iniciar a sessão.");
 }
 
-/** `questions` é opcional: questões feitas/acertadas por assunto, para o % de acerto. */
-export async function completeCycleSessionAction(sessionId: string, lap: number, questions?: QuestionEntryInput[]) {
+/**
+ * `questions` é opcional: questões feitas/acertadas por assunto, para o % de acerto.
+ * `topicId` é opcional: assunto da sessão que será marcado como concluído (com as revisões agendadas).
+ */
+export async function completeCycleSessionAction(sessionId: string, lap: number, questions?: QuestionEntryInput[], topicId?: string) {
     const result = await runCycleAction(
         "POST",
         "/sessions/complete",
-        { sessionId, lap, ...(questions && questions.length > 0 ? { questions } : {}) },
+        {
+            sessionId,
+            lap,
+            ...(questions && questions.length > 0 ? { questions } : {}),
+            ...(topicId ? { topic_id: topicId } : {}),
+        },
         "Falha ao concluir a sessão.",
     );
 
-    if (result.success) revalidatePath("/desempenho");
+    if (result.success) {
+        revalidatePath("/desempenho");
+
+        if (topicId) {
+            // O status do assunto mudou: expira o cache dos assuntos e atualiza as telas que dependem dele.
+            updateTag("topics");
+            revalidatePath("/cronograma");
+            revalidatePath("/materias");
+            revalidatePath("/materias/[id]", "page");
+            revalidatePath("/kanban");
+            revalidatePath("/revisoes");
+            revalidatePath("/");
+        }
+    }
 
     return result;
 }
