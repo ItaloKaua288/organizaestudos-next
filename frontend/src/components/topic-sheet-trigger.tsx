@@ -38,7 +38,7 @@ type TopicSheetTriggerProps = {
     children: React.ReactNode;
 };
 
-/** Botão que abre o detalhe do assunto, o mesmo painel do kanban. */
+/** Botão que abre o detalhe do assunto, o mesmo painel do quadro. */
 export function TopicSheetTrigger({ topic, className, children }: TopicSheetTriggerProps) {
     const [open, setOpen] = useState(false);
     const changeTopicStatus = useTopicStatusChange();

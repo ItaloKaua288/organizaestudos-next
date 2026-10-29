@@ -32,7 +32,7 @@ const NAV_LINKS = [
     { href: "/revisoes", label: "Revisões", icon: RotateCw },
     { href: "/notas", label: "Notas", icon: NotepadText },
     { href: "/cronograma", label: "Cronograma", icon: CalendarClock },
-    { href: "/kanban", label: "Kanban", icon: Kanban },
+    { href: "/kanban", label: "Quadro", icon: Kanban },
     { href: "/desempenho", label: "Desempenho", icon: ChartColumn },
 ] as const;
 
