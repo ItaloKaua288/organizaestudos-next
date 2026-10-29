@@ -13,15 +13,33 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useRef } from "react"
 import "@/components/notes.css"
 
+/** Parágrafo vazio (só espaços, &nbsp; ou <br>), comum em notas coladas de outros lugares. */
+const EMPTY_P = "<p[^>]*>(?:\\s|&nbsp;|\u00a0|<br\\s*\\/?>)*<\\/p>"
+
+/**
+ * Só para exibição no cartão: remove os parágrafos vazios do começo e do fim e junta os
+ * seguidos em um só, para a nota não virar um bloco enorme de espaço em branco.
+ * O conteúdo salvo não é alterado.
+ */
+function tidyNoteHtml(html: string): string {
+    return html
+        .replace(new RegExp(`^(?:\\s*${EMPTY_P})+\\s*`, "i"), "")
+        .replace(new RegExp(`(?:\\s*${EMPTY_P})+\\s*$`, "i"), "")
+        .replace(new RegExp(`(?:${EMPTY_P}\\s*){2,}`, "gi"), "<p><br></p>")
+        .trim()
+}
+
 interface NoteCardProps {
     note: Note
     subjectId: string
     /** HTML da nota, já sanitizado no servidor. */
     html: string
     tagSuggestions?: string[]
+    /** Página onde os filtros por tag são aplicados. Padrão: /notas/[matéria]. */
+    basePath?: string
 }
 
-export function NoteCard({ note, subjectId, html, tagSuggestions }: NoteCardProps) {
+export function NoteCard({ note, subjectId, html, tagSuggestions, basePath }: NoteCardProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
     const cardRef = useRef<HTMLDivElement>(null)
@@ -30,6 +48,8 @@ export function NoteCard({ note, subjectId, html, tagSuggestions }: NoteCardProp
     const tags = note.tags ?? []
     const attachments = note.attachments ?? []
     const backlinks = note.backlinks ?? []
+    const cleanHtml = tidyNoteHtml(html)
+    const hasContent = cleanHtml.replace(/<[^>]*>|&nbsp;|\s/g, "").length > 0 || /<(img|table|iframe|hr)\b/i.test(cleanHtml)
 
     // Chegou por um link de outra nota: leva o cartão para o meio da tela.
     useEffect(() => {
@@ -45,7 +65,7 @@ export function NoteCard({ note, subjectId, html, tagSuggestions }: NoteCardProp
         if (params.get("tag") === tag) params.delete("tag")
         else params.set("tag", tag)
         const query = params.toString()
-        return `/notas/${subjectId}${query ? `?${query}` : ""}`
+        return `${basePath ?? `/notas/${subjectId}`}${query ? `?${query}` : ""}`
     }
 
     // Links entre notas navegam sem recarregar a página.
@@ -68,7 +88,7 @@ export function NoteCard({ note, subjectId, html, tagSuggestions }: NoteCardProp
         <Card
             ref={cardRef}
             id={`nota-${note.id}`}
-            className={cn("flex flex-col justify-between scroll-mt-24", isTarget && "note-card-focus")}
+            className={cn("flex flex-col gap-3 scroll-mt-24", isTarget && "note-card-focus")}
         >
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
                 <CardTitle className="truncate" title={note.title}>
@@ -94,11 +114,21 @@ export function NoteCard({ note, subjectId, html, tagSuggestions }: NoteCardProp
                 </CardContent>
             ) : null}
 
-            <CardContent
-                className="prose prose-sm dark:prose-invert max-h-150 max-w-none overflow-y-auto"
-                onClick={handleContentClick}
-                dangerouslySetInnerHTML={{ __html: html }}
-            />
+            {hasContent ? (
+                <CardContent
+                    className={cn(
+                        "note-content prose prose-sm dark:prose-invert max-h-96 max-w-none overflow-y-auto border-t border-border/50 pt-4",
+                        "prose-headings:mt-4 prose-headings:mb-1.5 prose-headings:text-[0.95rem] prose-headings:leading-snug first:prose-headings:mt-0",
+                        "prose-p:my-1.5 prose-p:leading-relaxed prose-li:my-0.5 prose-ul:my-2 prose-ol:my-2"
+                    )}
+                    onClick={handleContentClick}
+                    dangerouslySetInnerHTML={{ __html: cleanHtml }}
+                />
+            ) : (
+                <CardContent className="border-t border-border/50 pt-4">
+                    <p className="text-sm italic text-muted-foreground">Nota sem conteúdo.</p>
+                </CardContent>
+            )}
 
             {attachments.length > 0 || backlinks.length > 0 ? (
                 <CardContent className="space-y-3 border-t border-border/60 pt-4">

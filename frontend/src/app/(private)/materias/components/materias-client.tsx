@@ -15,14 +15,20 @@ import { Topic } from "@/types/topic";
 import { ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
 import { FormEvent, useState } from "react";
 import toast from "react-hot-toast";
+import { LayoutToggle } from "./layout-toggle";
+import { MateriasLayout } from "./layout-cookie";
+import SubjectLinkCard from "./subject-link-card";
 
 type SubjectWithTopics = Subject & { topics: Topic[] };
 
 interface MateriasClientProps {
     subjects: SubjectWithTopics[];
+    initialLayout?: MateriasLayout;
 }
 
-export default function MateriasClient({ subjects }: MateriasClientProps) {
+export default function MateriasClient({ subjects, initialLayout = "detalhado" }: MateriasClientProps) {
+    const [layout, setLayout] = useState<MateriasLayout>(initialLayout)
+    const isCompact = layout === "compacto"
     const [color, setColor] = useState("#3b82f6");
     const [title, setTitle] = useState("");
     const [isCreateSubjectOpen, setIsCreateSubjectOpen] = useState(false)
@@ -67,12 +73,17 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
                 description="Gerencie suas matérias e assuntos."
                 actions={
                     <>
-                        <Button variant="outline" size="sm" onClick={expandAll} title="Expandir todas as matérias" disabled={subjects.length === 0}>
-                            <ChevronsUpDown size={15} /> <span className="max-sm:hidden">Expandir todas</span>
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={collapseAll} title="Reduzir todas as matérias" disabled={subjects.length === 0}>
-                            <ChevronsDownUp size={15} /> <span className="max-sm:hidden">Reduzir todas</span>
-                        </Button>
+                        <LayoutToggle value={layout} onChange={setLayout} />
+                        {!isCompact && (
+                            <>
+                                <Button variant="outline" size="sm" onClick={expandAll} title="Expandir todas as matérias" disabled={subjects.length === 0}>
+                                    <ChevronsUpDown size={15} /> <span className="max-sm:hidden">Expandir todas</span>
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={collapseAll} title="Reduzir todas as matérias" disabled={subjects.length === 0}>
+                                    <ChevronsDownUp size={15} /> <span className="max-sm:hidden">Reduzir todas</span>
+                                </Button>
+                            </>
+                        )}
                         <DataTransfer />
                         <DialogDemo
                             contentBtn={
@@ -104,16 +115,24 @@ export default function MateriasClient({ subjects }: MateriasClientProps) {
             />
 
             {subjects.length > 0 ? (
-                <div className="grid grid-cols-1  gap-4 lg:grid-cols-2">
-                    {subjects.map((subject) => (
-                        <SubjectBox
-                            key={subject.id}
-                            subject={subject}
-                            isExpanded={!collapsedIds.has(subject.id)}
-                            onToggleExpanded={() => toggleSubject(subject.id)}
-                        />
-                    ))}
-                </div>
+                isCompact ? (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {subjects.map((subject) => (
+                            <SubjectLinkCard key={subject.id} subject={subject} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1  gap-4 lg:grid-cols-2">
+                        {subjects.map((subject) => (
+                            <SubjectBox
+                                key={subject.id}
+                                subject={subject}
+                                isExpanded={!collapsedIds.has(subject.id)}
+                                onToggleExpanded={() => toggleSubject(subject.id)}
+                            />
+                        ))}
+                    </div>
+                )
             ) : (
                 <div className="glass rounded-2xl px-6 py-12 text-center">
                     <p className="font-medium">Você ainda não tem matérias.</p>

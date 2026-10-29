@@ -1,6 +1,8 @@
+import { getNotes } from "@/actions/notes.actions";
 import { getDetailSubjectAction } from "@/actions/subjects.actions";
+import { SearchNotes } from "@/app/(private)/notas/[id]/components/search-notes";
 import { CreateNoteDialog } from "@/components/Create-note-dialog";
-import { OptionsNoteCard } from "@/components/options-note-card";
+import { NoteCard } from "@/components/note-card";
 import ProgressLabelDemo from "@/components/progress-label";
 import { ReviewSection } from "@/components/reviewSection";
 import { SubjectActiveToggle } from "@/components/subject-active-toggle";
@@ -10,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getTodayBR } from "@/lib/date";
+import { cn } from "@/lib/utils";
 import { TOPIC_TITLE_SEPARATOR, withoutContainers } from "@/lib/topic-tree";
 import { Topic } from "@/types/topic";
 import DOMPurify from "isomorphic-dompurify";
@@ -23,12 +26,13 @@ export default async function DetailMateriaPage({
     searchParams
 }: {
     params: Promise<{ id: string }>;
-    searchParams: Promise<{ tab?: string }>;
+    searchParams: Promise<{ tab?: string; q?: string; tag?: string; nota?: string }>;
 }) {
     const { id } = await params;
 
     const resolvedSearchParams = await searchParams;
     const tab = resolvedSearchParams.tab || "assuntos";
+    const { q, tag, nota } = resolvedSearchParams;
 
     const subject = await getDetailSubjectAction(id);
 
@@ -73,13 +77,6 @@ export default async function DetailMateriaPage({
         );
     }
 
-    const sortedNotes = subject.notes?.sort((a, b) => {
-        const aPinned = a.is_pined ? 1 : 0;
-        const bPinned = b.is_pined ? 1 : 0;
-
-        return bPinned - aPinned;
-    })
-
     // Assuntos com subassuntos são só organizadores: não contam no progresso nem nas revisões.
     const countableTopics = withoutContainers(subject.topics ?? []);
     const totalTopics = countableTopics.length;
@@ -99,6 +96,47 @@ export default async function DetailMateriaPage({
     const tabBase = "inline-flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none";
     const activeTabStyle = `${tabBase} bg-(--glass-fill-strong) text-foreground shadow-[inset_0_1px_0_var(--glass-edge),0_0_0_1px_var(--glass-ring)]`;
     const inactiveTabStyle = `${tabBase} text-muted-foreground hover:bg-foreground/6 hover:text-foreground`;
+
+    // Aba de notas: mesma listagem, busca e filtro por tag da página de anotações da matéria.
+    const allNotas = tab === 'notas' ? await getNotes(id) : [];
+
+    const tagCounts = new Map<string, number>();
+    for (const note of allNotas) {
+        for (const noteTag of note.tags ?? []) {
+            tagCounts.set(noteTag, (tagCounts.get(noteTag) ?? 0) + 1);
+        }
+    }
+    const allTags = [...tagCounts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"))
+        .map(([name, count]) => ({ name, count }));
+
+    const query = q?.toLowerCase() || "";
+    const activeTag = tag && tagCounts.has(tag) ? tag : undefined;
+
+    const filteredNotas = allNotas.filter((note) => {
+        // Vindo de um link entre notas (?nota=), a nota de destino sempre aparece.
+        if (nota && note.id === nota) return true;
+
+        if (activeTag && !(note.tags ?? []).includes(activeTag)) return false;
+
+        if (!query) return true;
+
+        return (
+            note.title.toLowerCase().includes(query) ||
+            note.content.toLowerCase().includes(query) ||
+            (note.tags ?? []).some((noteTag) => noteTag.includes(query.replace(/^#/, "")))
+        );
+    }).sort((a, b) => (b.is_pined ? 1 : 0) - (a.is_pined ? 1 : 0));
+
+    // Mantém a busca ao trocar de tag.
+    const tagHref = (name?: string) => {
+        const params = new URLSearchParams({ tab: "notas" });
+        if (q) params.set("q", q);
+        if (name) params.set("tag", name);
+        return `/materias/${id}?${params.toString()}`;
+    };
+
+    const tagPillBase = "rounded-full px-3 py-1 text-sm font-medium transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
 
     const now = getTodayBR();
 
@@ -199,35 +237,66 @@ export default async function DetailMateriaPage({
                     )}
 
                     {tab === 'notas' && (
-                        <div className="animate-in fade-in duration-300 space-y-4 col-span-1 md:col-span-3">
-                            <div className="flex items-center justify-end mb-4">
-                                <CreateNoteDialog subjectId={id} />
+                        <div className="animate-in fade-in duration-300 col-span-1 flex flex-col gap-4 md:col-span-3">
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                                <SearchNotes />
+                                <CreateNoteDialog subjectId={id} tagSuggestions={allTags.map((item) => item.name)} />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                                {sortedNotes && sortedNotes.length > 0 ? (
-                                    sortedNotes.map(note => {
-                                        const cleanHTML = DOMPurify.sanitize(note.content);
 
-                                        return (
-                                            <Card key={note.id} className="flex flex-col justify-between">
-                                                <CardHeader className="flex flex-row items-center justify-between space-y-0 gap-3">
-                                                    <CardTitle className="truncate" title={note.title}>
-                                                        {note.title}
-                                                    </CardTitle>
-                                                    <OptionsNoteCard key={note.id} subjectId={subject.id} note={note}></OptionsNoteCard>
-                                                </CardHeader>
+                            {allTags.length > 0 ? (
+                                <nav aria-label="Filtrar por tag" className="flex flex-wrap items-center gap-2">
+                                    <Link
+                                        href={tagHref()}
+                                        scroll={false}
+                                        aria-current={!activeTag ? "true" : undefined}
+                                        className={cn(tagPillBase, !activeTag ? "bg-primary text-primary-foreground" : "bg-foreground/6 hover:bg-foreground/12")}
+                                    >
+                                        Todas <span className="opacity-70">{allNotas.length}</span>
+                                    </Link>
+                                    {allTags.map((item) => (
+                                        <Link
+                                            key={item.name}
+                                            href={tagHref(item.name)}
+                                            scroll={false}
+                                            aria-current={activeTag === item.name ? "true" : undefined}
+                                            className={cn(tagPillBase, activeTag === item.name ? "bg-primary text-primary-foreground" : "bg-foreground/6 hover:bg-foreground/12")}
+                                        >
+                                            #{item.name} <span className="opacity-70">{item.count}</span>
+                                        </Link>
+                                    ))}
+                                </nav>
+                            ) : null}
 
-                                                <CardContent
-                                                    className="prose prose-sm dark:prose-invert max-w-none pt-2 max-h-150 overflow-y-auto"
-                                                    dangerouslySetInnerHTML={{ __html: cleanHTML }}
-                                                />
-                                            </Card>
-                                        )
-                                    })
+                            <section aria-label="Listagem de anotações">
+                                {allNotas.length === 0 ? (
+                                    <div className="glass rounded-2xl px-6 py-12 text-center">
+                                        <p className="font-medium">Nenhuma nota nesta matéria</p>
+                                        <p className="mt-1 text-sm text-muted-foreground">Use Nova nota para criar a primeira.</p>
+                                    </div>
+                                ) : filteredNotas.length === 0 ? (
+                                    <div className="glass rounded-2xl px-6 py-12 text-center">
+                                        <p className="font-medium">
+                                            {activeTag && !q ? `Nenhuma nota com a tag #${activeTag}` : `Nada encontrado para “${q ?? ""}”`}
+                                        </p>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            {activeTag ? "Escolha outra tag ou limpe o filtro." : "Tente outro termo de busca."}
+                                        </p>
+                                    </div>
                                 ) : (
-                                    <p className="glass col-span-1 rounded-2xl px-6 py-12 text-center text-sm text-muted-foreground md:col-span-2">Nenhuma nota nesta matéria. Use Nova nota para criar a primeira.</p>
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                        {filteredNotas.map((note) => (
+                                            <NoteCard
+                                                key={note.id}
+                                                note={note}
+                                                subjectId={id}
+                                                html={DOMPurify.sanitize(note.content)}
+                                                tagSuggestions={allTags.map((item) => item.name)}
+                                                basePath={`/materias/${id}`}
+                                            />
+                                        ))}
+                                    </div>
                                 )}
-                            </div>
+                            </section>
                         </div>
                     )}
 
