@@ -112,10 +112,13 @@ export const getTopics = async (req, res) => {
 
 export const getAllTopics = async (req, res) => {
     try {
-        const subjects = await Subject.find(subjectScope(req, { active: { $ne: false } }));
+        const subjects = await Subject.find(subjectScope(req, { active: { $ne: false } })).lean();
         const subjectIds = subjects.map(subject => subject._id);
+        const subjectById = new Map(subjects.map(subject => [String(subject._id), subject]));
 
-        const topics = await Topic.find({ subject_id: { $in: subjectIds } }).populate('subject_id').sort({ order: 1 }).lean();
+        // Já temos as matérias em memória: monta o objeto em vez de um populate (economiza uma consulta).
+        const topics = (await Topic.find({ subject_id: { $in: subjectIds } }).sort({ order: 1 }).lean())
+            .map(topic => ({ ...topic, subject_id: subjectById.get(String(topic.subject_id)) }));
         res.status(200).json({ success: true, topics });
     } catch (error) {
         console.log("error in getAllTopics ", error);

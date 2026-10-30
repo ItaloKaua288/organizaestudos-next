@@ -21,7 +21,9 @@ export default async function RootLayout({
 }>) {
   // Quando o perfil muda, o conteúdo é recriado do zero. Sem isso, telas que copiam os dados
   // do servidor para um useState (ex.: ciclo de estudos) continuariam mostrando o perfil anterior.
-  const profileKey = (await cookies()).get(PROFILE_COOKIE)?.value ?? "default";
+  const cookieStore = await cookies();
+  const profileKey = cookieStore.get(PROFILE_COOKIE)?.value ?? "default";
+  const hasToken = Boolean(cookieStore.get("token")?.value);
 
   return (
     <html
@@ -44,7 +46,7 @@ export default async function RootLayout({
             }}
           />
           <div aria-hidden className="ambient" />
-          <Navbar2 />
+          <Navbar2 hasToken={hasToken} />
           <div key={profileKey} className="mx-auto w-full max-w-7xl flex-1 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
             {children}
           </div>

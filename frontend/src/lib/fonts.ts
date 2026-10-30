@@ -9,6 +9,8 @@ export const geistSans = Geist({
 export const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  // Pouco usada: não precisa ser pré-carregada no caminho crítico.
+  preload: false,
 });
 
 export const sora = Sora({

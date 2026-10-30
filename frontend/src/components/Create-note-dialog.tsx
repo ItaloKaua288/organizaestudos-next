@@ -3,7 +3,7 @@
 import { addNoteAction, uploadNoteAttachmentAction } from "@/actions/notes.actions"
 import { DialogDemo } from "@/components/dialog-button"
 import { NoteAttachmentsField } from "@/components/note-attachments-field"
-import { RichTextEditor } from "@/components/rich-text-editor"
+import dynamic from "next/dynamic"
 import { TagInput } from "@/components/tag-input"
 import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -11,6 +11,12 @@ import { Label } from "@/components/ui/label"
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import toast from "react-hot-toast"
+
+// O editor (Tiptap) é pesado: só é baixado quando a tela de edição realmente abre.
+const RichTextEditor = dynamic(
+    () => import("@/components/rich-text-editor").then((m) => m.RichTextEditor),
+    { ssr: false, loading: () => <div className="min-h-40 animate-pulse rounded-xl bg-foreground/5" /> }
+);
 
 interface CreateNoteDialogProps {
     subjectId: string

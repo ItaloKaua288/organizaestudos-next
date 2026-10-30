@@ -9,6 +9,7 @@ import TimeLine from "../models/timeLine.model.js";
 import Topic from "../models/topic.model.js";
 import cloudinary from "../utils/cloudinary.js";
 import { deleteNotesWithAttachments } from "../utils/noteAttachments.js";
+import { clearProfileCache } from "../middleware/profile.js";
 
 const MAX_PROFILES = 20;
 
@@ -130,6 +131,7 @@ export const deleteProfile = async (req, res) => {
         await Topic.deleteMany({ subject_id: { $in: subjectIds } });
         await Subject.deleteMany({ _id: { $in: subjectIds } });
         await profile.deleteOne();
+        clearProfileCache(req.userId);
 
         res.status(200).json({ success: true, message: "Perfil excluído com sucesso." });
     } catch (error) {

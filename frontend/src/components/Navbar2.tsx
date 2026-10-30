@@ -36,34 +36,65 @@ const NAV_LINKS = [
     { href: "/desempenho", label: "Desempenho", icon: ChartColumn },
 ] as const;
 
-export function Navbar2() {
+const ADMIN_CACHE_KEY = "oe:is-admin";
+
+/**
+ * `hasToken` vem do servidor (cookie de sessão). O proxy já barra quem não tem token, então a barra
+ * aparece completa de imediato, sem esperar a chamada à API. A verificação real roda em segundo plano
+ * (fora do caminho crítico de renderização) só para confirmar a sessão e descobrir se é admin.
+ */
+export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
     const router = useRouter();
     const pathname = usePathname();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(hasToken);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const isLoading = false;
 
     useEffect(() => {
+        let cancelled = false;
+
+        try {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            if (sessionStorage.getItem(ADMIN_CACHE_KEY) === "1") setIsAdmin(true);
+        } catch {
+            // sessionStorage indisponível: segue sem cache
+        }
+
         const checkAuth = async () => {
             try {
                 const response = await checkAuthApi();
+                if (cancelled) return;
                 setIsAuthenticated(response.success);
-                setIsAdmin(Boolean(response.user?.isAdmin));
+                const admin = Boolean(response.user?.isAdmin);
+                setIsAdmin(admin);
+                try {
+                    sessionStorage.setItem(ADMIN_CACHE_KEY, admin ? "1" : "0");
+                } catch { }
                 if (!response.success)
                     router.push("/login");
             } catch {
-                setIsAuthenticated(false);
-            } finally {
-                setIsLoading(false);
+                if (!cancelled) setIsAuthenticated(false);
             }
         };
 
-        checkAuth();
+        // Adia a verificação para depois da hidratação/pintura da página.
+        const w = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+        const hasIdle = typeof w.requestIdleCallback === "function";
+        const handle = hasIdle
+            ? w.requestIdleCallback!(checkAuth, { timeout: 2000 })
+            : window.setTimeout(checkAuth, 300);
+
+        return () => {
+            cancelled = true;
+            if (hasIdle && w.cancelIdleCallback) w.cancelIdleCallback(handle);
+            else window.clearTimeout(handle);
+        };
     }, [router]);
 
     const handleLogout = async () => {
         try {
             await logout();
+            try { sessionStorage.removeItem(ADMIN_CACHE_KEY); } catch { }
 
             setIsAuthenticated(false);
             router.push("/login");

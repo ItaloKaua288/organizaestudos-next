@@ -8,6 +8,19 @@ export const DEFAULT_PROFILE_NAME = "Geral";
 
 const firstProfile = (userId) => Profile.findOne({ user_id: userId }).sort({ createdAt: 1, _id: 1 });
 
+// Cache curto (em memória, por instância) do perfil resolvido. Evita 1-2 consultas ao banco em TODA
+// requisição (o dashboard, por exemplo, faz 3 chamadas em paralelo). Dura pouco e é limpo ao
+// criar/excluir perfis, então nunca fica muito defasado.
+const PROFILE_CACHE_TTL_MS = 30_000;
+const PROFILE_CACHE_MAX = 500;
+const profileCache = new Map(); // `${userId}:${requested}` -> { id, expires }
+
+export const clearProfileCache = (userId) => {
+    if (!userId) return profileCache.clear();
+    const prefix = `${userId}:`;
+    for (const key of profileCache.keys()) if (key.startsWith(prefix)) profileCache.delete(key);
+};
+
 // Garante que o usuário tenha ao menos um perfil. Na primeira vez, cria o perfil "Geral" e leva
 // para ele as matérias e o ciclo que já existiam (dados criados antes dos perfis existirem).
 // É seguro chamar em paralelo: o índice único (user_id + nome) impede perfis duplicados.
@@ -46,12 +59,23 @@ export const attachProfile = async (req, res, next) => {
         if (!userId) return next();
 
         const requested = req.headers["x-profile-id"];
+        const cacheKey = `${userId}:${typeof requested === "string" ? requested : ""}`;
+
+        const cached = profileCache.get(cacheKey);
+        if (cached && cached.expires > Date.now()) {
+            req.profileId = cached.id;
+            return next();
+        }
+
         let profile = null;
 
         if (typeof requested === "string" && mongoose.isValidObjectId(requested)) {
-            profile = await Profile.findOne({ _id: requested, user_id: userId });
+            profile = await Profile.findOne({ _id: requested, user_id: userId }).select("_id").lean();
         }
         if (!profile) profile = await ensureDefaultProfile(userId);
+
+        if (profileCache.size >= PROFILE_CACHE_MAX) profileCache.clear();
+        profileCache.set(cacheKey, { id: profile._id, expires: Date.now() + PROFILE_CACHE_TTL_MS });
 
         req.profileId = profile._id;
         req.profile = profile;
