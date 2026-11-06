@@ -201,9 +201,11 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     const currentTopic = current ? pendingTopicsBySubject[current.subject.id] : undefined;
 
     // Conclui a sessão atual (e o assunto pendente mostrado nela); com `questions`, também grava as questões feitas por assunto.
-    const completeCurrent = async (questions?: QuestionEntryInput[]) => {
+    // `markTopic` false = conclui a sessão sem concluir o assunto (ele continua pendente).
+    const completeCurrent = async (questions?: QuestionEntryInput[], markTopic = true) => {
         if (!current) return;
-        const result = await run(() => completeCycleSessionAction(current.id, cycle.lap, questions, currentTopic?.id), "Concluindo sessão...");
+        const topicId = markTopic ? currentTopic?.id : undefined;
+        const result = await run(() => completeCycleSessionAction(current.id, cycle.lap, questions, topicId), "Concluindo sessão...");
         // Mantém o diálogo aberto só quando houve erro de validação, para o estudante corrigir os números.
         if (result && (result.success || result.stale)) setIsQuestionsOpen(false);
     };
@@ -451,14 +453,16 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     open={isQuestionsOpen}
                     onOpenChange={setIsQuestionsOpen}
                     title="Concluir sessão"
-                    description={`Quantas questões você fez e acertou em ${current.subject.title}? Isso gera seu % de acerto por assunto e por matéria. Se não fez questões, conclua sem registrar.${currentTopic ? ` O assunto "${currentTopic.title}" será marcado como concluído.` : ""}`}
+                    description={`Quantas questões você fez e acertou em ${current.subject.title}? Isso gera seu % de acerto por assunto e por matéria. Se não fez questões, conclua sem registrar.`}
                     groups={[{ id: current.subject.id, title: current.subject.title, color: current.subject.color, topics: topicsBySubject[current.subject.id] ?? [] }]}
                     defaultTopicId={currentTopic?.id}
                     submitLabel="Concluir e registrar"
                     skipLabel="Concluir sem questões"
                     isBusy={isBusy}
-                    onSubmit={(entries) => completeCurrent(entries)}
-                    onSkip={() => completeCurrent()}
+                    toggleLabel={currentTopic ? `Marcar o assunto "${currentTopic.title}" como concluído` : undefined}
+                    toggleDefaultChecked
+                    onSubmit={(entries, markTopic) => completeCurrent(entries, markTopic)}
+                    onSkip={(markTopic) => completeCurrent(undefined, markTopic)}
                 />
             )}
 

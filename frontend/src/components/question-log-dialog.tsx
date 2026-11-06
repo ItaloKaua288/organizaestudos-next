@@ -41,8 +41,11 @@ type QuestionLogDialogProps = {
     /** Quando informado, mostra um botão que segue sem registrar questões. */
     skipLabel?: string;
     isBusy?: boolean;
-    onSubmit: (entries: QuestionEntryInput[]) => void;
-    onSkip?: () => void;
+    /** Quando informado, mostra uma caixa opcional (ex.: "marcar assunto como concluído"); o valor chega em `checked`. */
+    toggleLabel?: string;
+    toggleDefaultChecked?: boolean;
+    onSubmit: (entries: QuestionEntryInput[], checked: boolean) => void;
+    onSkip?: (checked: boolean) => void;
 };
 
 let rowCounter = 0;
@@ -70,6 +73,8 @@ function QuestionLogForm({
     submitLabel,
     skipLabel,
     isBusy = false,
+    toggleLabel,
+    toggleDefaultChecked = true,
     onSubmit,
     onSkip,
     onClose,
@@ -77,6 +82,7 @@ function QuestionLogForm({
     const allTopics = groups.flatMap((group) => group.topics);
     const initialTopic = defaultTopicId && allTopics.some((t) => t.id === defaultTopicId) ? defaultTopicId : "";
     const [rows, setRows] = useState<Row[]>(() => [newRow(initialTopic)]);
+    const [checked, setChecked] = useState(toggleDefaultChecked);
 
     const updateRow = (key: string, patch: Partial<Row>) =>
         setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -122,7 +128,7 @@ function QuestionLogForm({
             return;
         }
 
-        onSubmit(entries);
+        onSubmit(entries, checked);
     };
 
     return (
@@ -204,10 +210,36 @@ function QuestionLogForm({
                     </div>
                 </div>
 
+                {toggleLabel && (
+                    <label
+                        className={cn(
+                            "mb-4 flex cursor-pointer items-start gap-3 rounded-lg border px-3.5 py-3 transition-colors",
+                            checked ? "border-primary/50 bg-primary/10" : "border-border bg-foreground/5 hover:bg-foreground/8",
+                            isBusy && "pointer-events-none opacity-60",
+                        )}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => setChecked(e.target.checked)}
+                            disabled={isBusy}
+                            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+                        />
+                        <span className="flex min-w-0 flex-col gap-0.5">
+                            <span className="text-sm font-medium leading-snug break-words">{toggleLabel}</span>
+                            <span className="text-xs text-muted-foreground">
+                                {checked
+                                    ? "O assunto sai da fila de pendentes e as revisões são agendadas."
+                                    : "A sessão será concluída, mas o assunto continua pendente."}
+                            </span>
+                        </span>
+                    </label>
+                )}
+
                 <DialogFooter className="sm:items-center sm:justify-end">
                     <Button type="button" variant="outline" onClick={onClose} disabled={isBusy}>Cancelar</Button>
                     {skipLabel && (
-                        <Button type="button" variant="ghost" onClick={onSkip} disabled={isBusy}>{skipLabel}</Button>
+                        <Button type="button" variant="ghost" onClick={() => onSkip?.(checked)} disabled={isBusy}>{skipLabel}</Button>
                     )}
                     <Button type="submit" disabled={isBusy}>{submitLabel}</Button>
                 </DialogFooter>
