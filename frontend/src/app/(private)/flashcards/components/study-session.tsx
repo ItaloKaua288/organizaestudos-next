@@ -182,9 +182,21 @@ export function StudySession({ deck, initialCards, tag, learnAheadMinutes }: {
             </div>
 
             <article className="glass flex min-h-72 flex-col rounded-3xl p-6 sm:p-8">
-                <p className={cn("mb-4 text-xs font-medium tracking-wide uppercase", stateColor)}>
-                    {current.state === "new" ? "Novo" : current.state === "review" ? "Revisão" : "Aprendendo"}
-                </p>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    <p className={cn("text-xs font-medium tracking-wide uppercase", stateColor)}>
+                        {current.state === "new" ? "Novo" : current.state === "review" ? "Revisão" : "Aprendendo"}
+                    </p>
+
+                    {(current.tags ?? []).length > 0 && (
+                        <ul className="flex flex-wrap justify-end gap-1" aria-label="Tags do cartão">
+                            {current.tags.map((tag) => (
+                                <li key={tag} className="rounded-full bg-primary/15 px-2 py-0.5 text-[0.7rem] font-medium text-primary">
+                                    #{tag}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
 
                 <div className="flex flex-1 flex-col justify-center gap-6">
                     <p className="text-lg leading-relaxed font-medium whitespace-pre-wrap sm:text-xl">{current.front}</p>
