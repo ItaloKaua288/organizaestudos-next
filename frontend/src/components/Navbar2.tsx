@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
     Sheet,
     SheetContent,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, ChartColumn, CircleUser, Kanban, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, ChevronDown, CircleUser, Kanban, Layers, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -26,15 +27,22 @@ const ThemeToggle = dynamic(
     }
 );
 
-const NAV_LINKS = [
+// Links principais ficam na barra; os demais ficam no menu "Mais" (no celular aparecem todos).
+const PRIMARY_LINKS = [
     { href: "/", label: "Dashboard", icon: LayoutDashboard },
     { href: "/materias", label: "Matérias", icon: Captions },
     { href: "/revisoes", label: "Revisões", icon: RotateCw },
-    { href: "/notas", label: "Notas", icon: NotepadText },
+    { href: "/flashcards", label: "Flashcards", icon: Layers },
     { href: "/cronograma", label: "Cronograma", icon: CalendarClock },
+] as const;
+
+const MORE_LINKS = [
+    { href: "/notas", label: "Notas", icon: NotepadText },
     { href: "/kanban", label: "Quadro", icon: Kanban },
     { href: "/desempenho", label: "Desempenho", icon: ChartColumn },
 ] as const;
+
+const NAV_LINKS = [...PRIMARY_LINKS, ...MORE_LINKS] as const;
 
 const ADMIN_CACHE_KEY = "oe:is-admin";
 
@@ -48,6 +56,8 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
     const pathname = usePathname();
     const [isAuthenticated, setIsAuthenticated] = useState(hasToken);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [moreOpen, setMoreOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
     const isLoading = false;
 
     useEffect(() => {
@@ -120,7 +130,7 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
 
                 {/* Navegação (desktop) */}
                 <nav aria-label="Principal" className="flex items-center gap-0.5 max-xl:hidden">
-                    {NAV_LINKS.map(({ href, label }) => (
+                    {PRIMARY_LINKS.map(({ href, label }) => (
                         <Link
                             key={href}
                             href={href}
@@ -135,6 +145,35 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
                             {label}
                         </Link>
                     ))}
+
+                    <Popover open={moreOpen} onOpenChange={setMoreOpen}>
+                        <PopoverTrigger
+                            className={cn(
+                                "flex items-center gap-1 rounded-xl px-3.5 py-1.5 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
+                                MORE_LINKS.some((link) => isActive(link.href))
+                                    ? "bg-foreground/10 text-foreground"
+                                    : "text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
+                            )}
+                        >
+                            Mais <ChevronDown className="size-3.5" />
+                        </PopoverTrigger>
+                        <PopoverContent align="start" className="w-48 gap-0.5 p-1.5">
+                            {MORE_LINKS.map(({ href, label, icon: Icon }) => (
+                                <Link
+                                    key={href}
+                                    href={href}
+                                    onClick={() => setMoreOpen(false)}
+                                    aria-current={isActive(href) ? "page" : undefined}
+                                    className={cn(
+                                        "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
+                                        isActive(href) ? "bg-foreground/10 text-foreground" : "text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
+                                    )}
+                                >
+                                    <Icon className="size-4" /> {label}
+                                </Link>
+                            ))}
+                        </PopoverContent>
+                    </Popover>
                 </nav>
 
                 {/* Ações e menu mobile */}
@@ -156,42 +195,47 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
 
                     {!isLoading && isAuthenticated && <ProfileSwitcher />}
 
-                    {!isLoading && isAuthenticated && isAdmin && (
-                        <Link
-                            href="/admin"
-                            title="Admin"
-                            aria-label="Admin"
-                            className={cn(
-                                buttonVariants({ variant: "ghost", size: "icon" }),
-                                "max-xl:hidden",
-                                pathname === "/admin" && "bg-foreground/10 text-primary"
-                            )}
-                        >
-                            <ShieldCheck />
-                        </Link>
-                    )}
-
-                    {!isLoading && isAuthenticated && (
-                        <Link
-                            href="/perfil"
-                            title="Meu perfil"
-                            aria-label="Meu perfil"
-                            className={cn(
-                                buttonVariants({ variant: "ghost", size: "icon" }),
-                                "max-xl:hidden",
-                                pathname === "/perfil" && "bg-foreground/10 text-primary"
-                            )}
-                        >
-                            <CircleUser />
-                        </Link>
-                    )}
-
                     <ThemeToggle size="icon" variant="ghost" />
 
                     {!isLoading && isAuthenticated && (
-                        <Button variant="outline" onClick={handleLogout} className="ml-1 max-xl:hidden">
-                            Sair
-                        </Button>
+                        <Popover open={userMenuOpen} onOpenChange={setUserMenuOpen}>
+                            <PopoverTrigger
+                                title="Minha conta"
+                                aria-label="Minha conta"
+                                className={cn(
+                                    buttonVariants({ variant: "ghost", size: "icon" }),
+                                    "max-xl:hidden",
+                                    (pathname === "/perfil" || pathname === "/admin") && "bg-foreground/10 text-primary"
+                                )}
+                            >
+                                <CircleUser />
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-48 gap-0.5 p-1.5">
+                                <Link
+                                    href="/perfil"
+                                    onClick={() => setUserMenuOpen(false)}
+                                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/6 hover:text-foreground"
+                                >
+                                    <CircleUser className="size-4" /> Meu perfil
+                                </Link>
+                                {isAdmin && (
+                                    <Link
+                                        href="/admin"
+                                        onClick={() => setUserMenuOpen(false)}
+                                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/6 hover:text-foreground"
+                                    >
+                                        <ShieldCheck className="size-4" /> Admin
+                                    </Link>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => { setUserMenuOpen(false); void handleLogout(); }}
+                                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-foreground/6 hover:text-foreground"
+                                >
+                                    <LogOut className="size-4" /> Sair
+                                </button>
+                            </PopoverContent>
+                        </Popover>
                     )}
 
                     {/* Menu mobile */}

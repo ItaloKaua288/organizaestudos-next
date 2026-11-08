@@ -16,6 +16,7 @@ import questionLogRoutes from './routes/questionLog.route.js';
 import searchRoutes from './routes/search.route.js';
 import dataRoutes from './routes/data.route.js';
 import profileRoutes from './routes/profile.route.js';
+import flashcardRoutes from './routes/flashcard.route.js';
 import { attachProfile } from './middleware/profile.js';
 
 
@@ -52,6 +53,7 @@ app.use("/api/cycle", attachProfile, cycleRoutes)
 app.use("/api/questions", attachProfile, questionLogRoutes)
 app.use("/api/search", attachProfile, searchRoutes)
 app.use("/api/data", attachProfile, dataRoutes)
+app.use("/api/flashcards", attachProfile, flashcardRoutes)
 
 if (process.env.VERCEL) {
     await connectDB();

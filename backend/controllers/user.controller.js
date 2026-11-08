@@ -10,6 +10,8 @@ import StudyCycle from '../models/studyCycle.model.js';
 import CycleHistory from '../models/cycleHistory.model.js';
 import cloudinary from '../utils/cloudinary.js';
 import { deleteNotesWithAttachments } from "../utils/noteAttachments.js";
+import Deck from '../models/deck.model.js';
+import Flashcard from '../models/flashcard.model.js';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_NAME_LENGTH = 60;
@@ -356,6 +358,8 @@ export const deleteUserAdmin = async (req, res) => {
             QuestionLog.deleteMany({ user_id: id }),
             StudyCycle.deleteMany({ user_id: id }),
             CycleHistory.deleteMany({ user_id: id }),
+            Flashcard.deleteMany({ user_id: id }),
+            Deck.deleteMany({ user_id: id }),
         ]);
         await User.findByIdAndDelete(id);
 

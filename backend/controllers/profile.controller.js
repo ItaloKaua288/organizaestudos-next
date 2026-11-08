@@ -9,6 +9,8 @@ import TimeLine from "../models/timeLine.model.js";
 import Topic from "../models/topic.model.js";
 import cloudinary from "../utils/cloudinary.js";
 import { deleteNotesWithAttachments } from "../utils/noteAttachments.js";
+import Deck from "../models/deck.model.js";
+import Flashcard from "../models/flashcard.model.js";
 import { clearProfileCache } from "../middleware/profile.js";
 
 const MAX_PROFILES = 20;
@@ -130,6 +132,10 @@ export const deleteProfile = async (req, res) => {
         await QuestionLog.deleteMany({ subject_id: { $in: subjectIds } });
         await Topic.deleteMany({ subject_id: { $in: subjectIds } });
         await Subject.deleteMany({ _id: { $in: subjectIds } });
+        // Baralhos e cartões de flashcards do perfil.
+        const decks = await Deck.find({ user_id: req.userId, profile_id: profile._id }).select("_id").lean();
+        await Flashcard.deleteMany({ deck_id: { $in: decks.map((deck) => deck._id) } });
+        await Deck.deleteMany({ user_id: req.userId, profile_id: profile._id });
         await profile.deleteOne();
         clearProfileCache(req.userId);
 
