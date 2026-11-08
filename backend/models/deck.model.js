@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { DEFAULT_DECK_SETTINGS } from "../utils/srs.js";
 
 // Baralho de flashcards. Pertence ao perfil de estudo ativo (como as matérias).
 const deckSchema = new mongoose.Schema({
@@ -27,6 +28,15 @@ const deckSchema = new mongoose.Schema({
     color: {
         type: String,
         default: "#3b82f6"
+    },
+    // Limites diários e passos de aprendizado deste baralho (validados em utils/srs.js).
+    settings: {
+        newPerDay: { type: Number, default: DEFAULT_DECK_SETTINGS.newPerDay },
+        reviewsPerDay: { type: Number, default: DEFAULT_DECK_SETTINGS.reviewsPerDay },
+        learningSteps: { type: [Number], default: () => [...DEFAULT_DECK_SETTINGS.learningSteps] },
+        relearningSteps: { type: [Number], default: () => [...DEFAULT_DECK_SETTINGS.relearningSteps] },
+        graduatingInterval: { type: Number, default: DEFAULT_DECK_SETTINGS.graduatingInterval },
+        easyInterval: { type: Number, default: DEFAULT_DECK_SETTINGS.easyInterval },
     }
 }, { timestamps: true });
 

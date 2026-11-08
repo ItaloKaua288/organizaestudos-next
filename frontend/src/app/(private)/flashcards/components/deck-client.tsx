@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { DeckSettingsDialog } from "./deck-settings-dialog";
 import { DeckCountsBadges, hasCardsToStudy } from "./deck-counts";
 import { DeckFormFields, DeckFormValues } from "./deck-form-fields";
 
@@ -203,6 +204,8 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
                             <DeckFormFields idPrefix="edit-deck" values={deckForm} onChange={setDeckForm} />
                         </DialogDemo>
 
+                        <DeckSettingsDialog deck={deck} />
+
                         <DialogDemo
                             contentBtn={<Trash2 className="size-4" />}
                             variantDialogBtn="destructive"
@@ -230,7 +233,7 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
             <div className="glass mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl px-5 py-4">
                 <DeckCountsBadges counts={deck.counts} />
                 <p className="text-xs text-muted-foreground">
-                    Disponíveis para estudar agora. Limite diário: 20 novos e 200 revisões.
+                    Disponíveis para estudar agora. Limite diário: {deck.settings.newPerDay} novos e {deck.settings.reviewsPerDay} revisões.
                 </p>
             </div>
 

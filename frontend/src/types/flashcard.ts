@@ -36,11 +36,32 @@ export interface DeckCounts {
     review: number;
 }
 
+/** Ajustes de estudo de um baralho. Passos em minutos; intervalos em dias. */
+export interface DeckSettings {
+    newPerDay: number;
+    reviewsPerDay: number;
+    learningSteps: number[];
+    relearningSteps: number[];
+    graduatingInterval: number;
+    easyInterval: number;
+}
+
+/** Mesmos valores padrão do servidor (backend/utils/srs.js). */
+export const DEFAULT_DECK_SETTINGS: DeckSettings = {
+    newPerDay: 20,
+    reviewsPerDay: 200,
+    learningSteps: [1, 10],
+    relearningSteps: [10],
+    graduatingInterval: 1,
+    easyInterval: 4,
+};
+
 export interface Deck {
     id: string;
     name: string;
     description: string;
     color: string;
+    settings: DeckSettings;
     counts: DeckCounts;
     createdAt?: string;
 }
@@ -65,5 +86,6 @@ export interface FlashcardBackupDeck {
     name: string;
     description?: string;
     color?: string;
+    settings?: DeckSettings;
     cards: FlashcardBackupCard[];
 }

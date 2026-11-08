@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Deck from "../models/deck.model.js";
 import Flashcard from "../models/flashcard.model.js";
-import { RATING, SRS_CONFIG, endOfDay, previewIntervals, schedule, startOfDay } from "../utils/srs.js";
+import { DEFAULT_DECK_SETTINGS, RATING, SRS_CONFIG, configForDeck, endOfDay, parseDeckSettings, previewIntervals, schedule, startOfDay } from "../utils/srs.js";
 
 const HEX_COLOR = /^#([0-9A-F]{3}){1,2}$/i;
 const MAX_BULK_CARDS = 500;
@@ -15,7 +15,7 @@ const serverError = (res, label, error) => {
 const validationMessage = (error) =>
     error?.name === "ValidationError" ? Object.values(error.errors).map((e) => e.message)[0] : null;
 
-const toCardDto = (card, now = new Date()) => ({
+const toCardDto = (card, now = new Date(), cfg = SRS_CONFIG) => ({
     id: String(card._id),
     deckId: String(card.deck_id),
     front: card.front,
@@ -27,22 +27,38 @@ const toCardDto = (card, now = new Date()) => ({
     due: card.due,
     reps: card.reps,
     lapses: card.lapses,
-    previews: previewIntervals(card, now),
+    previews: previewIntervals(card, now, cfg),
     createdAt: card.createdAt,
 });
+
+/** Só os campos editáveis da configuração (sem o resto do SRS_CONFIG). */
+const settingsOf = (deck) => {
+    const cfg = configForDeck(deck);
+    return Object.fromEntries(Object.keys(DEFAULT_DECK_SETTINGS).map((key) => [key, cfg[key]]));
+};
+
+/** Configuração do agendador do baralho a que o cartão pertence. */
+async function configForCard(card) {
+    const deck = await Deck.findOne({ _id: card.deck_id, user_id: card.user_id }).select("settings").lean();
+    return configForDeck(deck);
+}
 
 const toDeckDto = (deck, counts = {}) => ({
     id: String(deck._id),
     name: deck.name,
     description: deck.description ?? "",
     color: deck.color,
+    settings: settingsOf(deck),
     counts: { total: 0, new: 0, learning: 0, review: 0, ...counts },
     createdAt: deck.createdAt,
 });
 
 /** Contagens do que está disponível para estudar agora, por baralho (respeitando o limite diário de novos). */
-async function countsByDeck(userId, deckIds, now = new Date()) {
-    if (deckIds.length === 0) return new Map();
+async function countsByDeck(userId, decks, now = new Date()) {
+    if (decks.length === 0) return new Map();
+
+    const deckIds = decks.map((deck) => deck._id);
+    const configs = new Map(decks.map((deck) => [String(deck._id), configForDeck(deck)]));
 
     const learnUntil = new Date(now.getTime() + SRS_CONFIG.learnAheadMinutes * 60_000);
     const today = startOfDay(now);
@@ -63,12 +79,15 @@ async function countsByDeck(userId, deckIds, now = new Date()) {
         },
     ]);
 
-    return new Map(rows.map((row) => [String(row._id), {
-        total: row.total,
-        new: Math.min(row.newTotal, Math.max(0, SRS_CONFIG.newPerDay - row.introducedToday)),
-        learning: row.learning,
-        review: Math.min(row.review, SRS_CONFIG.reviewsPerDay),
-    }]));
+    return new Map(rows.map((row) => {
+        const cfg = configs.get(String(row._id)) ?? SRS_CONFIG;
+        return [String(row._id), {
+            total: row.total,
+            new: Math.min(row.newTotal, Math.max(0, cfg.newPerDay - row.introducedToday)),
+            learning: row.learning,
+            review: Math.min(row.review, cfg.reviewsPerDay),
+        }];
+    }));
 }
 
 // ---------------------------------------------------------------- Baralhos
@@ -76,7 +95,7 @@ async function countsByDeck(userId, deckIds, now = new Date()) {
 export const getDecks = async (req, res) => {
     try {
         const decks = await Deck.find({ user_id: req.userId, profile_id: req.profileId }).sort({ createdAt: 1 }).lean();
-        const counts = await countsByDeck(req.userId, decks.map((deck) => deck._id));
+        const counts = await countsByDeck(req.userId, decks);
 
         res.status(200).json({ success: true, decks: decks.map((deck) => toDeckDto(deck, counts.get(String(deck._id)))) });
     } catch (error) {
@@ -112,7 +131,7 @@ export const createDeck = async (req, res) => {
 
 export const updateDeck = async (req, res) => {
     const { id } = req.params;
-    const { name, description, color } = req.body;
+    const { name, description, color, settings } = req.body;
 
     try {
         if (!validId(id)) return notFound(res);
@@ -130,6 +149,12 @@ export const updateDeck = async (req, res) => {
             if (typeof color !== "string" || !HEX_COLOR.test(color.trim()))
                 return res.status(400).json({ success: false, message: "Cor inválida." });
             deck.color = color.trim();
+        }
+
+        if (settings !== undefined) {
+            const parsed = parseDeckSettings(settings, configForDeck(deck.toObject()));
+            if (parsed.error) return res.status(400).json({ success: false, message: parsed.error });
+            deck.settings = parsed.settings;
         }
 
         await deck.save();
@@ -171,15 +196,16 @@ export const getDeck = async (req, res) => {
         if (!deck) return notFound(res);
 
         const now = new Date();
+        const cfg = configForDeck(deck);
         const [cards, counts] = await Promise.all([
             Flashcard.find({ deck_id: deck._id, user_id: req.userId }).sort({ createdAt: -1 }).lean(),
-            countsByDeck(req.userId, [deck._id], now),
+            countsByDeck(req.userId, [deck], now),
         ]);
 
         res.status(200).json({
             success: true,
             deck: toDeckDto(deck, counts.get(String(deck._id))),
-            cards: cards.map((card) => toCardDto(card, now)),
+            cards: cards.map((card) => toCardDto(card, now, cfg)),
         });
     } catch (error) {
         serverError(res, "getDeck", error);
@@ -197,7 +223,7 @@ export const createCards = async (req, res) => {
     try {
         if (!validId(id)) return notFound(res);
 
-        const deck = await Deck.findOne({ _id: id, user_id: req.userId }).select("_id").lean();
+        const deck = await Deck.findOne({ _id: id, user_id: req.userId }).select("_id settings").lean();
         if (!deck) return notFound(res);
 
         const input = Array.isArray(req.body.cards) ? req.body.cards : [req.body];
@@ -221,7 +247,7 @@ export const createCards = async (req, res) => {
         res.status(201).json({
             success: true,
             message: created.length === 1 ? "Cartão criado!" : `${created.length} cartões criados!`,
-            cards: created.map((card) => toCardDto(card.toObject(), now)),
+            cards: created.map((card) => toCardDto(card.toObject(), now, configForDeck(deck))),
         });
     } catch (error) {
         const message = validationMessage(error);
@@ -248,7 +274,7 @@ export const updateCard = async (req, res) => {
         card.back = back;
         await card.save();
 
-        res.status(200).json({ success: true, message: "Cartão atualizado!", card: toCardDto(card.toObject()) });
+        res.status(200).json({ success: true, message: "Cartão atualizado!", card: toCardDto(card.toObject(), new Date(), await configForCard(card)) });
     } catch (error) {
         const message = validationMessage(error);
         if (message) return res.status(400).json({ success: false, message });
@@ -287,7 +313,7 @@ export const resetCard = async (req, res) => {
         });
         await card.save();
 
-        res.status(200).json({ success: true, message: "Cartão reiniciado.", card: toCardDto(card.toObject()) });
+        res.status(200).json({ success: true, message: "Cartão reiniciado.", card: toCardDto(card.toObject(), new Date(), await configForCard(card)) });
     } catch (error) {
         serverError(res, "resetCard", error);
     }
@@ -311,20 +337,21 @@ export const getStudyQueue = async (req, res) => {
         const now = new Date();
         const learnUntil = new Date(now.getTime() + SRS_CONFIG.learnAheadMinutes * 60_000);
         const base = { user_id: req.userId, deck_id: deck._id };
+        const cfg = configForDeck(deck);
 
         const introducedToday = await Flashcard.countDocuments({ ...base, introducedAt: { $gte: startOfDay(now) } });
-        const newLimit = Math.max(0, SRS_CONFIG.newPerDay - introducedToday);
+        const newLimit = Math.max(0, cfg.newPerDay - introducedToday);
 
         const [learning, review, fresh] = await Promise.all([
             Flashcard.find({ ...base, state: { $in: ["learning", "relearning"] }, due: { $lte: learnUntil } }).sort({ due: 1 }).lean(),
-            Flashcard.find({ ...base, state: "review", due: { $lt: endOfDay(now) } }).sort({ due: 1 }).limit(SRS_CONFIG.reviewsPerDay).lean(),
+            Flashcard.find({ ...base, state: "review", due: { $lt: endOfDay(now) } }).sort({ due: 1 }).limit(cfg.reviewsPerDay).lean(),
             newLimit > 0 ? Flashcard.find({ ...base, state: "new" }).sort({ createdAt: 1 }).limit(newLimit).lean() : [],
         ]);
 
         res.status(200).json({
             success: true,
             deck: { id: String(deck._id), name: deck.name, color: deck.color },
-            cards: [...learning, ...review, ...fresh].map((card) => toCardDto(card, now)),
+            cards: [...learning, ...review, ...fresh].map((card) => toCardDto(card, now, cfg)),
             learnAheadMinutes: SRS_CONFIG.learnAheadMinutes,
         });
     } catch (error) {
@@ -347,8 +374,9 @@ export const reviewCard = async (req, res) => {
         if (!card) return notFound(res, "Cartão");
 
         const now = new Date();
+        const cfg = await configForCard(card);
         const wasNew = card.state === "new";
-        const next = schedule(card.toObject(), rating, now);
+        const next = schedule(card.toObject(), rating, now, cfg);
 
         card.state = next.state;
         card.step = next.step;
@@ -362,7 +390,7 @@ export const reviewCard = async (req, res) => {
 
         await card.save();
 
-        res.status(200).json({ success: true, card: toCardDto(card.toObject(), now) });
+        res.status(200).json({ success: true, card: toCardDto(card.toObject(), now, cfg) });
     } catch (error) {
         serverError(res, "reviewCard", error);
     }
@@ -423,7 +451,7 @@ export const exportDecks = async (req, res) => {
         res.status(200).json({
             success: true,
             decks: decks.map((deck) => ({
-                name: deck.name, description: deck.description ?? "", color: deck.color, cards: byDeck.get(String(deck._id)) ?? [],
+                name: deck.name, description: deck.description ?? "", color: deck.color, settings: settingsOf(deck), cards: byDeck.get(String(deck._id)) ?? [],
             })),
         });
     } catch (error) {
@@ -461,6 +489,8 @@ export const importDecks = async (req, res) => {
                 name: item.name,
                 description: typeof item.description === "string" ? item.description : "",
                 ...(color ? { color } : {}),
+                // Configuração inválida no arquivo é ignorada (vale o padrão).
+                ...(item.settings ? (() => { const parsed = parseDeckSettings(item.settings); return parsed.settings ? { settings: parsed.settings } : {}; })() : {}),
             });
             decksCreated++;
 

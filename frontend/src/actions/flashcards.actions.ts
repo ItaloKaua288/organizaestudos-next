@@ -1,7 +1,7 @@
 "use server";
 
 import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
-import { Deck, Flashcard, FlashcardBackupDeck, FlashcardRating } from "@/types/flashcard";
+import { Deck, DeckSettings, Flashcard, FlashcardBackupDeck, FlashcardRating } from "@/types/flashcard";
 import { revalidatePath } from "next/cache";
 
 type ActionResult = { success: boolean; message: string };
@@ -98,6 +98,21 @@ export async function updateDeckAction(deckId: string, input: DeckInput): Promis
         return { success: true, message: "Baralho atualizado!" };
     } catch (error) {
         console.error("Erro interno ao atualizar baralho:", error);
+        return { success: false, message: "Ocorreu um erro inesperado." };
+    }
+}
+
+export async function updateDeckSettingsAction(deckId: string, settings: DeckSettings): Promise<ActionResult> {
+    try {
+        const res = await request(`/decks/${deckId}`, { method: "PUT", body: JSON.stringify({ settings }) });
+        if (!res.ok) return { success: false, message: await errorMessage(res, "Falha da API ao salvar as configurações.") };
+
+        revalidatePath("/flashcards");
+        revalidatePath(`/flashcards/${deckId}`);
+        revalidatePath(`/flashcards/${deckId}/estudar`);
+        return { success: true, message: "Configurações salvas!" };
+    } catch (error) {
+        console.error("Erro interno ao salvar configurações do baralho:", error);
         return { success: false, message: "Ocorreu um erro inesperado." };
     }
 }

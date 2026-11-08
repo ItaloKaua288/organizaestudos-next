@@ -70,7 +70,7 @@ export const newCardState = () => ({
     lapses: 0,
 });
 
-function scheduleLearning(card, rating, now, steps, kind) {
+function scheduleLearning(card, rating, now, steps, kind, cfg) {
     const base = { ...card, reps: (card.reps ?? 0) + 1 };
     const learningState = kind === "relearning" ? "relearning" : "learning";
 
@@ -95,24 +95,24 @@ function scheduleLearning(card, rating, now, steps, kind) {
         const next = (card.step ?? 0) + 1;
         if (next >= steps.length) {
             // Reaprendizado volta ao intervalo guardado; aprendizado novo usa o intervalo de graduação.
-            return graduate(kind === "relearning" ? capInterval(card.interval || 1) : SRS_CONFIG.graduatingInterval);
+            return graduate(kind === "relearning" ? capInterval(card.interval || 1) : cfg.graduatingInterval);
         }
         return { ...base, state: learningState, step: next, due: dueInMinutes(steps[next], now) };
     }
 
     // EASY
-    return graduate(kind === "relearning" ? capInterval((card.interval || 1) + 1) : SRS_CONFIG.easyInterval);
+    return graduate(kind === "relearning" ? capInterval((card.interval || 1) + 1) : cfg.easyInterval);
 }
 
-function scheduleReview(card, rating, now) {
-    const { hardFactor, easyBonus, intervalModifier, lapseNewInterval } = SRS_CONFIG;
+function scheduleReview(card, rating, now, cfg) {
+    const { hardFactor, easyBonus, intervalModifier, lapseNewInterval } = cfg;
     const interval = Math.max(1, card.interval || 1);
     const ease = card.ease || SRS_CONFIG.startingEase;
     const overdue = daysOverdue(card, now);
     const base = { ...card, reps: (card.reps ?? 0) + 1 };
 
     if (rating === RATING.AGAIN) {
-        const steps = SRS_CONFIG.relearningSteps;
+        const steps = cfg.relearningSteps;
         return {
             ...base,
             state: "relearning",
@@ -139,14 +139,14 @@ function scheduleReview(card, rating, now) {
 }
 
 /** Calcula o novo estado do cartão para uma avaliação (1 a 4). Não altera o cartão original. */
-export function schedule(card, rating, now = new Date()) {
+export function schedule(card, rating, now = new Date(), cfg = SRS_CONFIG) {
     const current = { ...newCardState(), ...card };
     const state = current.state ?? "new";
 
-    if (state === "review") return scheduleReview(current, rating, now);
-    if (state === "relearning") return scheduleLearning(current, rating, now, SRS_CONFIG.relearningSteps, "relearning");
+    if (state === "review") return scheduleReview(current, rating, now, cfg);
+    if (state === "relearning") return scheduleLearning(current, rating, now, cfg.relearningSteps, "relearning", cfg);
     // "new" e "learning" usam os mesmos passos de aprendizado.
-    return scheduleLearning(current, rating, now, SRS_CONFIG.learningSteps, "learning");
+    return scheduleLearning(current, rating, now, cfg.learningSteps, "learning", cfg);
 }
 
 const DECIMAL = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
@@ -169,11 +169,77 @@ export function formatDelay(from, to) {
 }
 
 /** Texto de cada botão (quanto tempo até a próxima revisão) sem alterar o cartão. */
-export function previewIntervals(card, now = new Date()) {
+export function previewIntervals(card, now = new Date(), cfg = SRS_CONFIG) {
     const label = (rating) => {
-        const next = schedule(card, rating, now);
+        const next = schedule(card, rating, now, cfg);
         // Cartões graduados vencem por dia; os demais por minutos.
         return next.state === "review" ? formatDays(next.interval) : formatDelay(now, next.due);
     };
     return { again: label(1), hard: label(2), good: label(3), easy: label(4) };
+}
+
+// ---------------------------------------------------------------- Configurações por baralho
+
+/** Campos que o usuário pode ajustar em cada baralho. */
+export const DEFAULT_DECK_SETTINGS = {
+    newPerDay: SRS_CONFIG.newPerDay,
+    reviewsPerDay: SRS_CONFIG.reviewsPerDay,
+    learningSteps: SRS_CONFIG.learningSteps,
+    relearningSteps: SRS_CONFIG.relearningSteps,
+    graduatingInterval: SRS_CONFIG.graduatingInterval,
+    easyInterval: SRS_CONFIG.easyInterval,
+};
+
+const MAX_STEPS = 8;
+const MAX_STEP_MINUTES = 60 * 24 * 30; // 30 dias
+
+const isIntInRange = (value, min, max) => Number.isInteger(value) && value >= min && value <= max;
+
+const validSteps = (steps) =>
+    Array.isArray(steps) && steps.length >= 1 && steps.length <= MAX_STEPS &&
+    steps.every((step) => typeof step === "number" && Number.isFinite(step) && step > 0 && step <= MAX_STEP_MINUTES);
+
+/**
+ * Valida as configurações recebidas (parciais) e junta com as atuais/padrão.
+ * Devolve { settings } ou { error } com mensagem em português.
+ */
+export function parseDeckSettings(input, current = DEFAULT_DECK_SETTINGS) {
+    if (typeof input !== "object" || input === null || Array.isArray(input)) return { error: "Configurações inválidas." };
+
+    const next = { ...DEFAULT_DECK_SETTINGS, ...current };
+
+    if (input.newPerDay !== undefined) {
+        if (!isIntInRange(input.newPerDay, 0, 9999)) return { error: "Novos por dia: use um número inteiro de 0 a 9999." };
+        next.newPerDay = input.newPerDay;
+    }
+    if (input.reviewsPerDay !== undefined) {
+        if (!isIntInRange(input.reviewsPerDay, 0, 9999)) return { error: "Revisões por dia: use um número inteiro de 0 a 9999." };
+        next.reviewsPerDay = input.reviewsPerDay;
+    }
+    if (input.learningSteps !== undefined) {
+        if (!validSteps(input.learningSteps)) return { error: `Passos de aprendizado: de 1 a ${MAX_STEPS} valores em minutos (até 30 dias).` };
+        next.learningSteps = input.learningSteps;
+    }
+    if (input.relearningSteps !== undefined) {
+        if (!validSteps(input.relearningSteps)) return { error: `Passos de reaprendizado: de 1 a ${MAX_STEPS} valores em minutos (até 30 dias).` };
+        next.relearningSteps = input.relearningSteps;
+    }
+    if (input.graduatingInterval !== undefined) {
+        if (!isIntInRange(input.graduatingInterval, 1, 365)) return { error: "Intervalo ao graduar: de 1 a 365 dias." };
+        next.graduatingInterval = input.graduatingInterval;
+    }
+    if (input.easyInterval !== undefined) {
+        if (!isIntInRange(input.easyInterval, 1, 365)) return { error: "Intervalo do botão Fácil: de 1 a 365 dias." };
+        next.easyInterval = input.easyInterval;
+    }
+    if (next.easyInterval < next.graduatingInterval) return { error: "O intervalo do botão Fácil não pode ser menor que o intervalo ao graduar." };
+
+    return { settings: next };
+}
+
+/** Configuração completa do agendador para um baralho (padrão + ajustes salvos). */
+export function configForDeck(deck) {
+    const saved = deck?.settings ?? {};
+    const parsed = parseDeckSettings(saved);
+    return { ...SRS_CONFIG, ...(parsed.settings ?? DEFAULT_DECK_SETTINGS) };
 }
