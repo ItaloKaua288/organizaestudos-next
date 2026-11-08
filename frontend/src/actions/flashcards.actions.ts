@@ -48,18 +48,19 @@ export async function getDeckAction(deckId: string): Promise<{ deck: Deck; cards
     }
 }
 
-export async function getStudyQueueAction(deckId: string): Promise<{
+export async function getStudyQueueAction(deckId: string, tag?: string): Promise<{
     deck: { id: string; name: string; color: string };
     cards: Flashcard[];
+    tag: string | null;
     learnAheadMinutes: number;
 } | null> {
     try {
-        const res = await request(`/decks/${deckId}/study`);
+        const res = await request(`/decks/${deckId}/study${tag ? `?tag=${encodeURIComponent(tag)}` : ""}`);
         if (res.status === 404) return null;
         if (!res.ok) throw new Error(await errorMessage(res, "Falha ao montar a sessão de estudo."));
 
         const data = await res.json();
-        return { deck: data.deck, cards: data.cards, learnAheadMinutes: data.learnAheadMinutes ?? 20 };
+        return { deck: data.deck, cards: data.cards, tag: data.tag ?? null, learnAheadMinutes: data.learnAheadMinutes ?? 20 };
     } catch (error) {
         console.error("Erro interno ao montar a sessão de estudo:", error);
         throw new Error("Não foi possível carregar a sessão de estudo. Tente novamente mais tarde.");
@@ -132,7 +133,7 @@ export async function deleteDeckAction(deckId: string): Promise<ActionResult> {
 
 // ---------------------------------------------------------------- Cartões
 
-type CardInput = { front: string; back: string };
+type CardInput = { front: string; back: string; tags?: string[] };
 
 export async function createCardsAction(deckId: string, cards: CardInput[]): Promise<ActionResult & { cards?: Flashcard[] }> {
     try {

@@ -14,9 +14,10 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { TagInput } from "@/components/tag-input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
-import { buildBackup, buildCsv, cardToBackup, downloadTextFile, fileSlug, parseCardsInput } from "@/lib/flashcard-io";
+import { buildBackup, buildCsv, cardToBackup, cleanTags, downloadTextFile, fileSlug, parseCardsInput } from "@/lib/flashcard-io";
 import { cn } from "@/lib/utils";
 import { Deck, Flashcard, FlashcardState } from "@/types/flashcard";
 import { CornerDownLeft, Download, FileUp, Pencil, Play, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
@@ -54,6 +55,8 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
     const router = useRouter();
     const [front, setFront] = useState("");
     const [back, setBack] = useState("");
+    const [tags, setTags] = useState<string[]>([]);
+    const [activeTag, setActiveTag] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [query, setQuery] = useState("");
 
@@ -63,13 +66,28 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
     const [bulkOpen, setBulkOpen] = useState(false);
     const [bulkText, setBulkText] = useState("");
     const [bulkFileName, setBulkFileName] = useState("");
+    // Tags somadas a todos os cartões importados (além das que vierem no arquivo).
+    const [bulkTags, setBulkTags] = useState<string[]>([]);
     const [exportOpen, setExportOpen] = useState(false);
 
+    // Tags usadas no baralho (mais frequentes primeiro), para filtro e sugestões.
+    const tagCounts = useMemo(() => {
+        const counts = new Map<string, number>();
+        for (const card of cards) for (const tag of card.tags ?? []) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }, [cards]);
+    const tagSuggestions = useMemo(() => tagCounts.map(([tag]) => tag), [tagCounts]);
+    // Se a última carta com a tag foi apagada/editada, o filtro some junto.
+    const selectedTag = activeTag && tagSuggestions.includes(activeTag) ? activeTag : null;
+
     const filtered = useMemo(() => {
-        const term = query.trim().toLowerCase();
-        if (!term) return cards;
-        return cards.filter((card) => card.front.toLowerCase().includes(term) || card.back.toLowerCase().includes(term));
-    }, [cards, query]);
+        const term = query.trim().toLowerCase().replace(/^#/, "");
+        return cards.filter((card) => {
+            if (selectedTag && !(card.tags ?? []).includes(selectedTag)) return false;
+            if (!term) return true;
+            return card.front.toLowerCase().includes(term) || card.back.toLowerCase().includes(term) || (card.tags ?? []).some((tag) => tag.includes(term));
+        });
+    }, [cards, query, selectedTag]);
 
     async function addCard(event?: FormEvent) {
         event?.preventDefault();
@@ -81,7 +99,7 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
         }
 
         setSaving(true);
-        const result = await createCardsAction(deck.id, [{ front, back }]);
+        const result = await createCardsAction(deck.id, [{ front, back, tags }]);
         setSaving(false);
 
         if (!result.success) {
@@ -92,6 +110,7 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
         toast.success(result.message);
         setFront("");
         setBack("");
+        // As tags ficam: facilita cadastrar vários cartões do mesmo tema em sequência.
         document.getElementById("new-card-front")?.focus();
     }
 
@@ -105,7 +124,8 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
         }
 
         toast.loading("Importando cartões...", { id: "bulk-cards" });
-        const result = await createCardsAction(deck.id, parsed);
+        const withTags = parsed.map((card) => ({ ...card, tags: cleanTags([...card.tags, ...bulkTags]) }));
+        const result = await createCardsAction(deck.id, withTags);
 
         if (!result.success) {
             toast.error(result.message, { id: "bulk-cards" });
@@ -115,6 +135,7 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
         toast.success(invalid > 0 ? `${result.message} (${invalid} linha(s) ignorada(s))` : result.message, { id: "bulk-cards" });
         setBulkText("");
         setBulkFileName("");
+        setBulkTags([]);
         setBulkOpen(false);
     }
 
@@ -245,7 +266,7 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
                         <DialogDemo
                             contentBtn={<span className="flex items-center gap-1"><FileUp className="size-4" /> Importar</span>}
                             title="Importar cartões"
-                            description="Escolha um arquivo (.csv, .txt ou .json) ou cole uma linha por cartão, com frente e verso separados por ponto e vírgula, vírgula ou TAB."
+                            description="Escolha um arquivo (.csv, .txt ou .json) ou cole uma linha por cartão: frente;verso;tags (as tags são opcionais e separadas por espaço). Também vale vírgula ou TAB como separador."
                             nameConfirmBtn="Importar"
                             onSubmit={handleBulk}
                             open={bulkOpen}
@@ -292,6 +313,16 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
                                     value={bulkText}
                                     onChange={(e) => setBulkText(e.target.value)}
                                 />
+                                <Field>
+                                    <Label htmlFor="import-tags">Tags para todos os cartões (opcional)</Label>
+                                    <TagInput
+                                        id="import-tags"
+                                        value={bulkTags}
+                                        onChange={setBulkTags}
+                                        suggestions={tagSuggestions}
+                                        hint="Somam-se às tags que já vierem no arquivo."
+                                    />
+                                </Field>
                                 <p className="text-xs text-muted-foreground">
                                     {parseCardsInput(bulkText).cards.length} cartão(ões) reconhecido(s). Até 500 por vez. Backups JSON entram sem o progresso de estudo.
                                 </p>
@@ -346,6 +377,17 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
                     </Field>
                 </div>
 
+                <Field>
+                    <Label htmlFor="new-card-tags">Tags (opcional)</Label>
+                    <TagInput
+                        id="new-card-tags"
+                        value={tags}
+                        onChange={setTags}
+                        suggestions={tagSuggestions}
+                        hint="Enter ou vírgula adiciona. Ficam preenchidas para o próximo cartão."
+                    />
+                </Field>
+
                 <div className="flex items-center justify-between gap-3">
                     <span className="text-xs text-muted-foreground max-sm:hidden">Dica: Ctrl + Enter adiciona o cartão.</span>
                     <Button type="submit" disabled={saving} className="ml-auto">
@@ -366,6 +408,33 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
                 )}
             </div>
 
+            {tagCounts.length > 0 && (
+                <div className="mb-3 flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrar por tag">
+                    {tagCounts.map(([tag, count]) => (
+                        <button
+                            key={tag}
+                            type="button"
+                            aria-pressed={selectedTag === tag}
+                            onClick={() => setActiveTag(selectedTag === tag ? null : tag)}
+                            className={cn(
+                                "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                                selectedTag === tag ? "bg-primary text-primary-foreground" : "bg-primary/12 text-primary hover:bg-primary/20"
+                            )}
+                        >
+                            #{tag} <span className="opacity-70">{count}</span>
+                        </button>
+                    ))}
+                    {selectedTag && (
+                        <Link
+                            href={`/flashcards/${deck.id}/estudar?tag=${encodeURIComponent(selectedTag)}`}
+                            className={cn(buttonVariants({ variant: "outline", size: "xs" }), "ml-1")}
+                        >
+                            <Play /> Estudar #{selectedTag}
+                        </Link>
+                    )}
+                </div>
+            )}
+
             {cards.length === 0 ? (
                 <div className="glass rounded-2xl px-6 py-10 text-center">
                     <p className="font-medium">Nenhum cartão ainda.</p>
@@ -376,7 +445,7 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
             ) : (
                 <ul className="flex flex-col gap-2">
                     {filtered.map((card) => (
-                        <CardRow key={card.id} deckId={deck.id} card={card} />
+                        <CardRow key={card.id} deckId={deck.id} card={card} tagSuggestions={tagSuggestions} onTagClick={(tag) => setActiveTag(tag)} />
                     ))}
                 </ul>
             )}
@@ -384,10 +453,16 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
     );
 }
 
-function CardRow({ deckId, card }: { deckId: string; card: Flashcard }) {
+function CardRow({ deckId, card, tagSuggestions, onTagClick }: {
+    deckId: string;
+    card: Flashcard;
+    tagSuggestions: string[];
+    onTagClick: (tag: string) => void;
+}) {
     const [open, setOpen] = useState(false);
     const [front, setFront] = useState(card.front);
     const [back, setBack] = useState(card.back);
+    const [tags, setTags] = useState<string[]>(card.tags ?? []);
 
     async function handleSave(event: FormEvent) {
         event.preventDefault();
@@ -398,7 +473,7 @@ function CardRow({ deckId, card }: { deckId: string; card: Flashcard }) {
         }
 
         toast.loading("Salvando...", { id: `card-${card.id}` });
-        const result = await updateCardAction(deckId, card.id, { front, back });
+        const result = await updateCardAction(deckId, card.id, { front, back, tags });
 
         if (!result.success) {
             toast.error(result.message, { id: `card-${card.id}` });
@@ -442,6 +517,21 @@ function CardRow({ deckId, card }: { deckId: string; card: Flashcard }) {
                     <span className="text-xs text-muted-foreground">{schedule}</span>
                     {card.lapses > 0 && <span className="text-xs text-muted-foreground">· {card.lapses} {card.lapses === 1 ? "erro" : "erros"}</span>}
                 </div>
+                {(card.tags ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1 sm:col-span-2">
+                        {card.tags.map((tag) => (
+                            <button
+                                key={tag}
+                                type="button"
+                                onClick={() => onTagClick(tag)}
+                                title={`Filtrar por #${tag}`}
+                                className="rounded-full bg-primary/12 px-2 py-0.5 text-[0.7rem] font-medium text-primary transition-colors hover:bg-primary/20"
+                            >
+                                #{tag}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="flex shrink-0 items-center gap-1">
@@ -454,7 +544,7 @@ function CardRow({ deckId, card }: { deckId: string; card: Flashcard }) {
                     onSubmit={handleSave}
                     open={open}
                     onOpenChange={(next) => {
-                        if (next) { setFront(card.front); setBack(card.back); }
+                        if (next) { setFront(card.front); setBack(card.back); setTags(card.tags ?? []); }
                         setOpen(next);
                     }}
                     classNameBtn="size-8 p-0"
@@ -468,6 +558,10 @@ function CardRow({ deckId, card }: { deckId: string; card: Flashcard }) {
                         <Field>
                             <Label htmlFor={`edit-back-${card.id}`}>Verso</Label>
                             <Textarea id={`edit-back-${card.id}`} value={back} maxLength={5000} onChange={(e) => setBack(e.target.value)} />
+                        </Field>
+                        <Field>
+                            <Label htmlFor={`edit-tags-${card.id}`}>Tags</Label>
+                            <TagInput id={`edit-tags-${card.id}`} value={tags} onChange={setTags} suggestions={tagSuggestions} hint="Enter ou vírgula adiciona." />
                         </Field>
                     </FieldGroup>
                 </DialogDemo>

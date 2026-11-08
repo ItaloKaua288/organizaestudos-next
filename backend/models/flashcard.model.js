@@ -28,6 +28,12 @@ const flashcardSchema = new mongoose.Schema({
         maxlength: [MAX_CARD_TEXT, `O verso não pode exceder ${MAX_CARD_TEXT} caracteres`]
     },
 
+    // Etiquetas livres: minúsculas, sem "#" (veja normalizeTags no controller).
+    tags: {
+        type: [String],
+        default: []
+    },
+
     // ----- Agendamento (algoritmo SM-2 / estilo Anki, veja utils/srs.js) -----
     state: {
         type: String,
@@ -50,6 +56,7 @@ const flashcardSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 flashcardSchema.index({ user_id: 1, deck_id: 1, state: 1, due: 1 });
+flashcardSchema.index({ user_id: 1, deck_id: 1, tags: 1 });
 
 const Flashcard = mongoose.model("Flashcard", flashcardSchema);
 

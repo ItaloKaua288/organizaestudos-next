@@ -13,6 +13,7 @@ export interface Flashcard {
     deckId: string;
     front: string;
     back: string;
+    tags: string[];
     state: FlashcardState;
     step: number;
     /** Intervalo atual, em dias. */
@@ -73,6 +74,7 @@ export type FlashcardRating = 1 | 2 | 3 | 4;
 export interface FlashcardBackupCard {
     front: string;
     back: string;
+    tags?: string[];
     state?: FlashcardState;
     step?: number;
     interval?: number;

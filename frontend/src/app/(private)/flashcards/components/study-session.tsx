@@ -24,9 +24,11 @@ const RATING_BUTTONS: {
 /** Um cartão que ainda vai voltar hoje (aprendizado) é reinserido a poucos cartões de distância. */
 const REINSERT_DISTANCE = 4;
 
-export function StudySession({ deck, initialCards, learnAheadMinutes }: {
+export function StudySession({ deck, initialCards, tag, learnAheadMinutes }: {
     deck: { id: string; name: string; color: string };
     initialCards: Flashcard[];
+    /** Quando definida, a sessão estuda só os cartões com essa tag. */
+    tag?: string | null;
     learnAheadMinutes: number;
 }) {
     const [queue, setQueue] = useState<Flashcard[]>(initialCards);
@@ -112,7 +114,7 @@ export function StudySession({ deck, initialCards, learnAheadMinutes }: {
                 </h1>
                 <p className="text-sm text-muted-foreground">
                     {answered.total === 0
-                        ? `O baralho "${deck.name}" está em dia. Volte mais tarde ou adicione novos cartões.`
+                        ? (tag ? `Os cartões com a tag #${tag} em "${deck.name}" estão em dia.` : `O baralho "${deck.name}" está em dia.`) + " Volte mais tarde ou adicione novos cartões."
                         : `Você avaliou ${answered.total} ${answered.total === 1 ? "cartão" : "cartões"} em "${deck.name}". Os próximos já foram agendados.`}
                 </p>
 
@@ -149,6 +151,7 @@ export function StudySession({ deck, initialCards, learnAheadMinutes }: {
                     <CornerDownLeft className="size-3.5 shrink-0" />
                     <span className="inline-block size-2.5 shrink-0 rounded-full" style={{ backgroundColor: deck.color }} aria-hidden="true" />
                     <span className="truncate">{deck.name}</span>
+                    {tag && <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">#{tag}</span>}
                 </Link>
 
                 <dl className="flex items-center gap-3 text-sm tabular-nums">

@@ -1,14 +1,15 @@
+import { MAX_NOTE_TAGS, normalizeTag } from "@/lib/note-tags";
 import { Flashcard, FlashcardBackupCard, FlashcardBackupDeck } from "@/types/flashcard";
 
 export interface ParsedCards {
-    cards: { front: string; back: string }[];
+    cards: { front: string; back: string; tags: string[] }[];
     /** Linhas ignoradas por não terem frente e verso. */
     invalid: number;
 }
 
 /** Lê CSV/TSV com aspas (campos podem ter quebras de linha). O separador (TAB, ; ou ,) é detectado na 1ª linha. */
 export function parseDelimited(raw: string): string[][] {
-    const text = raw.replace(/^﻿/, "");
+    const text = raw.replace(/^\uFEFF/, "");
     const firstLine = text.split(/\r?\n/).find((line) => line.trim()) ?? "";
     const delimiter = firstLine.includes("\t") ? "\t" : firstLine.includes(";") ? ";" : ",";
 
@@ -72,7 +73,12 @@ export function parseBackup(raw: string): FlashcardBackupDeck[] | null {
     return single ? [single] : null;
 }
 
-/** Cartões (só frente e verso) de um texto colado ou arquivo: CSV/TSV (frente;verso) ou JSON de backup. */
+/** Normaliza, remove repetidas e respeita o limite de tags por cartão. */
+export function cleanTags(tags: string[]): string[] {
+    return [...new Set(tags.map(normalizeTag).filter(Boolean))].slice(0, MAX_NOTE_TAGS);
+}
+
+/** Cartões (frente, verso e tags) de um texto colado ou arquivo: CSV/TSV (frente;verso) ou JSON de backup. */
 export function parseCardsInput(raw: string): ParsedCards {
     const text = raw.trim();
     if (!text) return { cards: [], invalid: 0 };
@@ -80,22 +86,22 @@ export function parseCardsInput(raw: string): ParsedCards {
     if (text.startsWith("{") || text.startsWith("[")) {
         const decks = parseBackup(text);
         if (decks) {
-            const cards = decks.flatMap((deck) => deck.cards.map((card) => ({ front: card.front.trim(), back: card.back.trim() })));
+            const cards = decks.flatMap((deck) => deck.cards.map((card) => ({ front: card.front.trim(), back: card.back.trim(), tags: cleanTags(card.tags ?? []) })));
             const valid = cards.filter((card) => card.front && card.back);
             return { cards: valid, invalid: cards.length - valid.length };
         }
     }
 
-    const cards: { front: string; back: string }[] = [];
+    const cards: { front: string; back: string; tags: string[] }[] = [];
     let invalid = 0;
 
     parseDelimited(text).forEach((row, index) => {
-        const [front = "", back = ""] = row.map((cell) => cell.trim());
+        const [front = "", back = "", tagsCell = ""] = row.map((cell) => cell.trim());
 
         // Ignora uma linha de cabeçalho ("frente;verso").
         if (index === 0 && /^(frente|front|pergunta)$/i.test(front) && /^(verso|back|resposta)$/i.test(back)) return;
 
-        if (front && back) cards.push({ front, back });
+        if (front && back) cards.push({ front, back, tags: cleanTags(tagsCell.split(/[\s,;]+/)) });
         else invalid++;
     });
 
@@ -105,12 +111,13 @@ export function parseCardsInput(raw: string): ParsedCards {
 const csvField = (value: string) => (/[;"\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
 
 /** CSV com ";" (abre direto no Excel/Planilhas em português) e sem progresso de estudo. */
-export function buildCsv(cards: Pick<Flashcard, "front" | "back">[]): string {
-    return "﻿" + ["frente;verso", ...cards.map((card) => `${csvField(card.front)};${csvField(card.back)}`)].join("\r\n");
+export function buildCsv(cards: Pick<Flashcard, "front" | "back" | "tags">[]): string {
+    // A 3ª coluna guarda as tags separadas por espaço (tags nunca têm espaço).
+    return "\uFEFF" + ["frente;verso;tags", ...cards.map((card) => `${csvField(card.front)};${csvField(card.back)};${csvField((card.tags ?? []).join(" "))}`)].join("\r\n");
 }
 
 export const cardToBackup = (card: Flashcard): FlashcardBackupCard => ({
-    front: card.front, back: card.back, state: card.state, step: card.step, interval: card.interval,
+    front: card.front, back: card.back, tags: card.tags, state: card.state, step: card.step, interval: card.interval,
     ease: card.ease, due: card.due, reps: card.reps, lapses: card.lapses,
 });
 

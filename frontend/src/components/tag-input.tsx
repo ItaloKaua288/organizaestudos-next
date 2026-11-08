@@ -10,9 +10,11 @@ interface TagInputProps {
     /** Tags já usadas em outras notas, oferecidas como sugestão enquanto a pessoa digita. */
     suggestions?: string[];
     id?: string;
+    /** Texto de ajuda abaixo do campo. */
+    hint?: string;
 }
 
-export function TagInput({ value, onChange, suggestions = [], id }: TagInputProps) {
+export function TagInput({ value, onChange, suggestions = [], id, hint }: TagInputProps) {
     const [draft, setDraft] = useState("");
     const listId = useId();
     const atLimit = value.length >= MAX_NOTE_TAGS;
@@ -86,7 +88,7 @@ export function TagInput({ value, onChange, suggestions = [], id }: TagInputProp
                 </datalist>
             </div>
             <p className="text-xs text-muted-foreground">
-                Enter ou vírgula adiciona. Até {MAX_NOTE_TAGS} tags por nota.
+                {hint ?? `Enter ou vírgula adiciona. Até ${MAX_NOTE_TAGS} tags por nota.`}
             </p>
         </div>
     );

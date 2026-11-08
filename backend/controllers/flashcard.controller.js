@@ -1,10 +1,27 @@
 import mongoose from "mongoose";
 import Deck from "../models/deck.model.js";
 import Flashcard from "../models/flashcard.model.js";
+import { MAX_NOTE_TAGS, MAX_TAG_LENGTH } from "../models/note.model.js";
 import { DEFAULT_DECK_SETTINGS, RATING, SRS_CONFIG, configForDeck, endOfDay, parseDeckSettings, previewIntervals, schedule, startOfDay } from "../utils/srs.js";
 
 const HEX_COLOR = /^#([0-9A-F]{3}){1,2}$/i;
 const MAX_BULK_CARDS = 500;
+
+/** Minúsculas, sem "#", espaços viram "-", sem repetidas e dentro dos limites (mesma regra das notas). */
+function normalizeTags(input) {
+    if (!Array.isArray(input)) return [];
+
+    const seen = new Set();
+    for (const raw of input) {
+        if (typeof raw !== "string") continue;
+
+        const tag = raw.trim().replace(/^#+/, "").toLowerCase().replace(/\s+/g, "-").slice(0, MAX_TAG_LENGTH);
+        if (tag) seen.add(tag);
+        if (seen.size >= MAX_NOTE_TAGS) break;
+    }
+
+    return [...seen];
+}
 
 const validId = (id) => mongoose.isValidObjectId(id);
 const notFound = (res, what = "Baralho") => res.status(404).json({ success: false, message: `${what} não encontrado.` });
@@ -20,6 +37,7 @@ const toCardDto = (card, now = new Date(), cfg = SRS_CONFIG) => ({
     deckId: String(card.deck_id),
     front: card.front,
     back: card.back,
+    tags: card.tags ?? [],
     state: card.state,
     step: card.step,
     interval: card.interval,
@@ -238,7 +256,7 @@ export const createCards = async (req, res) => {
             if (!front || !back)
                 return res.status(400).json({ success: false, message: "Preencha a frente e o verso do cartão." });
 
-            docs.push({ user_id: req.userId, deck_id: deck._id, front, back });
+            docs.push({ user_id: req.userId, deck_id: deck._id, front, back, tags: normalizeTags(item?.tags) });
         }
 
         const created = await Flashcard.insertMany(docs);
@@ -272,6 +290,8 @@ export const updateCard = async (req, res) => {
 
         card.front = front;
         card.back = back;
+        // Sem o campo, as tags continuam como estavam.
+        if (req.body.tags !== undefined) card.tags = normalizeTags(req.body.tags);
         await card.save();
 
         res.status(200).json({ success: true, message: "Cartão atualizado!", card: toCardDto(card.toObject(), new Date(), await configForCard(card)) });
@@ -339,19 +359,24 @@ export const getStudyQueue = async (req, res) => {
         const base = { user_id: req.userId, deck_id: deck._id };
         const cfg = configForDeck(deck);
 
+        // ?tag=prova estuda só os cartões com essa tag.
+        const [tag] = typeof req.query.tag === "string" ? normalizeTags([req.query.tag]) : [];
+        const scope = tag ? { ...base, tags: tag } : base;
+
         const introducedToday = await Flashcard.countDocuments({ ...base, introducedAt: { $gte: startOfDay(now) } });
         const newLimit = Math.max(0, cfg.newPerDay - introducedToday);
 
         const [learning, review, fresh] = await Promise.all([
-            Flashcard.find({ ...base, state: { $in: ["learning", "relearning"] }, due: { $lte: learnUntil } }).sort({ due: 1 }).lean(),
-            Flashcard.find({ ...base, state: "review", due: { $lt: endOfDay(now) } }).sort({ due: 1 }).limit(cfg.reviewsPerDay).lean(),
-            newLimit > 0 ? Flashcard.find({ ...base, state: "new" }).sort({ createdAt: 1 }).limit(newLimit).lean() : [],
+            Flashcard.find({ ...scope, state: { $in: ["learning", "relearning"] }, due: { $lte: learnUntil } }).sort({ due: 1 }).lean(),
+            Flashcard.find({ ...scope, state: "review", due: { $lt: endOfDay(now) } }).sort({ due: 1 }).limit(cfg.reviewsPerDay).lean(),
+            newLimit > 0 ? Flashcard.find({ ...scope, state: "new" }).sort({ createdAt: 1 }).limit(newLimit).lean() : [],
         ]);
 
         res.status(200).json({
             success: true,
             deck: { id: String(deck._id), name: deck.name, color: deck.color },
             cards: [...learning, ...review, ...fresh].map((card) => toCardDto(card, now, cfg)),
+            tag: tag ?? null,
             learnAheadMinutes: SRS_CONFIG.learnAheadMinutes,
         });
     } catch (error) {
@@ -413,7 +438,7 @@ function sanitizeCard(raw, userId, deckId) {
     const back = cleanText(raw?.back);
     if (!front || !back) return null;
 
-    const doc = { user_id: userId, deck_id: deckId, front, back };
+    const doc = { user_id: userId, deck_id: deckId, front, back, tags: normalizeTags(raw?.tags) };
     const state = STATES.includes(raw?.state) ? raw.state : "new";
     if (state === "new") return doc;
 
@@ -442,7 +467,7 @@ export const exportDecks = async (req, res) => {
         for (const card of cards) {
             const list = byDeck.get(String(card.deck_id)) ?? [];
             list.push({
-                front: card.front, back: card.back, state: card.state, step: card.step, interval: card.interval,
+                front: card.front, back: card.back, tags: card.tags ?? [], state: card.state, step: card.step, interval: card.interval,
                 ease: card.ease, due: card.due, reps: card.reps, lapses: card.lapses,
             });
             byDeck.set(String(card.deck_id), list);

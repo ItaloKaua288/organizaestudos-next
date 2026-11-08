@@ -5,9 +5,13 @@ import { CornerDownLeft } from "lucide-react";
 import Link from "next/link";
 import { StudySession } from "../../components/study-session";
 
-export default async function EstudarPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EstudarPage({ params, searchParams }: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ tag?: string }>;
+}) {
     const { id } = await params;
-    const data = await getStudyQueueAction(id);
+    const { tag } = await searchParams;
+    const data = await getStudyQueueAction(id, tag);
 
     if (!data) {
         return (
@@ -22,7 +26,7 @@ export default async function EstudarPage({ params }: { params: Promise<{ id: st
 
     return (
         <section className="introduction-Page">
-            <StudySession deck={data.deck} initialCards={data.cards} learnAheadMinutes={data.learnAheadMinutes} />
+            <StudySession deck={data.deck} initialCards={data.cards} tag={data.tag} learnAheadMinutes={data.learnAheadMinutes} />
         </section>
     );
 }
