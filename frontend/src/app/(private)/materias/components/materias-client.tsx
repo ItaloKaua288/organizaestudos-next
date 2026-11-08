@@ -44,8 +44,9 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
         });
     };
 
-    const expandAll = () => setCollapsedIds(new Set());
-    const collapseAll = () => setCollapsedIds(new Set(subjects.map((subject) => subject.id)));
+    // Um botão só: reduz tudo quando todas estão abertas; senão, expande tudo.
+    const allExpanded = collapsedIds.size === 0;
+    const toggleAll = () => setCollapsedIds(allExpanded ? new Set(subjects.map((subject) => subject.id)) : new Set());
 
     async function handleSubmitSubject(event: FormEvent) {
         event.preventDefault();
@@ -75,14 +76,16 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
                     <>
                         <LayoutToggle value={layout} onChange={setLayout} />
                         {!isCompact && (
-                            <>
-                                <Button variant="outline" size="sm" onClick={expandAll} title="Expandir todas as matérias" disabled={subjects.length === 0}>
-                                    <ChevronsUpDown size={15} /> <span className="max-sm:hidden">Expandir todas</span>
-                                </Button>
-                                <Button variant="outline" size="sm" onClick={collapseAll} title="Reduzir todas as matérias" disabled={subjects.length === 0}>
-                                    <ChevronsDownUp size={15} /> <span className="max-sm:hidden">Reduzir todas</span>
-                                </Button>
-                            </>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={toggleAll}
+                                title={allExpanded ? "Reduzir todas as matérias" : "Expandir todas as matérias"}
+                                disabled={subjects.length === 0}
+                            >
+                                {allExpanded ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
+                                <span className="max-sm:hidden">{allExpanded ? "Reduzir todas" : "Expandir todas"}</span>
+                            </Button>
                         )}
                         <DataTransfer />
                         <DialogDemo
