@@ -1,16 +1,17 @@
 "use client";
 
-import { createDeckAction } from "@/actions/flashcards.actions";
+import { createDeckAction, exportFlashcardsAction, importFlashcardsAction } from "@/actions/flashcards.actions";
 import { DialogDemo } from "@/components/dialog-button";
 import { PageHeader } from "@/components/page-header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { buildBackup, downloadTextFile, parseBackup } from "@/lib/flashcard-io";
 import { cn } from "@/lib/utils";
 import { Deck } from "@/types/flashcard";
-import { Layers, Play, Plus, Settings2 } from "lucide-react";
+import { Download, Layers, Play, Plus, Settings2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { DeckCountsBadges, hasCardsToStudy } from "./deck-counts";
 import { DeckFormFields, DeckFormValues, EMPTY_DECK_FORM } from "./deck-form-fields";
@@ -19,6 +20,44 @@ export function DecksClient({ decks }: { decks: Deck[] }) {
     const router = useRouter();
     const [open, setOpen] = useState(false);
     const [form, setForm] = useState<DeckFormValues>(EMPTY_DECK_FORM);
+
+    const fileInput = useRef<HTMLInputElement>(null);
+
+    async function handleExportAll() {
+        toast.loading("Preparando backup...", { id: "export-flashcards" });
+        const result = await exportFlashcardsAction();
+
+        if (!result.success || !result.decks) {
+            toast.error(result.message || "Não foi possível exportar.", { id: "export-flashcards" });
+            return;
+        }
+
+        downloadTextFile("flashcards-backup.json", buildBackup(result.decks), "application/json");
+        toast.success("Backup baixado!", { id: "export-flashcards" });
+    }
+
+    async function handleImportFile(event: ChangeEvent<HTMLInputElement>) {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) return;
+
+        if (file.size > 450 * 1024) {
+            toast.error("Arquivo muito grande. O limite é de 450 KB por importação.");
+            return;
+        }
+
+        const backup = parseBackup(await file.text());
+        if (!backup) {
+            toast.error("Arquivo inválido. Use um backup JSON exportado por aqui.");
+            return;
+        }
+
+        toast.loading("Importando...", { id: "import-flashcards" });
+        const result = await importFlashcardsAction(backup);
+
+        if (result.success) toast.success(result.message, { id: "import-flashcards" });
+        else toast.error(result.message, { id: "import-flashcards" });
+    }
 
     async function handleCreate(event: FormEvent) {
         event.preventDefault();
@@ -51,6 +90,14 @@ export function DecksClient({ decks }: { decks: Deck[] }) {
                 title="Flashcards"
                 description="Crie cartões e revise com repetição espaçada: o que você erra volta logo, o que você sabe volta só depois."
                 actions={
+                    <>
+                    <input ref={fileInput} type="file" accept=".json,application/json" className="hidden" onChange={handleImportFile} />
+                    <Button variant="outline" size="sm" onClick={() => fileInput.current?.click()} title="Importar um backup JSON (cria baralhos novos)">
+                        <Upload /> <span className="max-sm:hidden">Importar</span>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportAll} disabled={decks.length === 0} title="Baixar todos os baralhos, com progresso">
+                        <Download /> <span className="max-sm:hidden">Exportar tudo</span>
+                    </Button>
                     <DialogDemo
                         contentBtn={<span className="flex items-center gap-1"><Plus className="size-4" /> Novo baralho</span>}
                         title="Novo baralho"
@@ -63,6 +110,7 @@ export function DecksClient({ decks }: { decks: Deck[] }) {
                     >
                         <DeckFormFields idPrefix="new-deck" values={form} onChange={setForm} />
                     </DialogDemo>
+                    </>
                 }
             />
 

@@ -21,6 +21,7 @@ const toCardDto = (card, now = new Date()) => ({
     front: card.front,
     back: card.back,
     state: card.state,
+    step: card.step,
     interval: card.interval,
     ease: card.ease,
     due: card.due,
@@ -364,5 +365,124 @@ export const reviewCard = async (req, res) => {
         res.status(200).json({ success: true, card: toCardDto(card.toObject(), now) });
     } catch (error) {
         serverError(res, "reviewCard", error);
+    }
+};
+
+// ---------------------------------------------------------------- Exportar / importar
+
+const MAX_IMPORT_DECKS = 50;
+const MAX_IMPORT_CARDS = 5000;
+const STATES = ["new", "learning", "review", "relearning"];
+
+const toInt = (value, min, max, fallback) => {
+    const n = Math.round(Number(value));
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+};
+
+/** Mantém só campos válidos do agendamento vindos de um arquivo (nunca confia no que chega). */
+function sanitizeCard(raw, userId, deckId) {
+    const front = cleanText(raw?.front);
+    const back = cleanText(raw?.back);
+    if (!front || !back) return null;
+
+    const doc = { user_id: userId, deck_id: deckId, front, back };
+    const state = STATES.includes(raw?.state) ? raw.state : "new";
+    if (state === "new") return doc;
+
+    const due = new Date(raw?.due);
+    const ease = Number(raw?.ease);
+
+    return {
+        ...doc,
+        state,
+        step: toInt(raw?.step, 0, 10, 0),
+        interval: toInt(raw?.interval, 0, SRS_CONFIG.maxInterval, 0),
+        ease: Number.isFinite(ease) ? Math.min(5, Math.max(SRS_CONFIG.minEase, ease)) : SRS_CONFIG.startingEase,
+        due: Number.isNaN(due.getTime()) ? new Date() : due,
+        reps: toInt(raw?.reps, 0, 100000, 0),
+        lapses: toInt(raw?.lapses, 0, 100000, 0),
+    };
+}
+
+/** Todos os baralhos do perfil ativo, com cartões e progresso (backup). */
+export const exportDecks = async (req, res) => {
+    try {
+        const decks = await Deck.find({ user_id: req.userId, profile_id: req.profileId }).sort({ createdAt: 1 }).lean();
+        const cards = await Flashcard.find({ user_id: req.userId, deck_id: { $in: decks.map((deck) => deck._id) } }).sort({ createdAt: 1 }).lean();
+
+        const byDeck = new Map();
+        for (const card of cards) {
+            const list = byDeck.get(String(card.deck_id)) ?? [];
+            list.push({
+                front: card.front, back: card.back, state: card.state, step: card.step, interval: card.interval,
+                ease: card.ease, due: card.due, reps: card.reps, lapses: card.lapses,
+            });
+            byDeck.set(String(card.deck_id), list);
+        }
+
+        res.status(200).json({
+            success: true,
+            decks: decks.map((deck) => ({
+                name: deck.name, description: deck.description ?? "", color: deck.color, cards: byDeck.get(String(deck._id)) ?? [],
+            })),
+        });
+    } catch (error) {
+        serverError(res, "exportDecks", error);
+    }
+};
+
+/** Cria baralhos (e cartões, com progresso) a partir de um backup. Sempre cria baralhos novos. */
+export const importDecks = async (req, res) => {
+    try {
+        const input = req.body?.decks;
+
+        if (!Array.isArray(input) || input.length === 0)
+            return res.status(400).json({ success: false, message: "O arquivo não tem nenhum baralho." });
+        if (input.length > MAX_IMPORT_DECKS)
+            return res.status(400).json({ success: false, message: `Importe no máximo ${MAX_IMPORT_DECKS} baralhos por vez.` });
+
+        const total = input.reduce((sum, deck) => sum + (Array.isArray(deck?.cards) ? deck.cards.length : 0), 0);
+        if (total > MAX_IMPORT_CARDS)
+            return res.status(400).json({ success: false, message: `Importe no máximo ${MAX_IMPORT_CARDS} cartões por vez.` });
+
+        for (const deck of input) {
+            if (typeof deck?.name !== "string" || !deck.name.trim())
+                return res.status(400).json({ success: false, message: "Há um baralho sem nome no arquivo." });
+        }
+
+        let decksCreated = 0;
+        let cardsCreated = 0;
+
+        for (const item of input) {
+            const color = typeof item.color === "string" && HEX_COLOR.test(item.color.trim()) ? item.color.trim() : undefined;
+            const deck = await Deck.create({
+                user_id: req.userId,
+                profile_id: req.profileId,
+                name: item.name,
+                description: typeof item.description === "string" ? item.description : "",
+                ...(color ? { color } : {}),
+            });
+            decksCreated++;
+
+            const docs = (Array.isArray(item.cards) ? item.cards : [])
+                .map((card) => sanitizeCard(card, req.userId, deck._id))
+                .filter(Boolean);
+
+            if (docs.length > 0) {
+                await Flashcard.insertMany(docs);
+                cardsCreated += docs.length;
+            }
+        }
+
+        res.status(201).json({
+            success: true,
+            message: `${decksCreated} baralho(s) e ${cardsCreated} cartão(ões) importados!`,
+            decks: decksCreated,
+            cards: cardsCreated,
+        });
+    } catch (error) {
+        const message = validationMessage(error);
+        if (message) return res.status(400).json({ success: false, message });
+        serverError(res, "importDecks", error);
     }
 };

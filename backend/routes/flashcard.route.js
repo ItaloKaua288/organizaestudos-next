@@ -4,9 +4,11 @@ import {
     createDeck,
     deleteCard,
     deleteDeck,
+    exportDecks,
     getDeck,
     getDecks,
     getStudyQueue,
+    importDecks,
     resetCard,
     reviewCard,
     updateCard,
@@ -15,6 +17,10 @@ import {
 import { verifyToken } from "../middleware/verifyToken.js";
 
 const router = express.Router();
+
+// Backup: exportar / importar baralhos com cartões e progresso
+router.get("/export", verifyToken, exportDecks);
+router.post("/import", verifyToken, importDecks);
 
 // Baralhos
 router.get("/decks", verifyToken, getDecks);

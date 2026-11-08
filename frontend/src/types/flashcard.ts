@@ -14,6 +14,7 @@ export interface Flashcard {
     front: string;
     back: string;
     state: FlashcardState;
+    step: number;
     /** Intervalo atual, em dias. */
     interval: number;
     /** Fator de facilidade (2.5 = 250%). */
@@ -46,3 +47,23 @@ export interface Deck {
 
 /** Avaliação enviada ao servidor: 1 = Errei, 2 = Difícil, 3 = Bom, 4 = Fácil. */
 export type FlashcardRating = 1 | 2 | 3 | 4;
+
+/** Formato do arquivo de backup (JSON). Um arquivo pode ter vários baralhos. */
+export interface FlashcardBackupCard {
+    front: string;
+    back: string;
+    state?: FlashcardState;
+    step?: number;
+    interval?: number;
+    ease?: number;
+    due?: string;
+    reps?: number;
+    lapses?: number;
+}
+
+export interface FlashcardBackupDeck {
+    name: string;
+    description?: string;
+    color?: string;
+    cards: FlashcardBackupCard[];
+}

@@ -14,10 +14,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { buildBackup, buildCsv, cardToBackup, downloadTextFile, fileSlug, parseCardsInput } from "@/lib/flashcard-io";
 import { cn } from "@/lib/utils";
 import { Deck, Flashcard, FlashcardState } from "@/types/flashcard";
-import { CornerDownLeft, FileUp, Pencil, Play, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { CornerDownLeft, Download, FileUp, Pencil, Play, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
@@ -42,28 +44,10 @@ const STATE_STYLE: Record<FlashcardState, string> = {
 const formatDue = (due: string) =>
     new Date(due).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "America/Sao_Paulo" });
 
-/**
- * Importação em massa: uma linha por cartão, com frente e verso separados por TAB ou ponto e vírgula
- * (formato que o Excel/Planilhas e o Anki exportam).
- */
-function parseBulk(raw: string): { cards: { front: string; back: string }[]; invalid: number } {
-    const cards: { front: string; back: string }[] = [];
-    let invalid = 0;
+// Mesmo tamanho para os botões Importar/Exportar (o ! vence o h-9 padrão do DialogDemo).
+const TOOL_BUTTON = "h-8! gap-1.5 rounded-lg! px-3! text-[0.8rem]!";
 
-    for (const line of raw.split(/\r?\n/)) {
-        if (!line.trim()) continue;
-
-        const separator = line.includes("\t") ? "\t" : ";";
-        const index = line.indexOf(separator);
-        const front = index === -1 ? "" : line.slice(0, index).trim();
-        const back = index === -1 ? "" : line.slice(index + 1).trim();
-
-        if (front && back) cards.push({ front, back });
-        else invalid++;
-    }
-
-    return { cards, invalid };
-}
+const MAX_FILE_BYTES = 450 * 1024; // o servidor aceita corpos de até 500 KB
 
 export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) {
     const router = useRouter();
@@ -77,6 +61,8 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
 
     const [bulkOpen, setBulkOpen] = useState(false);
     const [bulkText, setBulkText] = useState("");
+    const [bulkFileName, setBulkFileName] = useState("");
+    const [exportOpen, setExportOpen] = useState(false);
 
     const filtered = useMemo(() => {
         const term = query.trim().toLowerCase();
@@ -111,9 +97,9 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
     async function handleBulk(event: FormEvent) {
         event.preventDefault();
 
-        const { cards: parsed, invalid } = parseBulk(bulkText);
+        const { cards: parsed, invalid } = parseCardsInput(bulkText);
         if (parsed.length === 0) {
-            toast.error("Nenhuma linha válida. Use: frente;verso (uma por linha).");
+            toast.error("Nenhum cartão válido. Use: frente;verso (uma linha por cartão) ou um arquivo JSON.");
             return;
         }
 
@@ -127,7 +113,30 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
 
         toast.success(invalid > 0 ? `${result.message} (${invalid} linha(s) ignorada(s))` : result.message, { id: "bulk-cards" });
         setBulkText("");
+        setBulkFileName("");
         setBulkOpen(false);
+    }
+
+    async function handleBulkFile(file: File | undefined) {
+        if (!file) return;
+
+        if (file.size > MAX_FILE_BYTES) {
+            toast.error("Arquivo muito grande. Divida em partes de até 450 KB.");
+            return;
+        }
+
+        setBulkText(await file.text());
+    }
+
+    function exportCsv() {
+        downloadTextFile(`${fileSlug(deck.name)}.csv`, buildCsv(cards), "text/csv");
+        setExportOpen(false);
+    }
+
+    function exportJson() {
+        const backup = buildBackup([{ name: deck.name, description: deck.description, color: deck.color, cards: cards.map(cardToBackup) }]);
+        downloadTextFile(`${fileSlug(deck.name)}.json`, backup, "application/json");
+        setExportOpen(false);
     }
 
     async function handleUpdateDeck(event: FormEvent) {
@@ -229,27 +238,82 @@ export function DeckClient({ deck, cards }: { deck: Deck; cards: Flashcard[] }) 
             <div className="glass mb-6 flex flex-col gap-4 rounded-2xl p-5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h2 className="font-medium">Novo cartão</h2>
-                    <DialogDemo
-                        contentBtn={<span className="flex items-center gap-1"><FileUp className="size-3.5" /> Importar vários</span>}
-                        title="Importar cartões"
-                        description="Cole uma linha por cartão, com a frente e o verso separados por ponto e vírgula (ou TAB)."
-                        nameConfirmBtn="Importar"
-                        onSubmit={handleBulk}
-                        open={bulkOpen}
-                        onOpenChange={setBulkOpen}
-                        classNameBtn="h-7 rounded-lg px-2.5 text-xs"
-                        contentClassName="sm:max-w-lg"
-                    >
-                        <Textarea
-                            className="min-h-48 font-mono text-xs"
-                            placeholder={"Capital do Brasil;Brasília\nPrazo do mandado de segurança;120 dias"}
-                            value={bulkText}
-                            onChange={(e) => setBulkText(e.target.value)}
-                        />
-                        <p className="mt-2 text-xs text-muted-foreground">
-                            {parseBulk(bulkText).cards.length} cartão(ões) reconhecido(s). Até 500 por vez.
-                        </p>
-                    </DialogDemo>
+                    <div className="flex items-center gap-1.5">
+                        <DialogDemo
+                            contentBtn={<span className="flex items-center gap-1"><FileUp className="size-4" /> Importar</span>}
+                            title="Importar cartões"
+                            description="Escolha um arquivo (.csv, .txt ou .json) ou cole uma linha por cartão, com frente e verso separados por ponto e vírgula, vírgula ou TAB."
+                            nameConfirmBtn="Importar"
+                            onSubmit={handleBulk}
+                            open={bulkOpen}
+                            onOpenChange={setBulkOpen}
+                            classNameBtn={TOOL_BUTTON}
+                            contentClassName="sm:max-w-lg"
+                        >
+                            <div className="flex flex-col gap-3">
+                                <div className="relative">
+                                    <input
+                                        id="import-file"
+                                        type="file"
+                                        accept=".csv,.tsv,.txt,.json,text/csv,text/plain,application/json"
+                                        className="peer sr-only"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            setBulkFileName(file?.name ?? "");
+                                            void handleBulkFile(file);
+                                            e.target.value = "";
+                                        }}
+                                    />
+                                    <label
+                                        htmlFor="import-file"
+                                        className="flex cursor-pointer flex-col items-center gap-1 rounded-2xl border border-dashed border-foreground/25 bg-foreground/4 px-4 py-5 text-center transition-colors hover:border-primary/60 hover:bg-primary/8 peer-focus-visible:border-ring peer-focus-visible:ring-3 peer-focus-visible:ring-ring/35"
+                                    >
+                                        <FileUp className="size-5 text-muted-foreground" aria-hidden="true" />
+                                        {bulkFileName ? (
+                                            <>
+                                                <span className="max-w-full truncate text-sm font-medium">{bulkFileName}</span>
+                                                <span className="text-xs text-muted-foreground">Clique para trocar o arquivo</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="text-sm font-medium">Escolher arquivo</span>
+                                                <span className="text-xs text-muted-foreground">.csv, .txt ou .json (até 450 KB)</span>
+                                            </>
+                                        )}
+                                    </label>
+                                </div>
+                                <p className="text-center text-xs text-muted-foreground">ou cole o texto abaixo</p>
+                                <Textarea
+                                    className="min-h-40 font-mono text-xs"
+                                    placeholder={"Capital do Brasil;Brasília\nPrazo do mandado de segurança;120 dias"}
+                                    value={bulkText}
+                                    onChange={(e) => setBulkText(e.target.value)}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    {parseCardsInput(bulkText).cards.length} cartão(ões) reconhecido(s). Até 500 por vez. Backups JSON entram sem o progresso de estudo.
+                                </p>
+                            </div>
+                        </DialogDemo>
+
+                        <Popover open={exportOpen} onOpenChange={setExportOpen}>
+                            <PopoverTrigger
+                                disabled={cards.length === 0}
+                                className={cn(buttonVariants({ variant: "outline" }), TOOL_BUTTON)}
+                            >
+                                <Download className="size-4" /> Exportar
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-64 gap-0.5 p-1.5">
+                                <button type="button" onClick={exportCsv} className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-foreground/6">
+                                    <span className="text-sm font-medium">CSV (frente;verso)</span>
+                                    <span className="text-xs text-muted-foreground">Abre no Excel/Planilhas. Sem progresso.</span>
+                                </button>
+                                <button type="button" onClick={exportJson} className="flex flex-col rounded-xl px-3 py-2 text-left transition-colors hover:bg-foreground/6">
+                                    <span className="text-sm font-medium">Backup (JSON)</span>
+                                    <span className="text-xs text-muted-foreground">Inclui intervalos e datas de revisão.</span>
+                                </button>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
 
                 {/* O diálogo de importação fica fora deste <form>: eventos de submit de portais sobem pelo React. */}

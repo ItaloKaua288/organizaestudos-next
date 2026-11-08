@@ -1,7 +1,7 @@
 "use server";
 
 import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
-import { Deck, Flashcard, FlashcardRating } from "@/types/flashcard";
+import { Deck, Flashcard, FlashcardBackupDeck, FlashcardRating } from "@/types/flashcard";
 import { revalidatePath } from "next/cache";
 
 type ActionResult = { success: boolean; message: string };
@@ -188,6 +188,37 @@ export async function reviewCardAction(cardId: string, rating: FlashcardRating):
         return { success: true, message: "", card: data.card };
     } catch (error) {
         console.error("Erro interno ao avaliar cartão:", error);
+        return { success: false, message: "Ocorreu um erro inesperado." };
+    }
+}
+
+// ---------------------------------------------------------------- Exportar / importar
+
+/** Todos os baralhos do perfil ativo, com cartões e progresso. */
+export async function exportFlashcardsAction(): Promise<{ success: boolean; message: string; decks?: FlashcardBackupDeck[] }> {
+    try {
+        const res = await request("/export");
+        if (!res.ok) return { success: false, message: await errorMessage(res, "Falha da API ao exportar.") };
+
+        const data = await res.json();
+        return { success: true, message: "", decks: data.decks as FlashcardBackupDeck[] };
+    } catch (error) {
+        console.error("Erro interno ao exportar flashcards:", error);
+        return { success: false, message: "Ocorreu um erro inesperado." };
+    }
+}
+
+/** Cria baralhos novos (com cartões e progresso) a partir de um backup. */
+export async function importFlashcardsAction(decks: FlashcardBackupDeck[]): Promise<ActionResult> {
+    try {
+        const res = await request("/import", { method: "POST", body: JSON.stringify({ decks }) });
+        if (!res.ok) return { success: false, message: await errorMessage(res, "Falha da API ao importar.") };
+
+        const data = await res.json();
+        revalidatePath("/flashcards");
+        return { success: true, message: data.message ?? "Importado!" };
+    } catch (error) {
+        console.error("Erro interno ao importar flashcards:", error);
         return { success: false, message: "Ocorreu um erro inesperado." };
     }
 }
