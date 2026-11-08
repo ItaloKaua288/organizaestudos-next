@@ -35,6 +35,35 @@ const PERFORMANCE_OPTIONS: { value: ReviewPerformance; label: string; hint: stri
     { value: "FACIL", label: "Fácil", hint: "Espaçar mais", className: "hover:bg-foreground/8" },
 ];
 
+// Espelha as regras do backend (topic.controller.js): em quantos dias a próxima revisão aparece.
+const NEXT_REVIEW_DAYS: Record<1 | 2, Record<ReviewPerformance, number>> = {
+    1: { ERROU: 2, DIFICIL: 4, BOM: 7, FACIL: 12 },
+    2: { ERROU: 7, DIFICIL: 15, BOM: 30, FACIL: 45 },
+};
+const RECURRING_FACTOR: Record<ReviewPerformance, number> = { ERROU: 0.3, DIFICIL: 0.6, BOM: 1.5, FACIL: 2.5 };
+const RECURRING_MIN_DAYS = 7;
+const RECURRING_MAX_DAYS = 180;
+const DEFAULT_RECURRING_DAYS = 30;
+
+// Dias até a próxima revisão para cada avaliação; null quando a avaliação não reagenda nada.
+function getNextReviewDays(item: Topic, reviewIndex: number, performance: ReviewPerformance): number | null {
+    if (reviewIndex === 3) {
+        const current = item.reviewInterval || DEFAULT_RECURRING_DAYS;
+        const next = Math.round(current * RECURRING_FACTOR[performance]);
+        return Math.min(RECURRING_MAX_DAYS, Math.max(RECURRING_MIN_DAYS, next));
+    }
+
+    if (reviewIndex === 1 || reviewIndex === 2) {
+        const target = reviewIndex === 1 ? item.reviews.second : item.reviews.third;
+        if (target.concluded) return null;
+        return NEXT_REVIEW_DAYS[reviewIndex][performance];
+    }
+
+    return null;
+}
+
+const formatDays = (days: number) => `em ${days} ${days === 1 ? "dia" : "dias"}`;
+
 const formatShortDate = (value: string) =>
     new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" });
 
@@ -181,7 +210,10 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                     <div className="w-full flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
                         <span className="text-xs text-muted-foreground">Como foi essa revisão? Isso ajusta a data da próxima.</span>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                            {PERFORMANCE_OPTIONS.map((option) => (
+                            {PERFORMANCE_OPTIONS.map((option) => {
+                                const days = reviewIndex ? getNextReviewDays(item, reviewIndex, option.value) : null;
+
+                                return (
                                 <Button
                                     key={option.value}
                                     type="button"
@@ -194,8 +226,14 @@ function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                 >
                                     <span className="font-medium">{option.label}</span>
                                     <span className="text-xs font-normal text-muted-foreground">{option.hint}</span>
+                                    {days !== null && (
+                                        <span className="mt-1 rounded-full bg-foreground/10 px-2 py-0.5 text-[11px] font-semibold text-foreground">
+                                            {formatDays(days)}
+                                        </span>
+                                    )}
                                 </Button>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                         )}

@@ -95,6 +95,7 @@ export async function getDetailSubjectAction(subject_id: string) {
                     },
                 },
 
+                reviewInterval: topic.review3_interval ?? 30,
                 link: topic.link,
                 attachments: topic.attachments.map((attach) => ({
                     id: attach._id!,

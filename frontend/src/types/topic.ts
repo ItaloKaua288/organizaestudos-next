@@ -29,6 +29,8 @@ export interface Topic {
         second: { date: string; concluded: boolean };
         third: { date: string; concluded: boolean };
     };
+    /** Intervalo atual (em dias) da revisão recorrente de 30 dias; padrão 30. */
+    reviewInterval?: number;
     link: string | null;
     attachments: Attachment[];
 }

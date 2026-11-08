@@ -44,6 +44,7 @@ interface ApiTopic {
     review1_concluded: boolean
     review2_concluded: boolean
     review3_concluded: boolean
+    review3_interval?: number
     link: string | null
     attachments: Attachment[]
 }

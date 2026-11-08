@@ -87,6 +87,7 @@ export async function getTopicsAction(options?: { rawTitles?: boolean; includeCo
                     second: { date: topic.review2, concluded: topic.review2_concluded },
                     third: { date: topic.review3, concluded: topic.review3_concluded },
                 },
+                reviewInterval: topic.review3_interval ?? 30,
                 attachments: topic.attachments.map(attachment => ({
                     ...attachment,
                     name: fixEncoding(attachment.name),
