@@ -67,7 +67,7 @@ const formatDays = (days: number) => `em ${days} ${days === 1 ? "dia" : "dias"}`
 const formatShortDate = (value: string) =>
     new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" });
 
-function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
+export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
     const [isPending, startTransition] = useTransition();
     const [isRating, setIsRating] = useState(false);
     const [isInfoOpen, setIsInfoOpen] = useState(false);

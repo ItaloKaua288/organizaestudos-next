@@ -35,6 +35,7 @@ export default async function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Toaster
             position="bottom-right"
+            containerClassName="max-xl:mb-20"
             toastOptions={{
               className: "glass-popover",
               style: {
@@ -47,7 +48,7 @@ export default async function RootLayout({
           />
           <div aria-hidden className="ambient" />
           <Navbar2 hasToken={hasToken} />
-          <div key={profileKey} className="mx-auto w-full max-w-7xl flex-1 px-4 pt-24 pb-16 sm:px-6 lg:px-8">
+          <div key={profileKey} className="mx-auto w-full max-w-7xl flex-1 px-4 pt-24 pb-28 sm:px-6 xl:pb-16 lg:px-8">
             {children}
           </div>
         </ThemeProvider>

@@ -1,8 +1,10 @@
 import { getTopicsAction } from "@/actions/topics.actions";
 import { ReviewSection, ReviewSectionSkeleton } from "@/components/reviewSection";
 import { PageHeader } from "@/components/page-header";
+import { buttonVariants } from "@/components/ui/button";
 import { Topic } from "@/types/topic";
 import { CheckCircle2, Clock } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 
 async function RevisaoContent() {
@@ -15,6 +17,9 @@ async function RevisaoContent() {
                 <p className="max-w-sm text-sm text-muted-foreground">
                     Conclua um assunto em uma matéria e ele entra no ciclo de revisões. Se você já concluiu e nada aparece, recarregue a página.
                 </p>
+                <Link href="/materias" className={buttonVariants({ className: "mt-3" })}>
+                    Ir para Matérias
+                </Link>
             </div>
         );
     }

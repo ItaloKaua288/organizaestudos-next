@@ -108,8 +108,22 @@ export function GlobalSearch() {
 
     return (
         <>
-            <Button variant="outline" size="icon" onClick={() => setOpen(true)} aria-label="Buscar (Ctrl+K)" title="Buscar (Ctrl+K)">
+            {/* Telas menores: só a lupa. */}
+            <Button variant="outline" size="icon" className="xl:hidden" onClick={() => setOpen(true)} aria-label="Buscar (Ctrl+K)" title="Buscar (Ctrl+K)">
                 <Search className="h-4 w-4" />
+            </Button>
+
+            {/* Desktop: campo de busca visível com o atalho. */}
+            <Button
+                variant="outline"
+                className="w-36 justify-start gap-2 px-3 font-normal text-muted-foreground max-xl:hidden"
+                onClick={() => setOpen(true)}
+                aria-label="Buscar (Ctrl+K)"
+                title="Buscar (Ctrl+K)"
+            >
+                <Search className="h-4 w-4 shrink-0" />
+                <span className="flex-1 truncate text-left">Buscar…</span>
+                <kbd className="rounded-md border border-(--glass-ring) bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium">Ctrl K</kbd>
             </Button>
 
             <Dialog open={open} onOpenChange={handleOpenChange}>
