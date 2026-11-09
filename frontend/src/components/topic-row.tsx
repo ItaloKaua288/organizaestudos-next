@@ -1,5 +1,6 @@
 "use client";
 
+import { describeFailure, toastError } from "@/lib/toast-feedback";
 import { DialogDemo } from "@/components/dialog-button";
 import { KanbanTopicSheet } from "@/app/(private)/kanban/components/kanban-topic-sheet";
 import { Field, FieldGroup } from "@/components/ui/field";
@@ -251,7 +252,7 @@ export function TopicRow({
             toast.success("Assunto deletado com sucesso", { id: "delete-topic" });
         } catch (error) {
             console.error("Falha ao deletar o assunto", error);
-            toast.error("Falha ao deletar o assunto", { id: "delete-topic" });
+            toastError(describeFailure("Falha ao deletar o assunto", error), { id: "delete-topic", retry: () => void handleTopicDelete(topicId) });
         }
     };
 
@@ -267,7 +268,10 @@ export function TopicRow({
             await updateTopicAction(formData);
             toast.success("Status do assunto atualizado!", { id: "update-status-topic" });
         } catch (error) {
-            toast.error("Falha ao atualizar o status.", { id: "update-status-topic" });
+            toastError(describeFailure("Falha ao atualizar o status", error), {
+                id: "update-status-topic",
+                retry: () => void handleTopicStatusChange(topic, newStatus),
+            });
             console.error("Erro:", error);
         }
     }

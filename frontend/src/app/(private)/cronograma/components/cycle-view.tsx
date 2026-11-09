@@ -1,5 +1,6 @@
 "use client"
 
+import { describeFailure, toastError } from "@/lib/toast-feedback";
 import {
     cancelCycleSessionAction,
     completeCycleSessionAction,
@@ -11,6 +12,7 @@ import {
 } from "@/actions/cycle.actions";
 import { QuestionLogDialog } from "@/components/question-log-dialog";
 import { TopicSheetTrigger } from "@/components/topic-sheet-trigger";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +49,14 @@ const UPCOMING_LIMIT = 4;
 export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topicsBySubject, todayReviews }: CycleViewProps) {
     const [cycle, setCycle] = useState<Cycle | null>(initialCycle);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
+    const [pendingConfirm, setPendingConfirm] = useState<{
+        title: string;
+        description: string;
+        confirmLabel: string;
+        destructive: boolean;
+        action: () => Promise<CycleActionResult>;
+        loading: string;
+    } | null>(null);
     const [showUpcoming, setShowUpcoming] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
@@ -72,12 +82,18 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
             } else if (result.stale) {
                 toast(result.message, { id: toastId, icon: "ℹ️" });
             } else {
-                toast.error(result.message, { id: toastId });
+                toastError(describeFailure("Não foi possível atualizar o ciclo", result.message), {
+                    id: toastId,
+                    retry: () => void run(action, loadingMessage, onDone),
+                });
             }
 
             return result;
-        } catch {
-            toast.error("Erro ao atualizar o ciclo.", { id: toastId });
+        } catch (error) {
+            toastError(describeFailure("Erro ao atualizar o ciclo", error), {
+                id: toastId,
+                retry: () => void run(action, loadingMessage, onDone),
+            });
             return null;
         } finally {
             lockRef.current = false;
@@ -210,9 +226,8 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
         if (result && (result.success || result.stale)) setIsQuestionsOpen(false);
     };
 
-    const confirmAndRun = (message: string, action: () => Promise<CycleActionResult>, loading: string) => {
-        if (window.confirm(message)) void run(action, loading);
-    };
+    const confirmAndRun = (options: Omit<NonNullable<typeof pendingConfirm>, "destructive"> & { destructive?: boolean }) =>
+        setPendingConfirm({ destructive: false, ...options });
 
     return (
         <section className="flex flex-col gap-4">
@@ -224,11 +239,13 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     variant="outline"
                     size="sm"
                     disabled={isBusy}
-                    onClick={() => confirmAndRun(
-                        "Reiniciar a volta atual? O progresso desta volta volta para zero e você recomeça na primeira sessão. O histórico é mantido.",
-                        () => restartCycleLapAction(),
-                        "Reiniciando volta..."
-                    )}
+                    onClick={() => confirmAndRun({
+                        title: "Reiniciar a volta atual?",
+                        description: "O progresso desta volta volta para zero e você recomeça na primeira sessão. O histórico é mantido.",
+                        confirmLabel: "Reiniciar volta",
+                        action: () => restartCycleLapAction(),
+                        loading: "Reiniciando volta...",
+                    })}
                 >
                     <RotateCcw className="h-4 w-4" /> Reiniciar volta
                 </Button>
@@ -236,11 +253,14 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     variant="outline"
                     size="sm"
                     disabled={isBusy}
-                    onClick={() => confirmAndRun(
-                        "Excluir o ciclo de estudos e todo o seu histórico? Essa ação não pode ser desfeita.",
-                        () => deleteCycleAction(),
-                        "Excluindo ciclo..."
-                    )}
+                    onClick={() => confirmAndRun({
+                        title: "Excluir o ciclo de estudos?",
+                        description: "O ciclo e todo o seu histórico serão apagados. Essa ação não pode ser desfeita.",
+                        confirmLabel: "Excluir ciclo",
+                        destructive: true,
+                        action: () => deleteCycleAction(),
+                        loading: "Excluindo ciclo...",
+                    })}
                 >
                     <Trash2 className="h-4 w-4 text-destructive" /> Excluir ciclo
                 </Button>
@@ -474,6 +494,18 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
             />
 
             <CycleEditor open={isEditorOpen} onOpenChange={setIsEditorOpen} cycle={cycle} subjects={subjects} onSaved={setCycle} />
+
+            <ConfirmDialog
+                open={pendingConfirm !== null}
+                onOpenChange={(open) => { if (!open) setPendingConfirm(null); }}
+                title={pendingConfirm?.title ?? ""}
+                description={pendingConfirm?.description ?? ""}
+                confirmLabel={pendingConfirm?.confirmLabel}
+                destructive={pendingConfirm?.destructive}
+                onConfirm={() => {
+                    if (pendingConfirm) void run(pendingConfirm.action, pendingConfirm.loading);
+                }}
+            />
         </section>
     );
 }

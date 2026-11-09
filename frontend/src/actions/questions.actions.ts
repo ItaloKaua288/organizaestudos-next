@@ -34,7 +34,8 @@ export async function getQuestionStatsAction(): Promise<QuestionStats> {
 }
 
 /** Registra questões fora de uma sessão do ciclo (ex.: pela página de desempenho). */
-export async function createQuestionLogsAction(entries: QuestionEntryInput[]) {
+/** `answeredAt` (ISO) é opcional e serve para restaurar um registro removido mantendo a data original. */
+export async function createQuestionLogsAction(entries: QuestionEntryInput[], answeredAt?: string) {
     try {
         const baseUrl = await getBaseUrl();
         const headers = await getAuthHeaders();
@@ -42,7 +43,7 @@ export async function createQuestionLogsAction(entries: QuestionEntryInput[]) {
         const res = await fetch(`${baseUrl}/questions`, {
             method: "POST",
             headers,
-            body: JSON.stringify({ entries }),
+            body: JSON.stringify({ entries, ...(answeredAt ? { answeredAt } : {}) }),
         });
 
         if (!res.ok) {

@@ -5,8 +5,9 @@ import { QuestionLogDialog } from "@/components/question-log-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { describeFailure, toastError, toastUndo } from "@/lib/toast-feedback";
 import { cn } from "@/lib/utils";
-import { QuestionEntryInput, QuestionStats } from "@/types/question";
+import { QuestionEntryInput, QuestionRecentLog, QuestionStats } from "@/types/question";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, History, ListChecks, Minus, Plus, Trash2, TrendingUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -83,32 +84,61 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                 setIsDialogOpen(false);
                 router.refresh();
             } else {
-                toast.error(result.message, { id: "question-log" });
+                toastError(describeFailure("Não foi possível registrar as questões", result.message), { id: "question-log" });
             }
-        } catch {
-            toast.error("Erro ao registrar as questões.", { id: "question-log" });
+        } catch (error) {
+            toastError(describeFailure("Erro ao registrar as questões", error), {
+                id: "question-log",
+                retry: () => void handleCreate(entries),
+            });
         } finally {
             setIsBusy(false);
         }
     };
 
-    const handleDelete = async (id: string) => {
+    // Recria o registro removido, com a data original, para o "Desfazer" do toast.
+    const restoreLog = async (log: QuestionRecentLog) => {
+        toast.loading("Restaurando registro...", { id: "question-log" });
+
+        try {
+            const result = await createQuestionLogsAction([{ topic_id: log.topicId, total: log.total, correct: log.correct }], log.answeredAt);
+            if (result.success) {
+                toast.success("Registro restaurado.", { id: "question-log" });
+                router.refresh();
+            } else {
+                toastError(describeFailure("Não foi possível restaurar o registro", result.message), {
+                    id: "question-log",
+                    retry: () => void restoreLog(log),
+                });
+            }
+        } catch (error) {
+            toastError(describeFailure("Erro ao restaurar o registro", error), {
+                id: "question-log",
+                retry: () => void restoreLog(log),
+            });
+        }
+    };
+
+    // Sem confirmação antes: remove na hora e oferece "Desfazer" no toast.
+    const handleDelete = async (log: QuestionRecentLog) => {
         if (isBusy) return;
-        if (!window.confirm("Remover este registro de questões? O % de acerto será recalculado.")) return;
 
         setIsBusy(true);
         toast.loading("Removendo registro...", { id: "question-log" });
 
         try {
-            const result = await deleteQuestionLogAction(id);
+            const result = await deleteQuestionLogAction(log.id);
             if (result.success) {
-                toast.success(result.message, { id: "question-log" });
+                toastUndo("Registro removido. O % foi recalculado.", () => void restoreLog(log), { id: "question-log" });
                 router.refresh();
             } else {
-                toast.error(result.message, { id: "question-log" });
+                toastError(describeFailure("Não foi possível remover o registro", result.message), { id: "question-log" });
             }
-        } catch {
-            toast.error("Erro ao remover o registro.", { id: "question-log" });
+        } catch (error) {
+            toastError(describeFailure("Erro ao remover o registro", error), {
+                id: "question-log",
+                retry: () => void handleDelete(log),
+            });
         } finally {
             setIsBusy(false);
         }
@@ -342,7 +372,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         <CardTitle className="flex items-center gap-2">
                             <History className="h-4 w-4 text-muted-foreground" /> Registros recentes
                         </CardTitle>
-                        <CardDescription>Lançou errado? Remova o registro e o % é recalculado.</CardDescription>
+                        <CardDescription>Lançou errado? Remova o registro e o % é recalculado. Dá para desfazer logo depois.</CardDescription>
                     </CardHeader>
                     <CardContent className="max-h-200 overflow-auto">
                         {stats.recent.length === 0 ? (
@@ -364,7 +394,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                                             <p className={cn("text-sm font-semibold tabular-nums", getLevel(log.percent).text)}>{formatPercent(log.percent)}</p>
                                             <p className="text-xs tabular-nums text-muted-foreground">{log.correct}/{log.total}</p>
                                         </div>
-                                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => handleDelete(log.id)} disabled={isBusy} aria-label={`Remover registro de ${log.topicTitle}`}>
+                                        <Button type="button" variant="ghost" size="icon-sm" onClick={() => handleDelete(log)} disabled={isBusy} aria-label={`Remover registro de ${log.topicTitle}`}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </li>

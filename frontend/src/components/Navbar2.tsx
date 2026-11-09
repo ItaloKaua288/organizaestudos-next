@@ -10,6 +10,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GlobalSearch } from "./global-search";
+import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { Logo } from "./logo";
 import { ProfileSwitcher } from "./profile-switcher";
 
@@ -234,6 +235,8 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
                         )}
 
                         {!isLoading && isAuthenticated && <GlobalSearch />}
+
+                        {!isLoading && isAuthenticated && <KeyboardShortcuts />}
 
                         {!isLoading && isAuthenticated && <ProfileSwitcher />}
 

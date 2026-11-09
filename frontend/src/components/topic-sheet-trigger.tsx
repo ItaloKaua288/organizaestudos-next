@@ -1,5 +1,6 @@
 "use client";
 
+import { describeFailure, toastError } from "@/lib/toast-feedback";
 import { updateTopicAction } from "@/actions/topics.actions";
 import { KanbanTopicSheet } from "@/app/(private)/kanban/components/kanban-topic-sheet";
 import { Button } from "@/components/ui/button";
@@ -24,8 +25,11 @@ export function useTopicStatusChange() {
             formData.append("status", newStatus);
             await updateTopicAction(formData);
             toast.success("Status do assunto atualizado!", { id: toastId });
-        } catch {
-            toast.error("Falha ao atualizar o status.", { id: toastId });
+        } catch (error) {
+            toastError(describeFailure("Falha ao atualizar o status", error), {
+                id: toastId,
+                retry: () => void changeTopicStatus(topic, newStatus),
+            });
         }
     };
 }

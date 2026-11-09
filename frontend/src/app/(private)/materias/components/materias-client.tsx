@@ -13,7 +13,9 @@ import { PageHeader } from "@/components/page-header";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
 import { ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { NEW_ITEM_EVENT, type NewItemEventDetail } from "@/lib/shortcut-events";
+import { describeFailure, toastError } from "@/lib/toast-feedback";
+import { FormEvent, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { LayoutToggle } from "./layout-toggle";
 import { MateriasLayout } from "./layout-cookie";
@@ -34,6 +36,18 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
     const [isCreateSubjectOpen, setIsCreateSubjectOpen] = useState(false)
     // Ids das matérias reduzidas. Vazio = todas expandidas (padrão).
     const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
+
+    // Atalho "N": abre o diálogo de nova matéria.
+    useEffect(() => {
+        const onNewItem = (event: Event) => {
+            const detail = (event as CustomEvent<NewItemEventDetail>).detail;
+            if (detail) detail.handled = true;
+            setIsCreateSubjectOpen(true);
+        };
+
+        window.addEventListener(NEW_ITEM_EVENT, onNewItem);
+        return () => window.removeEventListener(NEW_ITEM_EVENT, onNewItem);
+    }, []);
 
     const toggleSubject = (subjectId: string) => {
         setCollapsedIds((current) => {
@@ -62,7 +76,7 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
             setColor("#3b82f6");
             setIsCreateSubjectOpen(false)
         } catch (error) {
-            toast.error("Erro ao criar matéria", { id: "create-subject" });
+            toastError(describeFailure("Erro ao criar a matéria", error), { id: "create-subject" });
             console.error("Erro ao criar matéria", error)
         }
     }

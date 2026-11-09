@@ -104,7 +104,12 @@ export const createQuestionLogs = async (req, res) => {
         const parsed = await parseQuestionEntries(rawEntries, req.userId);
         if (parsed.error) return res.status(400).json({ success: false, message: parsed.error });
 
-        const answeredAt = new Date();
+        // `answeredAt` opcional: usado ao desfazer a remoção de um registro (mantém a data original).
+        // Datas inválidas ou no futuro são ignoradas e valem "agora".
+        const now = new Date();
+        const requested = req.body.answeredAt ? new Date(req.body.answeredAt) : null;
+        const answeredAt = requested && !isNaN(requested.getTime()) && requested <= now ? requested : now;
+
         await QuestionLog.insertMany(parsed.entries.map((entry) => ({
             user_id: req.userId,
             subject_id: entry.subject_id,

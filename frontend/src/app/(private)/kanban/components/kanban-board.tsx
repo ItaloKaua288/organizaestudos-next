@@ -1,5 +1,6 @@
 "use client";
 
+import { describeFailure, toastError } from "@/lib/toast-feedback";
 import { moveTopicStatusAction } from "@/actions/topics.actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -165,11 +166,11 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
                 if (result.success) {
                     toast.success(to === "CONCLUIDO" ? `Movido para ${column.title}. Revisões agendadas.` : `Movido para ${column.title}.`, { id: toastId });
                 } else {
-                    toast.error(result.message, { id: toastId });
+                    toastError(describeFailure("Não foi possível mover o assunto", result.message), { id: toastId, retry: () => moveTopic(topic, to) });
                 }
             } catch (error) {
                 console.error("Falha ao mover o assunto", error);
-                toast.error("Não foi possível mover o assunto.", { id: toastId });
+                toastError(describeFailure("Não foi possível mover o assunto", error), { id: toastId, retry: () => moveTopic(topic, to) });
             }
         });
     }
