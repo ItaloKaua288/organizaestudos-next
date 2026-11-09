@@ -20,6 +20,16 @@ import { CalendarClock, CheckCircle2, Clock, CornerDownLeft } from "lucide-react
 import Link from "next/link";
 import { CreateTopicForm } from "./components/create-topic-form";
 import { TopicList } from "./components/topic-list";
+import type { Metadata } from "next";
+
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id } = await params;
+    const subject = await getDetailSubjectAction(id).catch(() => null);
+
+    return { title: subject?.title ?? "Matéria" };
+}
+
 
 export default async function DetailMateriaPage({
     params,

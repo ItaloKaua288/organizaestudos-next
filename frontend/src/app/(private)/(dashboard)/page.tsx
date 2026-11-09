@@ -17,7 +17,13 @@ import type { CycleSession } from "@/types/cycle";
 import { ArrowRight, CalendarPlus, Check, ExternalLink, Play, Plus, RefreshCw, RotateCw } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import type { Metadata } from "next";
 
+
+
+export const metadata: Metadata = {
+    title: "Dashboard",
+};
 
 export default async function DashboardPage() {
     const currentDayName = new Intl.DateTimeFormat('pt-BR', {
@@ -211,11 +217,19 @@ export default async function DashboardPage() {
                     aria-label="Próximo passo"
                     className="glass flex flex-col gap-4 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <div className="min-w-0 space-y-1">
-                        <h2 className="text-sm font-medium text-muted-foreground">{nextAction.title}</h2>
-                        <p className="text-lg font-semibold tracking-tight text-balance sm:text-xl">{nextAction.description}</p>
+                    <div className="flex min-w-0 flex-1 items-center gap-4">
+                        <span
+                            aria-hidden="true"
+                            className="hidden size-12 shrink-0 place-items-center rounded-xl bg-primary/15 text-primary sm:grid"
+                        >
+                            <NextActionIcon className="size-6" />
+                        </span>
+                        <div className="min-w-0 space-y-1">
+                            <h2 className="text-sm font-medium text-muted-foreground">{nextAction.title}</h2>
+                            <p className="text-lg font-semibold tracking-tight text-balance sm:text-xl">{nextAction.description}</p>
+                        </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
                         <Link href={nextAction.primary.href} className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}>
                             <NextActionIcon data-icon="inline-start" />
                             {nextAction.primary.label}

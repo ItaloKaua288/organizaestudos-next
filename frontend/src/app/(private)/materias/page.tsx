@@ -6,6 +6,12 @@ import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { LAYOUT_COOKIE, parseLayout } from "./components/layout-cookie";
 import MateriasClient, { MateriasSkeleton } from "./components/materias-client";
+import type { Metadata } from "next";
+
+
+export const metadata: Metadata = {
+    title: "Matérias",
+};
 
 async function MateriasContent() {
     let subjectsWithTopics: (Subject & { topics: Topic[] })[] = [];

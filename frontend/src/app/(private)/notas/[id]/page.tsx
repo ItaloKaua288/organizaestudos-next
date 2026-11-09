@@ -10,6 +10,17 @@ import { CornerDownLeft } from "lucide-react"
 import Link from "next/link"
 import { CloseRedirectToast } from "./components/CloseRedirectToast"
 import { SearchNotes } from "./components/search-notes"
+import type { Metadata } from "next";
+
+
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    const { id } = await params
+    const subjects = await getSubjectsAction().catch(() => [])
+    const subject = subjects.find((item) => item.id === id)
+
+    return { title: subject ? `Anotações · ${subject.title}` : "Anotações" }
+}
 
 
 export default async function NotasOverviewPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams: Promise<{ q?: string, tag?: string, nota?: string }> }) {

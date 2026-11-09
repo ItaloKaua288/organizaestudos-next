@@ -9,7 +9,7 @@ import { KanbanBoard, KanbanSkeleton } from "./components/kanban-board";
 import { getCycleSubjectOrder, getTimelineSubjectOrder, ORDER_COOKIE, parseOrderMode } from "./components/kanban-order";
 
 export const metadata: Metadata = {
-    title: "Quadro | Organiza Estudos",
+    title: "Quadro",
 };
 
 async function KanbanContent() {
@@ -40,7 +40,7 @@ export default function KanbanPage() {
         <section className="introduction-Page">
             <PageHeader
                 title="Quadro"
-                description="Arraste cada assunto entre as colunas conforme o estudo avança. Ao concluir, as revisões de 1, 7 e 30 dias são agendadas."
+                description="Visão do andamento: arraste cada assunto entre as colunas conforme o estudo avança. Ao concluir, as revisões são agendadas para 1, 7 e 30 dias depois e a data de cada próxima ajusta conforme sua avaliação em Revisões."
             />
             <Suspense fallback={<KanbanSkeleton />}>
                 <KanbanContent />

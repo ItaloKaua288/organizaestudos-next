@@ -81,7 +81,8 @@ export type ReviewStep = {
     relative: string;
 };
 
-const REVIEW_INTERVALS = ["1 dia", "7 dias", "30 dias"] as const;
+// Prazo padrão de cada revisão. Depois que o estudante avalia uma revisão, a data da próxima muda; por isso o rótulo diz "padrão".
+const REVIEW_INTERVALS = ["padrão: 1 dia", "padrão: 7 dias", "padrão: 30 dias"] as const;
 
 function formatReviewDay(day: number): string {
     const date = new Date(day * DAY_MS);
@@ -103,7 +104,11 @@ export function getReviewTimeline(topic: Topic): ReviewStep[] {
 
     return entries.map((review, index) => {
         const number = (index + 1) as 1 | 2 | 3;
-        const interval = REVIEW_INTERVALS[index];
+        // A 3ª revisão se repete; mostra o intervalo real atual quando ele já mudou do padrão.
+        const recurring = topic.reviewInterval;
+        const interval = index === 2 && recurring && recurring !== 30
+            ? `repete a cada ${recurring} dias`
+            : REVIEW_INTERVALS[index];
         const day = review?.date ? reviewDayNumber(review.date) : null;
         const dateText = day === null ? null : formatReviewDay(day);
 

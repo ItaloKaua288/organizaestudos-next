@@ -9,19 +9,28 @@ import { CycleView } from "./components/cycle-view";
 import { getDueReview } from "@/lib/review-due";
 import { getPendingTopicsBySubject, getTodayReviews, getTopicsBySubject } from "./components/cycle-utils";
 import { DayCard } from "./components/day-card";
-import { VIEW_COOKIE } from "./components/view-cookie";
+import { VIEW_COOKIE, VIEW_HINT_COOKIE } from "./components/view-cookie";
+import { ViewHint } from "./components/view-hint";
 import { ViewToggle } from "./components/view-toggle";
+import type { Metadata } from "next";
 
 const WEEK_DAYS = [
     "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"
 ]
 
+
+export const metadata: Metadata = {
+    title: "Cronograma",
+};
+
 export default async function CronogramaPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
     const { view: viewParam } = await searchParams;
 
     // Sem ?view= na URL (ex.: link da navbar), usa a última visualização salva no cookie.
-    const savedView = (await cookies()).get(VIEW_COOKIE)?.value;
+    const cookieStore = await cookies();
+    const savedView = cookieStore.get(VIEW_COOKIE)?.value;
     const view = viewParam ?? savedView;
+    const showHint = !cookieStore.get(VIEW_HINT_COOKIE)?.value;
 
     if (view === "ciclo") {
         const [cycle, allSubjects, allTopics] = await Promise.all([getCycleAction(), getSubjectsAction(), getTopicsAction()]);
@@ -30,9 +39,11 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
             <main className="flex flex-col gap-6">
                 <PageHeader
                     title="Ciclo de estudos"
-                    description="Estude em sequência, sem depender de dias fixos."
+                    description="Ciclo: estude as matérias em sequência, no seu ritmo, sem dias fixos."
                     actions={<ViewToggle active="ciclo" />}
                 />
+
+                {showHint && <ViewHint />}
 
                 <CycleView
                     initialCycle={cycle}
@@ -135,9 +146,11 @@ export default async function CronogramaPage({ searchParams }: { searchParams: P
         <main className="flex flex-col gap-6">
             <PageHeader
                 title="Cronograma"
-                description="Organize suas matérias ao longo da semana."
+                description="Semana: escolha em quais dias estudar cada matéria e veja as revisões do dia."
                 actions={<ViewToggle active="cronograma" />}
             />
+
+            {showHint && <ViewHint />}
 
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {WEEK_DAYS.map((dayLabel, index) => {

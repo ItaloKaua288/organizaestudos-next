@@ -4,6 +4,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { CornerDownLeft } from "lucide-react";
 import Link from "next/link";
 import { DeckClient } from "../components/deck-client";
+import type { Metadata } from "next";
+
+
+export const metadata: Metadata = {
+    title: "Baralho",
+};
 
 export default async function DeckPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;

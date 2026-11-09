@@ -4,6 +4,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { CornerDownLeft } from "lucide-react";
 import Link from "next/link";
 import { StudySession } from "../../components/study-session";
+import type { Metadata } from "next";
+
+
+export const metadata: Metadata = {
+    title: "Estudar flashcards",
+};
 
 export default async function EstudarPage({ params, searchParams }: {
     params: Promise<{ id: string }>;

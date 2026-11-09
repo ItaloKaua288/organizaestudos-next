@@ -9,7 +9,10 @@ import { Toaster } from 'react-hot-toast';
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Organiza Estudos"
+  title: {
+    default: "Organiza Estudos",
+    template: "%s | Organiza Estudos",
+  },
 };
 
 export const dynamic = 'force-dynamic'

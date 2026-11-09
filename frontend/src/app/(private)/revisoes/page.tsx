@@ -6,6 +6,12 @@ import { Topic } from "@/types/topic";
 import { CheckCircle2, Clock } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
+import type { Metadata } from "next";
+
+
+export const metadata: Metadata = {
+    title: "Revisões",
+};
 
 async function RevisaoContent() {
     const topics = (await getTopicsAction()).filter(topic => topic.status === "CONCLUIDO");
@@ -89,7 +95,7 @@ export default function RevisaoPage() {
         <div>
             <PageHeader
                 title="Revisões"
-                description="Acompanhe a 1ª, 2ª e 3ª revisão de cada assunto concluído. A próxima data se ajusta conforme você avalia: muito difícil, difícil, bom ou fácil."
+                description="Assuntos concluídos entram aqui com revisões em 1, 7 e 30 dias. Ao marcar “Feito”, você avalia como foi e a próxima data se ajusta: “Bom” mantém o padrão (7 e 30 dias), “Muito difícil” traz de volta em 2 e 7 dias e “Fácil” espaça mais. A 3ª revisão se repete com intervalo que cresce ou encolhe."
             />
             <Suspense
                 fallback={

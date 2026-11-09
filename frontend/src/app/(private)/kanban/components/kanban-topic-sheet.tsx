@@ -210,8 +210,8 @@ function ReviewsSection({ topic, manage }: { topic: Topic; manage: boolean }) {
                 <SectionTitle>Revisões</SectionTitle>
                 <p className="text-sm text-balance text-muted-foreground">
                     {topic.status === "ESTUDANDO"
-                        ? "Ao concluir este assunto, as revisões de 1, 7 e 30 dias são agendadas."
-                        : "Depois de estudar e concluir, as revisões de 1, 7 e 30 dias são agendadas aqui."}
+                        ? "Ao concluir este assunto, as revisões são agendadas para 1, 7 e 30 dias depois."
+                        : "Depois de estudar e concluir, as revisões são agendadas para 1, 7 e 30 dias depois."}
                 </p>
             </section>
         );
@@ -239,7 +239,7 @@ function ReviewsSection({ topic, manage }: { topic: Topic; manage: boolean }) {
                         <div className="min-w-0 flex-1">
                             <div className="flex items-baseline justify-between gap-3">
                                 <p className="text-sm font-medium">{step.number}ª revisão</p>
-                                <p className="shrink-0 text-xs text-muted-foreground">após {step.interval}</p>
+                                <p className="shrink-0 text-xs text-muted-foreground">{step.interval}</p>
                             </div>
                             <div className="flex items-center justify-between gap-3">
                                 <p className={cn("text-xs", TEXT_STYLE[step.tone])}>

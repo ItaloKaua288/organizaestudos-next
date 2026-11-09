@@ -4,6 +4,12 @@ import { IdentityCard } from "./components/identity-card";
 import { NameForm } from "./components/name-form";
 import { PasswordForm } from "./components/password-form";
 import { StudyLedger } from "./components/study-ledger";
+import type { Metadata } from "next";
+
+
+export const metadata: Metadata = {
+    title: "Perfil",
+};
 
 export default async function PerfilPage() {
     const account = await getAccountAction();

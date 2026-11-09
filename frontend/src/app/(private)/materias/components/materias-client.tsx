@@ -71,7 +71,7 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
         <div className="flex flex-col">
             <PageHeader
                 title="Matérias"
-                description="Gerencie suas matérias e assuntos."
+                description="Cadastre matérias e organize os assuntos de cada uma. Concluir um assunto aqui ou no Quadro agenda as revisões."
                 actions={
                     <>
                         <LayoutToggle value={layout} onChange={setLayout} />
@@ -153,7 +153,7 @@ export function MateriasSkeleton() {
         <div className="flex flex-col">
             <PageHeader
                 title="Matérias"
-                description="Gerencie suas matérias e assuntos."
+                description="Cadastre matérias e organize os assuntos de cada uma. Concluir um assunto aqui ou no Quadro agenda as revisões."
                 actions={<Button variant="outline" size="sm" disabled>Nova matéria</Button>}
             />
 

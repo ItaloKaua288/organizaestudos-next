@@ -1,13 +1,19 @@
 import { getSubjectsAction } from "@/actions/subjects.actions";
 import { PageHeader } from "@/components/page-header";
 import { RedirectButton } from "./components/button-redirect";
+import type { Metadata } from "next";
+
+
+export const metadata: Metadata = {
+    title: "Anotações",
+};
 
 export default async function NotasPage() {
     const allSubjects = (await getSubjectsAction()).filter((subject) => subject.active !== false)
 
     return (
         <div className="introduction-Page flex flex-col">
-            <PageHeader title="Anotações" description="Escolha uma matéria para ver e criar notas." />
+            <PageHeader title="Anotações" description="Resumos, links e anexos livres, organizados por matéria. Escolha uma matéria para ver e criar notas. O andamento dos assuntos fica em Matérias e no Quadro." />
 
             <section>
                 {allSubjects.length === 0 ? (

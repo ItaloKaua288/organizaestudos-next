@@ -5,7 +5,10 @@ import type { Metadata } from "next";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Organiza Estudos",
+  title: {
+    default: "Organiza Estudos",
+    template: "%s | Organiza Estudos",
+  },
 };
 
 export default function RootLayout({

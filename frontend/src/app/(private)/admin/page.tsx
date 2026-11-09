@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { AdminClient } from "./components/admin-client";
 
 export const metadata: Metadata = {
-    title: "Admin | Organiza Estudos",
+    title: "Admin",
 };
 
 export default async function AdminPage() {
