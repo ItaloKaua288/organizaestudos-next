@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -9,9 +8,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { NEW_ITEM_EVENT, type NewItemEventDetail } from "@/lib/shortcut-events";
-import { Keyboard } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 
 // Depois de "g", a próxima tecla escolhe a página.
@@ -68,10 +66,12 @@ function Kbd({ children }: { children: React.ReactNode }) {
     );
 }
 
-/** Atalhos globais de teclado (N, g + letra, ?) e o botão/diálogo com a lista. O Ctrl+K fica na busca global. */
-export function KeyboardShortcuts() {
+/**
+ * Atalhos globais de teclado (N, g + letra, ?) e o diálogo com a lista. O Ctrl+K fica na busca global.
+ * O estado do diálogo é de quem usa, para que a lista também abra por um item do menu da conta.
+ */
+export function KeyboardShortcuts({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
     const router = useRouter();
-    const [open, setOpen] = useState(false);
     const goPending = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -88,7 +88,7 @@ export function KeyboardShortcuts() {
 
             if (event.key === "?") {
                 event.preventDefault();
-                setOpen((value) => !value);
+                onOpenChange(!open);
                 return;
             }
 
@@ -126,22 +126,11 @@ export function KeyboardShortcuts() {
             window.removeEventListener("keydown", onKeyDown);
             clearGo();
         };
-    }, [open, router]);
+    }, [open, onOpenChange, router]);
 
     return (
         <>
-            <Button
-                variant="outline"
-                size="icon"
-                className="max-xl:hidden"
-                onClick={() => setOpen(true)}
-                aria-label="Atalhos de teclado (?)"
-                title="Atalhos de teclado (?)"
-            >
-                <Keyboard />
-            </Button>
-
-            <Dialog open={open} onOpenChange={setOpen}>
+            <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>Atalhos de teclado</DialogTitle>

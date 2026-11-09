@@ -29,6 +29,11 @@ export function reviewDayNumber(value: string | Date): number | null {
     return Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / DAY_MS);
 }
 
+/** Quantos assuntos têm revisão para fazer hoje ou atrasada (o mesmo critério de "Revisar hoje" no dashboard). */
+export function countDueReviews(topics: Topic[]): number {
+    return topics.filter((topic) => getDueReview(topic) !== null).length;
+}
+
 /**
  * Revisão que o assunto tem para fazer agora: a primeira revisão não concluída,
  * quando ela vence hoje ou já está atrasada. Retorna null se não há nada para hoje.

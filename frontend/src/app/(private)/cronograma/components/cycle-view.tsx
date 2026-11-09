@@ -13,6 +13,7 @@ import {
 import { QuestionLogDialog } from "@/components/question-log-dialog";
 import { TopicSheetTrigger } from "@/components/topic-sheet-trigger";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { OverdueBadge } from "@/components/overdue-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,7 +157,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                                 <span className="flex w-full items-center gap-2 truncate text-sm">
                                     <BookOpen className="h-3.5 w-3.5 shrink-0" color={topic.subject.color} />
                                     <span className="truncate">{topic.title}</span>
-                                    {overdueDays > 0 && <Badge variant="destructive" className="ml-auto shrink-0">Atrasada {overdueDays}d</Badge>}
+                                    {overdueDays > 0 && <OverdueBadge days={overdueDays} label="Atrasada" className="ml-auto shrink-0" />}
                                     <Badge variant="outline" className={overdueDays > 0 ? "shrink-0" : "ml-auto shrink-0"}>{number}ª revisão</Badge>
                                 </span>
                             </TopicSheetTrigger>

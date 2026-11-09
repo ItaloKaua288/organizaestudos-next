@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, ChartColumn, ChevronDown, CircleUser, Kanban, Layers, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck, type LucideIcon } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, ChevronDown, CircleUser, Kanban, Keyboard, Layers, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -74,15 +74,33 @@ const NAV_TRIGGER_CLASS =
 const NAV_ACTIVE_CLASS = "bg-foreground/10 text-foreground";
 const NAV_IDLE_CLASS = "text-muted-foreground hover:bg-foreground/6 hover:text-foreground";
 
+/** Selo com a quantidade pendente. O texto escondido avisa leitores de tela; o número sozinho não diz o quê. */
+function CountBadge({ count, className }: { count: number; className?: string }) {
+    if (count <= 0) return null;
+
+    return (
+        <span
+            className={cn(
+                "inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground tabular-nums",
+                className
+            )}
+        >
+            {count > 99 ? "99+" : count}
+            <span className="sr-only"> {count === 1 ? "revisão pendente" : "revisões pendentes"}</span>
+        </span>
+    );
+}
+
 /** Grupo da barra (desktop): abre uma lista com ícone, nome e uma linha explicando cada tela. */
-function NavGroupMenu({ group, isActive }: { group: NavGroup; isActive: (href: string) => boolean }) {
+function NavGroupMenu({ group, isActive, counts }: { group: NavGroup; isActive: (href: string) => boolean; counts: Record<string, number> }) {
     const [open, setOpen] = useState(false);
     const groupActive = group.items.some((item) => isActive(item.href));
+    const groupCount = group.items.reduce((sum, item) => sum + (counts[item.href] ?? 0), 0);
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger className={cn(NAV_TRIGGER_CLASS, groupActive ? NAV_ACTIVE_CLASS : NAV_IDLE_CLASS)}>
-                {group.label} <ChevronDown className="size-3.5" />
+                {group.label} <CountBadge count={groupCount} /> <ChevronDown className="size-3.5" />
             </PopoverTrigger>
             <PopoverContent align="start" className="w-72 gap-0.5 p-1.5">
                 {group.items.map(({ href, label, description, icon: Icon }) => (
@@ -98,7 +116,10 @@ function NavGroupMenu({ group, isActive }: { group: NavGroup; isActive: (href: s
                     >
                         <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         <span className="flex min-w-0 flex-col">
-                            <span className="text-sm font-medium text-foreground">{label}</span>
+                            <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                                {label}
+                                <CountBadge count={counts[href] ?? 0} />
+                            </span>
                             <span className="text-xs text-muted-foreground">{description}</span>
                         </span>
                     </Link>
@@ -113,7 +134,9 @@ function NavGroupMenu({ group, isActive }: { group: NavGroup; isActive: (href: s
  * aparece completa de imediato, sem esperar a chamada à API. A verificação real roda em segundo plano
  * (fora do caminho crítico de renderização) só para confirmar a sessão e descobrir se é admin.
  */
-export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
+export function Navbar2({ hasToken = false, pendingReviews = 0 }: { hasToken?: boolean; pendingReviews?: number }) {
+    // Selos por destino do menu (hoje só as revisões pendentes).
+    const counts: Record<string, number> = { "/revisoes": pendingReviews };
     const router = useRouter();
     const pathname = usePathname();
     const [isAuthenticated, setIsAuthenticated] = useState(hasToken);
@@ -121,6 +144,7 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
     const [userName, setUserName] = useState<string | null>(null);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [shortcutsOpen, setShortcutsOpen] = useState(false);
     const isLoading = false;
 
     useEffect(() => {
@@ -218,7 +242,7 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
                                     {group.items[0].label}
                                 </Link>
                             ) : (
-                                <NavGroupMenu key={group.label} group={group} isActive={isActive} />
+                                <NavGroupMenu key={group.label} group={group} isActive={isActive} counts={counts} />
                             )
                         )}
                     </nav>
@@ -236,7 +260,7 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
 
                         {!isLoading && isAuthenticated && <GlobalSearch />}
 
-                        {!isLoading && isAuthenticated && <KeyboardShortcuts />}
+                        {!isLoading && isAuthenticated && <KeyboardShortcuts open={shortcutsOpen} onOpenChange={setShortcutsOpen} />}
 
                         {!isLoading && isAuthenticated && <ProfileSwitcher />}
 
@@ -275,6 +299,14 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
                                     )}
                                     <button
                                         type="button"
+                                        onClick={() => { setUserMenuOpen(false); setShortcutsOpen(true); }}
+                                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-foreground/6 hover:text-foreground"
+                                    >
+                                        <Keyboard className="size-4" /> Atalhos
+                                        <kbd className="ml-auto rounded-md border border-(--glass-ring) bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium">?</kbd>
+                                    </button>
+                                    <button
+                                        type="button"
                                         onClick={() => { setUserMenuOpen(false); void handleLogout(); }}
                                         className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-foreground/6 hover:text-foreground"
                                     >
@@ -305,7 +337,10 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
                                         isActive(href) ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-foreground/6 hover:text-foreground"
                                     )}
                                 >
-                                    <Icon className="size-5" />
+                                    <span className="relative">
+                                        <Icon className="size-5" />
+                                        <CountBadge count={counts[href] ?? 0} className="absolute -top-1.5 -right-3 h-4 min-w-4 px-1 text-[10px]" />
+                                    </span>
                                     <span className="max-w-full truncate">{label}</span>
                                 </Link>
                             ))}
@@ -344,6 +379,7 @@ export function Navbar2({ hasToken = false }: { hasToken?: boolean }) {
                                                 )}
                                             >
                                                 <Icon className="size-4.5 shrink-0" /> {label}
+                                                <CountBadge count={counts[href] ?? 0} className="ml-auto" />
                                             </Link>
                                         ))}
                                     </div>

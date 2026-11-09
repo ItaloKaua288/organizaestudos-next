@@ -1,6 +1,8 @@
+import { getTopicsAction } from "@/actions/topics.actions";
 import { Navbar2 } from "@/components/Navbar2";
 import { ThemeProvider } from "@/components/theme-provider";
 import { fontVariables } from "@/lib/fonts";
+import { countDueReviews } from "@/lib/review-due";
 import { PROFILE_COOKIE } from "@/lib/profile-cookie";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
@@ -17,6 +19,15 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic'
 
+/** Selo do menu: revisões de hoje + atrasadas. Se a API falhar, o menu só fica sem o selo. */
+async function getPendingReviewsCount() {
+  try {
+    return countDueReviews(await getTopicsAction());
+  } catch {
+    return 0;
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -27,6 +38,7 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const profileKey = cookieStore.get(PROFILE_COOKIE)?.value ?? "default";
   const hasToken = Boolean(cookieStore.get("token")?.value);
+  const pendingReviews = hasToken ? await getPendingReviewsCount() : 0;
 
   return (
     <html
@@ -50,7 +62,7 @@ export default async function RootLayout({
             }}
           />
           <div aria-hidden className="ambient" />
-          <Navbar2 hasToken={hasToken} />
+          <Navbar2 hasToken={hasToken} pendingReviews={pendingReviews} />
           <div key={profileKey} className="mx-auto w-full max-w-7xl flex-1 px-4 pt-24 pb-28 sm:px-6 xl:pb-16 lg:px-8">
             {children}
           </div>

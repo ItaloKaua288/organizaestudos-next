@@ -5,13 +5,14 @@ import { changeReviewStatus, redistributeMonthlyReviewsAction, ReviewPerformance
 import { DialogDemo } from "@/components/dialog-button";
 import { updateTopicAction } from "@/actions/topics.actions";
 import { KanbanTopicSheet } from "@/app/(private)/kanban/components/kanban-topic-sheet";
+import { OverdueBadge } from "@/components/overdue-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { getTodayBR } from "@/lib/date";
 import { Topic, TopicStatus } from "@/types/topic";
-import { CalendarRange, CheckCircle2, Clock, Loader2 } from "lucide-react";
+import { CalendarRange, CheckCircle2, ChevronRight, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useTransition } from "react";
 import toast from "react-hot-toast";
@@ -91,7 +92,7 @@ export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
         const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
         if (diffDays < 0) {
-            return <Badge variant="destructive">Atrasado {-diffDays}d</Badge>;
+            return <OverdueBadge days={-diffDays} />;
         } else if (diffDays === 0) {
             return <Badge variant="default">Hoje</Badge>;
         } else if (diffDays === 1) {
@@ -201,12 +202,13 @@ export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                         onMouseEnter={handleRowMouseEnter}
                         tabIndex={isConcludedSection ? undefined : 0}
                         data-review-row={isConcludedSection ? undefined : ""}
-                        className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-xl border-b px-3 py-3 transition-colors duration-150 outline-none hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40"
+                        className="group/row flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 rounded-xl border-b px-3 py-3 transition-colors duration-150 outline-none hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40"
                     >
                         <div className="flex-1 min-w-0 text-sm flex items-center gap-2.5">
                     <span
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
                         style={{ backgroundColor: item.subject.color }}
+                        title={item.subject.title}
                         aria-hidden="true"
                     />
                     <div className="flex flex-col flex-1 min-w-0">
@@ -223,6 +225,11 @@ export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                             {item.subject.title}
                         </span>
                     </div>
+                    {/* Deixa claro que a linha inteira abre os detalhes. */}
+                    <ChevronRight
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5 group-hover/row:text-foreground"
+                    />
                         </div>
 
                         {!isConcludedSection && (

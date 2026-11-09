@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
     ];
   },
   experimental: {
+    // 404 própria: o app tem dois layouts raiz, então o not-found global precisa deste recurso.
+    globalNotFound: true,
     // Importa só os ícones/funções realmente usados (bundle menor, carregamento mais rápido).
     optimizePackageImports: ["lucide-react", "date-fns", "date-fns-tz", "@base-ui/react"],
     serverActions: {
