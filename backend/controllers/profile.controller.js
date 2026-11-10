@@ -21,7 +21,23 @@ const present = (profile, subjectsCount = 0) => ({
     id: String(profile._id),
     name: profile.name,
     subjectsCount,
+    // Dia da prova no formato AAAA-MM-DD (ou null).
+    examDate: profile.examDate ? new Date(profile.examDate).toISOString().slice(0, 10) : null,
 });
+
+// Converte "AAAA-MM-DD" (ou vazio/null para limpar) em Date. Rejeita datas inexistentes (ex.: 2026-02-31).
+const parseExamDate = (value) => {
+    if (value === null || value === "") return { ok: true, date: null };
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return { ok: false };
+
+    const date = new Date(`${value}T12:00:00.000Z`);
+    const year = Number(value.slice(0, 4));
+
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value || year < 2000 || year > 2100) {
+        return { ok: false };
+    }
+    return { ok: true, date };
+};
 
 const countSubjects = async (userId) => {
     const rows = await Subject.aggregate([
@@ -74,22 +90,45 @@ export const createProfile = async (req, res) => {
     }
 };
 
+// Atualiza o nome e/ou a data da prova do perfil (envie só o que quer mudar).
 export const updateProfile = async (req, res) => {
     try {
         const { id } = req.params;
-        const name = cleanName(req.body?.name);
+        const body = req.body ?? {};
+        const hasName = body.name !== undefined;
+        const hasExamDate = body.examDate !== undefined;
 
         if (!mongoose.isValidObjectId(id)) return res.status(404).json({ success: false, message: "Perfil não encontrado." });
-        if (!name) return res.status(400).json({ success: false, message: "O nome do perfil é obrigatório." });
-        if (name.length > 60) return res.status(400).json({ success: false, message: "O nome do perfil pode ter no máximo 60 caracteres." });
+        if (!hasName && !hasExamDate) return res.status(400).json({ success: false, message: "Nada para atualizar." });
+
+        let name;
+        if (hasName) {
+            name = cleanName(body.name);
+            if (!name) return res.status(400).json({ success: false, message: "O nome do perfil é obrigatório." });
+            if (name.length > 60) return res.status(400).json({ success: false, message: "O nome do perfil pode ter no máximo 60 caracteres." });
+        }
+
+        let examDate;
+        if (hasExamDate) {
+            const parsed = parseExamDate(body.examDate);
+            if (!parsed.ok) return res.status(400).json({ success: false, message: "Data da prova inválida." });
+            examDate = parsed.date;
+        }
 
         const profile = await Profile.findOne({ _id: id, user_id: req.userId });
         if (!profile) return res.status(404).json({ success: false, message: "Perfil não encontrado." });
 
-        profile.name = name;
+        if (hasName) profile.name = name;
+        if (hasExamDate) profile.examDate = examDate;
         await profile.save();
 
-        res.status(200).json({ success: true, message: "Perfil renomeado com sucesso!", profile: present(profile) });
+        const message = hasName && hasExamDate
+            ? "Perfil atualizado com sucesso!"
+            : hasName
+                ? "Perfil renomeado com sucesso!"
+                : examDate ? "Data da prova salva!" : "Data da prova removida.";
+
+        res.status(200).json({ success: true, message, profile: present(profile) });
     } catch (error) {
         if (error?.code === 11000) {
             return res.status(409).json({ success: false, message: "Já existe um perfil com esse nome." });

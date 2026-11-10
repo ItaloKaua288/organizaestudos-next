@@ -122,6 +122,35 @@ export async function renameProfileAction(profileId: string, name: string): Prom
     }
 }
 
+/** Define (AAAA-MM-DD) ou remove (null) a data da prova do perfil. */
+export async function updateProfileExamDateAction(profileId: string, examDate: string | null): Promise<ProfileActionResult> {
+    try {
+        if (!profileId) return { success: false, message: "Perfil inválido." };
+        if (examDate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(examDate)) {
+            return { success: false, message: "Informe uma data válida." };
+        }
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/profiles/${profileId}`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify({ examDate }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) return { success: false, message: data.message || "Falha da API ao salvar a data da prova." };
+
+        revalidateEverything();
+
+        return { success: true, message: data.message || "Data da prova salva!", profile: data.profile };
+    } catch (error) {
+        console.error("Erro interno ao salvar a data da prova:", error);
+        return { success: false, message: "Ocorreu um erro inesperado." };
+    }
+}
+
 export async function deleteProfileAction(profileId: string): Promise<ProfileActionResult> {
     try {
         const baseUrl = await getBaseUrl();

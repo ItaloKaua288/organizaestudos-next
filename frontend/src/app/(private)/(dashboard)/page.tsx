@@ -1,4 +1,5 @@
 import { getCycleAction } from "@/actions/cycle.actions";
+import { getProfilesAction } from "@/actions/profiles.actions";
 import { getSubjectsAction } from "@/actions/subjects.actions";
 import { getTimelinesAction } from "@/actions/timeline.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
@@ -11,6 +12,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMinutes, getPendingTopicsBySubject } from "@/app/(private)/cronograma/components/cycle-utils";
 import { VIEW_COOKIE } from "@/app/(private)/cronograma/components/view-cookie";
+import { computeExamPlan } from "@/lib/exam-plan";
 import { getDueReview } from "@/lib/review-due";
 import { cn } from "@/lib/utils";
 import type { CycleSession } from "@/types/cycle";
@@ -18,6 +20,7 @@ import { ArrowRight, CalendarPlus, Check, ExternalLink, Play, Plus, RefreshCw, R
 import { cookies } from "next/headers";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ExamPlanCard } from "./components/exam-plan-card";
 
 
 
@@ -31,13 +34,14 @@ export default async function DashboardPage() {
         timeZone: 'America/Sao_Paulo'
     }).format(new Date());
 
-    const [subjectsRes, topicsRes, timelineRes, cycle, cookieStore] = await Promise.all([
+    const [subjectsRes, topicsRes, timelineRes, cycle, cookieStore, profilesState] = await Promise.all([
         getSubjectsAction(),
         getTopicsAction(),
         getTimelinesAction(),
         // Se o ciclo falhar, o dashboard segue sem ele.
         getCycleAction().catch(() => null),
         cookies(),
+        getProfilesAction(),
     ]);
 
     // Matérias desativadas não contam no dashboard (tópicos e cronograma já vêm filtrados pela API).
@@ -46,6 +50,11 @@ export default async function DashboardPage() {
         topics: topicsRes,
         timeline: timelineRes,
     };
+
+    // Planejamento reverso da prova do perfil ativo (só aparece com a data definida ou quando já há assuntos).
+    const activeProfile = profilesState.profiles.find((profile) => profile.id === profilesState.activeProfileId) ?? null;
+    const examPlan = activeProfile?.examDate ? computeExamPlan({ examDate: activeProfile.examDate, topics: data.topics }) : null;
+    const showExamCard = activeProfile !== null && (activeProfile.examDate !== null || data.topics.length > 0);
 
     const pendingTopics = data.topics.filter((t) => t.status !== "CONCLUIDO");
     const concludedTopics = data.topics.filter((t) => t.status === "CONCLUIDO");
@@ -249,6 +258,10 @@ export default async function DashboardPage() {
                         )}
                     </div>
                 </section>
+
+                {showExamCard && activeProfile && (
+                    <ExamPlanCard profileId={activeProfile.id} examDate={activeProfile.examDate} plan={examPlan} />
+                )}
 
                 {showOnboarding && (
                     <section aria-label="Primeiros passos" className="glass flex flex-col gap-3 rounded-2xl p-5">

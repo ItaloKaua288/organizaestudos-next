@@ -19,6 +19,12 @@ const profileSchema = new mongoose.Schema({
     nameKey: {
         type: String,
         required: true
+    },
+    // Data da prova do concurso deste perfil (só o dia, guardada às 12:00 UTC para não "voltar" um dia
+    // por causa de fuso horário). null = ainda não informada.
+    examDate: {
+        type: Date,
+        default: null
     }
 }, { timestamps: true });
 
