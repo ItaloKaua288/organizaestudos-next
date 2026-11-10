@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatMinutes } from "@/app/(private)/cronograma/components/cycle-utils";
+import { formatMinutes, getPendingTopicsBySubject } from "@/app/(private)/cronograma/components/cycle-utils";
 import { VIEW_COOKIE } from "@/app/(private)/cronograma/components/view-cookie";
 import { getDueReview } from "@/lib/review-due";
 import { cn } from "@/lib/utils";
@@ -110,14 +110,21 @@ export default async function DashboardPage() {
     const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
     const lateReviews = reviewTodayTopics.filter(({ due }) => due.overdueDays > 0).length;
 
-    // Assunto para estudar: das matérias de hoje, "Estudando" primeiro e depois "Pendente", na ordem do assunto.
-    const statusRank = (status: string) => (status === "ESTUDANDO" ? 0 : 1);
+    // Assunto para estudar: usa a MESMA regra do ciclo e do cronograma (primeiro assunto não concluído da
+    // matéria, na ordem cadastrada), para o "próximo passo" nunca divergir do que aparece em Cronograma.
+    // No modo ciclo, a matéria da sessão atual vem primeiro.
+    const pendingTopicBySubject = getPendingTopicsBySubject(data.topics);
+    const currentCycleSubjectId = studyMode === "ciclo"
+        ? cycle?.sessions.find((session) => session.id === cycle.currentSessionId)?.subject.id
+        : undefined;
+    const subjectIdsToStudy = [
+        ...(currentCycleSubjectId ? [currentCycleSubjectId] : []),
+        ...subjectsToday.map((subject) => subject.id),
+    ];
     const nextTopicToStudy = (() => {
-        for (const subject of subjectsToday) {
-            const [first] = pendingTopics
-                .filter((t) => t.subject.id === subject.id)
-                .sort((a, b) => statusRank(a.status) - statusRank(b.status) || a.order - b.order);
-            if (first) return first;
+        for (const subjectId of subjectIdsToStudy) {
+            const topic = pendingTopicBySubject[subjectId];
+            if (topic) return topic;
         }
         return null;
     })();
