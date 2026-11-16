@@ -7,10 +7,12 @@ import Link from "next/link";
 
 type SubjectLinkCardProps = {
     subject: Subject & { topics: Topic[] };
+    /** Reserva espaço à esquerda para a alça de arrastar (posicionada pelo pai). */
+    withDragHandle?: boolean;
 };
 
 /** Card compacto da matéria: ao clicar abre a página de detalhes (/materias/[id]). */
-export default function SubjectLinkCard({ subject }: SubjectLinkCardProps) {
+export default function SubjectLinkCard({ subject, withDragHandle = false }: SubjectLinkCardProps) {
     const isActive = subject.active !== false;
     const { total, done, pending, percent, dueReviews } = getSubjectStats(subject.topics);
     const isEmpty = total === 0;
@@ -20,7 +22,7 @@ export default function SubjectLinkCard({ subject }: SubjectLinkCardProps) {
         <Link
             href={`/materias/${subject.id}`}
             aria-label={`Abrir a matéria ${subject.title}`}
-            className="glass group flex flex-col gap-3 rounded-2xl p-4 transition-all duration-150 hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:p-5"
+            className={`glass group flex flex-col gap-3 rounded-2xl p-4 transition-all duration-150 hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none sm:p-5 ${withDragHandle ? "pl-10 sm:pl-11" : ""}`}
         >
             <div className="flex items-center justify-between gap-2">
                 <div className={`flex min-w-0 items-center gap-2.5 ${isActive ? "" : "opacity-70"}`}>

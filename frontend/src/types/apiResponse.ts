@@ -4,6 +4,7 @@ export interface ApiSubject {
     user_id: string;
     color: string;
     active?: boolean;
+    order?: number | null;
     createdAt: string;
     updatedAt: string;
     __v: number;

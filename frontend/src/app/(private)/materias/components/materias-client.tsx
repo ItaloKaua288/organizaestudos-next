@@ -17,18 +17,33 @@ import Link from "next/link";
 import { getSubjectStats } from "@/lib/subject-stats";
 import { NEW_ITEM_EVENT, type NewItemEventDetail } from "@/lib/shortcut-events";
 import { describeFailure, toastError } from "@/lib/toast-feedback";
-import { FormEvent, useEffect, useState } from "react";
+import { DndContext } from "@dnd-kit/core";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { LayoutToggle } from "./layout-toggle";
 import { MateriasLayout } from "./layout-cookie";
 import SubjectLinkCard from "./subject-link-card";
+import { SortableSubject, SubjectDragOverlay } from "./sortable-subject";
+import { SubjectsToolbar } from "./subjects-toolbar";
+import { useSubjectReorder } from "./use-subject-reorder";
+import {
+    applyView,
+    DEFAULT_VIEW_PREFS,
+    MateriasViewPrefs,
+    SEARCH_MIN_SUBJECTS,
+    serializeViewPrefs,
+    VIEW_COOKIE,
+} from "./view-prefs";
 
 type SubjectWithTopics = Subject & { topics: Topic[] };
 
 interface MateriasClientProps {
     subjects: SubjectWithTopics[];
     initialLayout?: MateriasLayout;
+    initialViewPrefs?: MateriasViewPrefs;
 }
+
+const ONE_YEAR = 60 * 60 * 24 * 365;
 
 /** Resumo geral das matérias ativas: quantas são, quanto já foi concluído e quantas revisões esperam. */
 function MateriasSummary({ subjects }: { subjects: SubjectWithTopics[] }) {
@@ -88,7 +103,16 @@ function MateriasSummary({ subjects }: { subjects: SubjectWithTopics[] }) {
     );
 }
 
-export default function MateriasClient({ subjects, initialLayout = "detalhado" }: MateriasClientProps) {
+export default function MateriasClient({
+    subjects: serverSubjects,
+    initialLayout = "detalhado",
+    initialViewPrefs = DEFAULT_VIEW_PREFS,
+}: MateriasClientProps) {
+    // Ordem manual (otimista ao arrastar). Busca, filtros e ordenação são aplicados por cima dela.
+    const reorder = useSubjectReorder(serverSubjects);
+    const subjects = reorder.subjects;
+    const [viewPrefs, setViewPrefs] = useState<MateriasViewPrefs>(initialViewPrefs)
+    const [query, setQuery] = useState("")
     const [layout, setLayout] = useState<MateriasLayout>(initialLayout)
     const isCompact = layout === "compacto"
     const [color, setColor] = useState("#3b82f6");
@@ -108,6 +132,16 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
         window.addEventListener(NEW_ITEM_EVENT, onNewItem);
         return () => window.removeEventListener(NEW_ITEM_EVENT, onNewItem);
     }, []);
+
+    const changeViewPrefs = (next: MateriasViewPrefs) => {
+        document.cookie = `${VIEW_COOKIE}=${serializeViewPrefs(next)}; path=/; max-age=${ONE_YEAR}; SameSite=Lax`;
+        setViewPrefs(next);
+    };
+
+    const visibleSubjects = useMemo(() => applyView(subjects, viewPrefs, query), [subjects, viewPrefs, query]);
+    const hasActiveFilter = viewPrefs.hideDone || viewPrefs.hideInactive || query.trim() !== "";
+    // Arrastar só faz sentido vendo a lista inteira na ordem manual.
+    const canReorder = viewPrefs.sort === "manual" && !hasActiveFilter && subjects.length > 1;
 
     const toggleSubject = (subjectId: string) => {
         setCollapsedIds((current) => {
@@ -193,24 +227,62 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
 
             {subjects.length > 0 && <MateriasSummary subjects={subjects} />}
 
+            {subjects.length > 1 && (
+                <SubjectsToolbar
+                    prefs={viewPrefs}
+                    onPrefsChange={changeViewPrefs}
+                    query={query}
+                    onQueryChange={setQuery}
+                    showSearch={subjects.length >= SEARCH_MIN_SUBJECTS}
+                    visibleCount={visibleSubjects.length}
+                    totalCount={subjects.length}
+                    canReorder={canReorder}
+                />
+            )}
+
             {subjects.length > 0 ? (
-                isCompact ? (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {subjects.map((subject) => (
-                            <SubjectLinkCard key={subject.id} subject={subject} />
-                        ))}
+                visibleSubjects.length === 0 ? (
+                    <div className="glass rounded-2xl px-6 py-12 text-center">
+                        <p className="font-medium">Nenhuma matéria encontrada.</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Ajuste a busca ou os filtros para ver as matérias.
+                        </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1  gap-4 lg:grid-cols-2">
-                        {subjects.map((subject) => (
-                            <SubjectBox
-                                key={subject.id}
-                                subject={subject}
-                                isExpanded={!collapsedIds.has(subject.id)}
-                                onToggleExpanded={() => toggleSubject(subject.id)}
-                            />
-                        ))}
-                    </div>
+                    <DndContext {...reorder.dndProps}>
+                        {isCompact ? (
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                {visibleSubjects.map((subject) => (
+                                    <SortableSubject key={subject.id} id={subject.id} enabled={canReorder}>
+                                        {(handle) => (
+                                            <>
+                                                {handle && (
+                                                    <span className="absolute top-3.5 left-1.5 z-10 sm:top-[18px] sm:left-2">{handle}</span>
+                                                )}
+                                                <SubjectLinkCard subject={subject} withDragHandle={!!handle} />
+                                            </>
+                                        )}
+                                    </SortableSubject>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                                {visibleSubjects.map((subject) => (
+                                    <SortableSubject key={subject.id} id={subject.id} enabled={canReorder}>
+                                        {(handle) => (
+                                            <SubjectBox
+                                                subject={subject}
+                                                isExpanded={!collapsedIds.has(subject.id)}
+                                                onToggleExpanded={() => toggleSubject(subject.id)}
+                                                dragHandle={handle}
+                                            />
+                                        )}
+                                    </SortableSubject>
+                                ))}
+                            </div>
+                        )}
+                        <SubjectDragOverlay subject={reorder.activeSubject} />
+                    </DndContext>
                 )
             ) : (
                 <div className="glass rounded-2xl px-6 py-12 text-center">

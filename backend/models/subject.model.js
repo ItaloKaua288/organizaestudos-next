@@ -27,6 +27,12 @@ const subjectSchema = new mongoose.Schema({
     active: {
         type: Boolean,
         default: true
+    },
+    // Posição manual da matéria na lista (0, 1, 2...). Documentos sem o campo (matérias antigas
+    // ou criadas depois da última reordenação) ficam depois das ordenadas, por data de criação.
+    order: {
+        type: Number,
+        default: null
     }
 
 }, { timestamps: true })

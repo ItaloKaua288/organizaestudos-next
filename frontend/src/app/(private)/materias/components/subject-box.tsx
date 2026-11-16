@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, ChevronRight, Eye, EyeOff, ExternalLink, PencilLine, Plus, Trash2 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.actions";
@@ -33,12 +33,15 @@ type SubjectBoxProps = {
     /** Controlado pelo pai (botões "Expandir/Reduzir todas"). Padrão: expandida. */
     isExpanded?: boolean;
     onToggleExpanded?: () => void;
+    /** Alça de arrastar para reordenar as matérias (só existe na ordem manual, sem filtros). */
+    dragHandle?: ReactNode;
 };
 
 export default function SubjectBox({
     subject,
     isExpanded = true,
     onToggleExpanded,
+    dragHandle,
 }: SubjectBoxProps) {
     const [draftColor, setDraftColor] = useState(subject.color);
     const [topicTitle, setTopicTitle] = useState("")
@@ -147,14 +150,17 @@ export default function SubjectBox({
         return (
             <div className="glass rounded-2xl p-4 sm:p-5">
                 <header className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2.5 opacity-70">
-                        <span
-                            className="size-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: subject.color }}
-                            aria-hidden="true"
-                        />
-                        <h2 className="truncate text-base font-semibold">{subject.title}</h2>
-                        <Badge variant="secondary">Desativada</Badge>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        {dragHandle}
+                        <span className="flex min-w-0 items-center gap-2.5 opacity-70">
+                            <span
+                                className="size-2.5 shrink-0 rounded-full"
+                                style={{ backgroundColor: subject.color }}
+                                aria-hidden="true"
+                            />
+                            <h2 className="truncate text-base font-semibold">{subject.title}</h2>
+                            <Badge variant="secondary">Desativada</Badge>
+                        </span>
                     </div>
 
                     <div className="flex shrink-0 items-center gap-0.5">
@@ -182,6 +188,7 @@ export default function SubjectBox({
         <div className="glass rounded-2xl p-4 sm:p-5">
             <header className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
+                    {dragHandle}
                     <button
                         type="button"
                         onClick={onToggleExpanded}

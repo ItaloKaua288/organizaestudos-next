@@ -5,6 +5,7 @@ import { Topic } from "@/types/topic";
 import { cookies } from "next/headers";
 import { Suspense } from "react";
 import { LAYOUT_COOKIE, parseLayout } from "./components/layout-cookie";
+import { VIEW_COOKIE, parseViewPrefs } from "./components/view-prefs";
 import MateriasClient, { MateriasSkeleton } from "./components/materias-client";
 import type { Metadata } from "next";
 
@@ -37,9 +38,12 @@ async function MateriasContent() {
     }));
 
     // Último layout escolhido (salvo em cookie) para a página já abrir do jeito certo.
-    const initialLayout = parseLayout((await cookies()).get(LAYOUT_COOKIE)?.value);
+    const cookieStore = await cookies();
+    const initialLayout = parseLayout(cookieStore.get(LAYOUT_COOKIE)?.value);
+    // Última ordenação/filtros escolhidos (também em cookie).
+    const initialViewPrefs = parseViewPrefs(cookieStore.get(VIEW_COOKIE)?.value);
 
-    return <MateriasClient subjects={subjectsWithTopics} initialLayout={initialLayout} />;
+    return <MateriasClient subjects={subjectsWithTopics} initialLayout={initialLayout} initialViewPrefs={initialViewPrefs} />;
 }
 
 export default function MateriasPage() {

@@ -32,6 +32,7 @@ export async function getSubjectsAction(): Promise<Subject[]> {
             title: item.title,
             color: item.color,
             active: item.active !== false,
+            order: item.order ?? undefined,
         }))
     } catch (error) {
         console.error("Erro interno ao buscar as matérias:", error);
@@ -270,6 +271,39 @@ export async function toggleSubjectActiveAction(formData: FormData) {
         return { success: true, message: active ? "Matéria ativada!" : "Matéria desativada!", };
     } catch (error) {
         console.error("Erro interno ao alterar o estado da matéria:", error);
+        return { success: false, message: "Ocorreu um erro inesperado.", };
+    }
+}
+
+/** Salva a ordem manual das matérias: `orderedSubjectIds` com TODAS as matérias, na nova ordem. */
+export async function reorderSubjectsAction(orderedSubjectIds: string[]) {
+    try {
+        if (!Array.isArray(orderedSubjectIds) || orderedSubjectIds.length === 0) {
+            return { success: false, message: "Dados inválidos para reordenar." };
+        }
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/subjects/reorder`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify({ ids: orderedSubjectIds }),
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, message: errorData.message || "Falha da API ao reordenar matérias.", };
+        }
+
+        revalidatePath("/materias");
+        revalidatePath("/notas");
+        revalidatePath("/");
+        revalidatePath("/cronograma");
+
+        return { success: true, message: "Ordem atualizada com sucesso!", };
+    } catch (error) {
+        console.error("Erro interno ao reordenar matérias:", error);
         return { success: false, message: "Ocorreu um erro inesperado.", };
     }
 }

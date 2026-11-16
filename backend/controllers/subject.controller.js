@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Note from "../models/note.model.js";
 import QuestionLog from "../models/questionLog.model.js";
 import Subject from "../models/subject.model.js";
@@ -44,10 +45,53 @@ export const createSubject = async (req, res) => {
 export const getSubjects = async (req, res) => {
     try {
         const subjects = await Subject.find(subjectScope(req)).sort({ createdAt: 1 }).lean();
+
+        // Ordem manual primeiro; sem ordem definida (null/ausente) vem depois, por data de criação.
+        // Array.sort é estável, então a ordenação por createdAt acima é mantida nos empates.
+        const position = (subject) => Number.isInteger(subject.order) ? subject.order : Infinity;
+        subjects.sort((a, b) => {
+            const pa = position(a);
+            const pb = position(b);
+            if (pa === pb) return 0;
+            return pa < pb ? -1 : 1;
+        });
+
         res.status(200).json({ success: true, subjects: subjects });
     } catch (error) {
         console.log("error in getSubjecs ", error);
         res.status(500).json({ success: false, message: "Server error" });
+    }
+}
+
+export const reorderSubjects = async (req, res) => {
+    try {
+        const { ids } = req.body; // Array de ids das matérias, na nova ordem
+
+        if (!Array.isArray(ids) || ids.length === 0 || !ids.every((id) => typeof id === "string" && id))
+            return res.status(400).json({ success: false, message: "Invalid ids" });
+
+        if (new Set(ids).size !== ids.length)
+            return res.status(400).json({ success: false, message: "Duplicated ids" });
+
+        if (!ids.every((id) => mongoose.isValidObjectId(id)))
+            return res.status(400).json({ success: false, message: "Invalid ids" });
+
+        const count = await Subject.countDocuments({ _id: { $in: ids }, user_id: req.userId });
+
+        if (count !== ids.length)
+            return res.status(404).json({ success: false, message: "Uma ou mais matérias não encontradas" });
+
+        await Subject.bulkWrite(ids.map((id, order) => ({
+            updateOne: {
+                filter: { _id: id, user_id: req.userId },
+                update: { $set: { order } }
+            }
+        })));
+
+        res.status(200).json({ success: true, message: "Ordem atualizada" });
+    } catch (error) {
+        console.log("error in reorderSubjects ", error);
+        res.status(500).json({ success: false, message: "Erro ao reordenar" });
     }
 }
 
