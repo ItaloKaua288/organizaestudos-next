@@ -3,15 +3,17 @@
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { checkAuth as checkAuthApi, logout } from "@/services/login.service";
-import { CalendarClock, Captions, ChartColumn, ChevronDown, CircleUser, Kanban, Keyboard, Layers, LayoutDashboard, LogOut, Menu, NotepadText, RotateCw, ShieldCheck, type LucideIcon } from "lucide-react";
+import { CalendarClock, Captions, ChartColumn, ChevronDown, CircleUser, Kanban, Keyboard, Layers, LayoutDashboard, LogOut, Menu, NotepadText, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, RotateCw, ShieldCheck, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { GlobalSearch } from "./global-search";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
-import { Logo } from "./logo";
+import { Logo, LogoSvg } from "./logo";
+import { useNavPrefs } from "./nav-prefs-provider";
 import { ProfileSwitcher } from "./profile-switcher";
 
 import dynamic from "next/dynamic";
@@ -91,6 +93,37 @@ function CountBadge({ count, className }: { count: number; className?: string })
     );
 }
 
+/** Versão do selo para a sidebar recolhida: um pontinho no canto do ícone. */
+function CountDot({ count }: { count: number }) {
+    if (count <= 0) return null;
+
+    return (
+        <span className="absolute top-1.5 right-2.5 size-2 rounded-full bg-primary ring-2 ring-background">
+            <span className="sr-only">{count === 1 ? "1 revisão pendente" : `${count} revisões pendentes`}</span>
+        </span>
+    );
+}
+
+const RAIL_CLASS =
+    "flex items-center justify-center rounded-xl py-2.5 transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none";
+
+/** Ações da sidebar recolhida: só o ícone, com o nome no tooltip nativo (title) e para leitores de tela. */
+function RailLink({ href, label, icon: Icon, active }: { href: string; label: string; icon: LucideIcon; active: boolean }) {
+    return (
+        <Link href={href} title={label} aria-label={label} aria-current={active ? "page" : undefined} className={cn(RAIL_CLASS, active ? NAV_ACTIVE_CLASS : NAV_IDLE_CLASS)}>
+            <Icon className="size-4" />
+        </Link>
+    );
+}
+
+function RailButton({ label, icon: Icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) {
+    return (
+        <button type="button" title={label} aria-label={label} onClick={onClick} className={cn(RAIL_CLASS, NAV_IDLE_CLASS)}>
+            <Icon className="size-4" />
+        </button>
+    );
+}
+
 /** Grupo da barra (desktop): abre uma lista com ícone, nome e uma linha explicando cada tela. */
 function NavGroupMenu({ group, isActive, counts }: { group: NavGroup; isActive: (href: string) => boolean; counts: Record<string, number> }) {
     const [open, setOpen] = useState(false);
@@ -135,6 +168,13 @@ function NavGroupMenu({ group, isActive, counts }: { group: NavGroup; isActive: 
  * (fora do caminho crítico de renderização) só para confirmar a sessão e descobrir se é admin.
  */
 export function Navbar2({ hasToken = false, pendingReviews = 0 }: { hasToken?: boolean; pendingReviews?: number }) {
+    const { prefs, update } = useNavPrefs();
+    const { collapsed, side } = prefs;
+    const sidebarMode = prefs.layout === "sidebar";
+    // A sidebar só existe a partir de xl. Os widgets com atalho global (busca, perfil) ficam montados em
+    // um lugar só: na sidebar em telas grandes, na barra do topo nas demais.
+    const isDesktop = useMediaQuery("(min-width: 1280px)");
+    const inSidebar = sidebarMode && isDesktop;
     // Selos por destino do menu (hoje só as revisões pendentes).
     const counts: Record<string, number> = { "/revisoes": pendingReviews };
     const router = useRouter();
@@ -217,7 +257,151 @@ export function Navbar2({ hasToken = false, pendingReviews = 0 }: { hasToken?: b
 
     return (
         <>
-            <header className="fixed inset-x-0 top-3 z-50 px-3 sm:px-6">
+            {!isLoading && isAuthenticated && <KeyboardShortcuts open={shortcutsOpen} onOpenChange={setShortcutsOpen} />}
+
+            {sidebarMode && (
+                <aside
+                    aria-label="Menu lateral"
+                    className={cn(
+                        "glass-strong fixed top-3 bottom-3 z-40 flex flex-col gap-3 rounded-2xl p-3 transition-[width] duration-200 ease-out max-xl:hidden",
+                        side === "right" ? "right-3" : "left-3",
+                        collapsed ? "w-[4.5rem]" : "w-60"
+                    )}
+                >
+                    <div className={cn("flex shrink-0 items-center", collapsed ? "flex-col gap-2" : "justify-between gap-1")}>
+                        <Link
+                            href="/"
+                            aria-label="Organiza Estudos, ir para o início"
+                            className={cn(
+                                "min-w-0 rounded-lg transition-opacity hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
+                                collapsed ? "p-1" : "px-2 py-1"
+                            )}
+                        >
+                            {collapsed ? <LogoSvg /> : <Logo />}
+                        </Link>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => update({ collapsed: !collapsed })}
+                            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+                            aria-expanded={!collapsed}
+                            title={collapsed ? "Expandir menu" : "Recolher menu"}
+                        >
+                            {side === "right"
+                                ? collapsed ? <PanelRightClose /> : <PanelRightOpen />
+                                : collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+                        </Button>
+                    </div>
+
+                    {!isLoading && isAuthenticated && inSidebar && <GlobalSearch fullWidth={!collapsed} iconOnly={collapsed} />}
+
+                    <nav aria-label="Principal" className={cn("-mx-1 flex min-h-0 flex-1 flex-col overflow-y-auto px-1 py-1", collapsed ? "gap-1" : "gap-4")}>
+                        {NAV_GROUPS.map((group, index) => (
+                            <section key={group.label} aria-label={group.label} className="flex flex-col gap-0.5">
+                                {collapsed ? (
+                                    index > 0 && <div role="separator" className="mx-3 mb-1 border-t border-(--glass-ring)" />
+                                ) : (
+                                    <h3 className="px-3 pb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{group.label}</h3>
+                                )}
+                                {group.items.map(({ href, label, icon: Icon }) => (
+                                    <Link
+                                        key={href}
+                                        href={href}
+                                        title={collapsed ? label : undefined}
+                                        aria-current={isActive(href) ? "page" : undefined}
+                                        className={cn(
+                                            "relative flex items-center gap-2.5 rounded-xl py-2 text-sm font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
+                                            collapsed ? "justify-center px-0" : "px-3",
+                                            isActive(href) ? NAV_ACTIVE_CLASS : NAV_IDLE_CLASS
+                                        )}
+                                    >
+                                        <Icon className="size-4 shrink-0" />
+                                        {collapsed ? <span className="sr-only">{label}</span> : <span className="truncate">{label}</span>}
+                                        {collapsed ? <CountDot count={counts[href] ?? 0} /> : <CountBadge count={counts[href] ?? 0} className="ml-auto" />}
+                                    </Link>
+                                ))}
+                            </section>
+                        ))}
+                    </nav>
+
+                    <div className={cn("flex shrink-0 flex-col border-t border-(--glass-ring) pt-3", collapsed ? "gap-1" : "gap-1.5")}>
+                        {!isLoading && !isAuthenticated && !collapsed && (
+                            <>
+                                <Button variant="outline" onClick={() => router.push("/login")}>
+                                    Entrar
+                                </Button>
+                                <Button onClick={() => router.push("/signup")}>Cadastrar-se</Button>
+                            </>
+                        )}
+
+                        {!isLoading && isAuthenticated && inSidebar && collapsed && (
+                            <>
+                                <ProfileSwitcher iconOnly />
+                                <div className="flex justify-center">
+                                    <ThemeToggle size="icon" variant="ghost" />
+                                </div>
+                                <RailLink href="/perfil" label="Meu perfil" icon={CircleUser} active={pathname === "/perfil"} />
+                                {isAdmin && <RailLink href="/admin" label="Admin" icon={ShieldCheck} active={pathname === "/admin"} />}
+                                <RailButton label="Atalhos de teclado" icon={Keyboard} onClick={() => setShortcutsOpen(true)} />
+                                <RailButton label="Sair" icon={LogOut} onClick={() => void handleLogout()} />
+                            </>
+                        )}
+
+                        {!isLoading && isAuthenticated && inSidebar && !collapsed && (
+                            <>
+                                <ProfileSwitcher fullWidth />
+
+                                <div className="mt-1 flex items-center justify-between gap-1 px-1">
+                                    <span className="truncate text-xs font-medium text-muted-foreground">
+                                        {firstName ? `Conta · ${firstName}` : "Conta"}
+                                    </span>
+                                    <ThemeToggle size="icon" variant="ghost" />
+                                </div>
+
+                                <Link
+                                    href="/perfil"
+                                    aria-current={pathname === "/perfil" ? "page" : undefined}
+                                    className={cn(
+                                        "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                                        pathname === "/perfil" ? NAV_ACTIVE_CLASS : NAV_IDLE_CLASS
+                                    )}
+                                >
+                                    <CircleUser className="size-4" /> Meu perfil
+                                </Link>
+                                {isAdmin && (
+                                    <Link
+                                        href="/admin"
+                                        aria-current={pathname === "/admin" ? "page" : undefined}
+                                        className={cn(
+                                            "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                                            pathname === "/admin" ? NAV_ACTIVE_CLASS : NAV_IDLE_CLASS
+                                        )}
+                                    >
+                                        <ShieldCheck className="size-4" /> Admin
+                                    </Link>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setShortcutsOpen(true)}
+                                    className={cn("flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors", NAV_IDLE_CLASS)}
+                                >
+                                    <Keyboard className="size-4" /> Atalhos
+                                    <kbd className="ml-auto rounded-md border border-(--glass-ring) bg-foreground/5 px-1.5 py-0.5 text-[10px] font-medium">?</kbd>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void handleLogout()}
+                                    className={cn("flex items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors", NAV_IDLE_CLASS)}
+                                >
+                                    <LogOut className="size-4" /> Sair
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </aside>
+            )}
+
+            <header className={cn("fixed inset-x-0 top-3 z-50 px-3 sm:px-6", sidebarMode && "xl:hidden")}>
                 <div className="glass-strong mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-3 rounded-2xl pr-2 pl-4 xl:grid xl:grid-cols-[1fr_auto_1fr]">
 
                     {/* Logo */}
@@ -258,15 +442,13 @@ export function Navbar2({ hasToken = false, pendingReviews = 0 }: { hasToken?: b
                             </>
                         )}
 
-                        {!isLoading && isAuthenticated && <GlobalSearch />}
+                        {!isLoading && isAuthenticated && !inSidebar && <GlobalSearch />}
 
-                        {!isLoading && isAuthenticated && <KeyboardShortcuts open={shortcutsOpen} onOpenChange={setShortcutsOpen} />}
+                        {!isLoading && isAuthenticated && !inSidebar && <ProfileSwitcher />}
 
-                        {!isLoading && isAuthenticated && <ProfileSwitcher />}
+                        {!inSidebar && <ThemeToggle size="icon" variant="ghost" />}
 
-                        <ThemeToggle size="icon" variant="ghost" />
-
-                        {!isLoading && isAuthenticated && (
+                        {!isLoading && isAuthenticated && !inSidebar && (
                             <Popover open={userMenuOpen} onOpenChange={setUserMenuOpen}>
                                 <PopoverTrigger
                                     title="Minha conta"

@@ -19,7 +19,7 @@ import toast from "react-hot-toast";
 const TOAST_ID = "profile-action";
 
 /** Seletor do perfil de estudo (PMPE, Agente Censitário...) com criação, renomeação e exclusão. */
-export function ProfileSwitcher() {
+export function ProfileSwitcher({ fullWidth = false, iconOnly = false }: { fullWidth?: boolean; iconOnly?: boolean }) {
     const router = useRouter();
     const pathname = usePathname();
 
@@ -165,11 +165,11 @@ export function ProfileSwitcher() {
                 onClick={() => handleOpenChange(true)}
                 title={active ? `Perfil: ${active.name}` : "Trocar de perfil de estudo"}
                 aria-label="Trocar de perfil de estudo"
-                className="max-w-56 gap-1.5 max-sm:w-8 max-sm:px-0"
+                className={iconOnly ? "w-full justify-center px-0" : fullWidth ? "w-full justify-start gap-1.5" : "max-w-56 gap-1.5 max-sm:w-8 max-sm:px-0"}
             >
                 <Layers size={15} className="shrink-0" />
-                <span className="truncate max-sm:hidden">{active?.name ?? "Perfil"}</span>
-                <ChevronsUpDown size={14} className="shrink-0 opacity-60 max-sm:hidden" />
+                <span className={iconOnly ? "sr-only" : fullWidth ? "min-w-0 flex-1 truncate text-left" : "truncate max-sm:hidden"}>{active?.name ?? "Perfil"}</span>
+                <ChevronsUpDown size={14} className={iconOnly ? "hidden" : fullWidth ? "shrink-0 opacity-60" : "shrink-0 opacity-60 max-sm:hidden"} />
             </Button>
 
             <Dialog open={open} onOpenChange={handleOpenChange}>

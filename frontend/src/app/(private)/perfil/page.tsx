@@ -5,6 +5,7 @@ import { NameForm } from "./components/name-form";
 import { PasswordForm } from "./components/password-form";
 import { StudyLedger } from "./components/study-ledger";
 import type { Metadata } from "next";
+import { LayoutForm } from "./components/layout-form";
 
 
 export const metadata: Metadata = {
@@ -39,6 +40,8 @@ export default async function PerfilPage() {
                         <NameForm currentName={account.name} />
                         <PasswordForm />
                     </section>
+
+                    <LayoutForm />
                 </div>
             )}
         </main>

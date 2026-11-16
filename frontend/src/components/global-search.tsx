@@ -38,7 +38,7 @@ function ResultLink({ href, onNavigate, color, title, subtitle }: { href: string
 }
 
 /** Busca global (matérias, assuntos e notas). Abre pelo botão do menu ou com Ctrl/⌘ + K. */
-export function GlobalSearch() {
+export function GlobalSearch({ fullWidth = false, iconOnly = false }: { fullWidth?: boolean; iconOnly?: boolean }) {
     const [open, setOpen] = useState(false);
     const [term, setTerm] = useState("");
     const [results, setResults] = useState<SearchResults>(EMPTY);
@@ -109,14 +109,14 @@ export function GlobalSearch() {
     return (
         <>
             {/* Telas menores: só a lupa. */}
-            <Button variant="outline" size="icon" className="xl:hidden" onClick={() => setOpen(true)} aria-label="Buscar (Ctrl+K)" title="Buscar (Ctrl+K)">
+            <Button variant="outline" size="icon" className={iconOnly ? "w-full" : fullWidth ? "hidden" : "xl:hidden"} onClick={() => setOpen(true)} aria-label="Buscar (Ctrl+K)" title="Buscar (Ctrl+K)">
                 <Search className="h-4 w-4" />
             </Button>
 
             {/* Desktop: campo de busca visível com o atalho. */}
             <Button
                 variant="outline"
-                className="w-36 justify-start gap-2 px-3 font-normal text-muted-foreground max-xl:hidden"
+                className={iconOnly ? "hidden" : fullWidth ? "w-full justify-start gap-2 px-3 font-normal text-muted-foreground" : "w-36 justify-start gap-2 px-3 font-normal text-muted-foreground max-xl:hidden"}
                 onClick={() => setOpen(true)}
                 aria-label="Buscar (Ctrl+K)"
                 title="Buscar (Ctrl+K)"

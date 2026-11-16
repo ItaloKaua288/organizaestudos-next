@@ -3,6 +3,9 @@ import { Navbar2 } from "@/components/Navbar2";
 import { ThemeProvider } from "@/components/theme-provider";
 import { fontVariables } from "@/lib/fonts";
 import { countDueReviews } from "@/lib/review-due";
+import { ContentShell } from "@/components/content-shell";
+import { NavPrefsProvider } from "@/components/nav-prefs-provider";
+import { readPrefs } from "@/lib/layout-preference";
 import { PROFILE_COOKIE } from "@/lib/profile-cookie";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
@@ -37,6 +40,7 @@ export default async function RootLayout({
   // do servidor para um useState (ex.: ciclo de estudos) continuariam mostrando o perfil anterior.
   const cookieStore = await cookies();
   const profileKey = cookieStore.get(PROFILE_COOKIE)?.value ?? "default";
+  const prefs = readPrefs((name) => cookieStore.get(name)?.value);
   const hasToken = Boolean(cookieStore.get("token")?.value);
   const pendingReviews = hasToken ? await getPendingReviewsCount() : 0;
 
@@ -44,6 +48,7 @@ export default async function RootLayout({
     <html
       lang="pt-BR"
       className={cn("h-full", "antialiased", "font-sans", fontVariables)}
+      data-density={prefs.density}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col mx-auto max-w-[1920px]">
@@ -62,10 +67,10 @@ export default async function RootLayout({
             }}
           />
           <div aria-hidden className="ambient" />
-          <Navbar2 hasToken={hasToken} pendingReviews={pendingReviews} />
-          <div key={profileKey} className="mx-auto w-full max-w-7xl flex-1 px-4 pt-24 pb-28 sm:px-6 xl:pb-16 lg:px-8">
-            {children}
-          </div>
+          <NavPrefsProvider initial={prefs}>
+            <Navbar2 hasToken={hasToken} pendingReviews={pendingReviews} />
+            <ContentShell profileKey={profileKey}>{children}</ContentShell>
+          </NavPrefsProvider>
         </ThemeProvider>
       </body>
     </html>

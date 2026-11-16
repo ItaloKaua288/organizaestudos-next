@@ -346,3 +346,8 @@
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Densidade "compacta" (escolhida no perfil): reduz a base de rem, então textos e espaços encolhem juntos. */
+html[data-density="compact"] {
+  font-size: 93.75%;
+}
