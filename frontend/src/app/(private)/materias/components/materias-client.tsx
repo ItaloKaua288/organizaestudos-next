@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/page-header";
 import { Subject } from "@/types/subject";
 import { Topic } from "@/types/topic";
-import { ChevronsDownUp, ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown, Plus, RotateCw } from "lucide-react";
+import Link from "next/link";
+import { getSubjectStats } from "@/lib/subject-stats";
 import { NEW_ITEM_EVENT, type NewItemEventDetail } from "@/lib/shortcut-events";
 import { describeFailure, toastError } from "@/lib/toast-feedback";
 import { FormEvent, useEffect, useState } from "react";
@@ -26,6 +28,64 @@ type SubjectWithTopics = Subject & { topics: Topic[] };
 interface MateriasClientProps {
     subjects: SubjectWithTopics[];
     initialLayout?: MateriasLayout;
+}
+
+/** Resumo geral das matérias ativas: quantas são, quanto já foi concluído e quantas revisões esperam. */
+function MateriasSummary({ subjects }: { subjects: SubjectWithTopics[] }) {
+    const active = subjects.filter((subject) => subject.active !== false);
+    const inactiveCount = subjects.length - active.length;
+
+    let total = 0;
+    let done = 0;
+    let dueReviews = 0;
+    for (const subject of active) {
+        const stats = getSubjectStats(subject.topics);
+        total += stats.total;
+        done += stats.done;
+        dueReviews += stats.dueReviews;
+    }
+    const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    return (
+        <section aria-label="Resumo geral" className="glass mb-4 flex flex-col gap-3 rounded-2xl p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                <p className="text-sm">
+                    <span className="font-semibold">{active.length === 1 ? "1 matéria" : `${active.length} matérias`}</span>
+                    <span className="text-muted-foreground">
+                        {" · "}
+                        <span className="font-medium text-foreground tabular-nums">{done}</span> de{" "}
+                        <span className="tabular-nums">{total}</span> assuntos concluídos (
+                        <span className="tabular-nums">{percent}%</span>)
+                        {inactiveCount > 0 && ` · ${inactiveCount} desativada${inactiveCount > 1 ? "s" : ""}`}
+                    </span>
+                </p>
+
+                {dueReviews > 0 && (
+                    <Link
+                        href="/revisoes"
+                        className="flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-xs font-medium tabular-nums text-primary transition-colors hover:bg-primary/25 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                    >
+                        <RotateCw size={12} aria-hidden="true" />
+                        {dueReviews} {dueReviews === 1 ? "revisão" : "revisões"} para hoje
+                    </Link>
+                )}
+            </div>
+
+            {total > 0 && (
+                <div
+                    role="progressbar"
+                    aria-label="Progresso geral"
+                    aria-valuemin={0}
+                    aria-valuemax={total}
+                    aria-valuenow={done}
+                    aria-valuetext={`${done} de ${total} assuntos concluídos`}
+                    className="h-1.5 w-full overflow-hidden rounded-full bg-foreground/10"
+                >
+                    <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${percent}%` }} />
+                </div>
+            )}
+        </section>
+    );
 }
 
 export default function MateriasClient({ subjects, initialLayout = "detalhado" }: MateriasClientProps) {
@@ -130,6 +190,8 @@ export default function MateriasClient({ subjects, initialLayout = "detalhado" }
                     </>
                 }
             />
+
+            {subjects.length > 0 && <MateriasSummary subjects={subjects} />}
 
             {subjects.length > 0 ? (
                 isCompact ? (
