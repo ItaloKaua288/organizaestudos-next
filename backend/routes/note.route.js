@@ -4,6 +4,8 @@ import {
     createNote,
     getNotes,
     getLinkTargets,
+    getNotesOverview,
+    searchNotes,
     deleteNote,
     updateNote,
     uploadNoteAttachment,
@@ -35,6 +37,8 @@ const uploadSingleFile = (req, res, next) => {
 router.post("/", verifyToken, createNote);
 // Rota fixa antes de "/:subjectId", senão o Express trataria "link-targets" como id de matéria.
 router.get("/link-targets", verifyToken, getLinkTargets);
+router.get("/overview", verifyToken, getNotesOverview);
+router.get("/search", verifyToken, searchNotes);
 router.get("/:subjectId", verifyToken, getNotes);
 router.put("/:id", verifyToken, updateNote);
 router.delete("/:id", verifyToken, deleteNote);

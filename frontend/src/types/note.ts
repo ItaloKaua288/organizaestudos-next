@@ -37,3 +37,39 @@ export interface Note {
     created_at?: string;
     updated_at?: string;
 }
+
+/** Resumo das notas de uma matéria (página de Anotações). */
+export interface NoteSubjectSummary {
+    subjectId: string;
+    count: number;
+    pinned: number;
+    attachments: number;
+    /** Data da última edição (ISO). */
+    lastUpdatedAt: string | null;
+}
+
+/** Nota recente (de qualquer matéria), com uma prévia do texto. */
+export interface RecentNote {
+    id: string;
+    title: string;
+    preview: string;
+    subjectId: string;
+    isPinned: boolean;
+    updatedAt: string;
+}
+
+export interface NotesOverview {
+    subjects: NoteSubjectSummary[];
+    recent: RecentNote[];
+}
+
+export interface NoteSearchResult {
+    id: string;
+    title: string;
+    /** Trecho do texto (sem HTML) perto do termo buscado. */
+    snippet: string;
+    subjectId: string;
+    isPinned: boolean;
+    tags: string[];
+    updatedAt: string;
+}

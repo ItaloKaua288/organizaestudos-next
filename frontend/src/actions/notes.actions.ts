@@ -2,7 +2,7 @@
 
 import { getAuthHeaders, getBaseUrl } from "@/lib/api.utils";
 import { NoteApiResponse } from "@/types/apiResponse";
-import { Note, NoteAttachment, NoteLinkTarget } from "@/types/note";
+import { Note, NoteAttachment, NoteLinkTarget, NoteSearchResult, NotesOverview } from "@/types/note";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -377,5 +377,53 @@ export async function getNoteLinkTargetsAction(): Promise<NoteLinkTarget[]> {
     } catch (error) {
         console.error("Erro interno ao buscar notas para link:", error);
         return [];
+    }
+}
+
+
+/**
+ * Resumo da página de Anotações (contagem por matéria e notas recentes). Nunca cacheia: muda a cada nota salva.
+ * Se falhar, devolve um resumo vazio: a página continua funcionando, só sem os números.
+ */
+export async function getNotesOverviewAction(): Promise<NotesOverview> {
+    try {
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/notes/overview`, { headers, cache: "no-store" });
+
+        if (!res.ok) throw new Error("Falha ao buscar o resumo das anotações.");
+
+        const data = await res.json();
+
+        return { subjects: data.subjects ?? [], recent: data.recent ?? [] };
+    } catch (error) {
+        console.error("Erro interno ao buscar o resumo das anotações:", error);
+        return { subjects: [], recent: [] };
+    }
+}
+
+/** Busca em todas as notas (título, conteúdo e tags). Nunca cacheia: depende do que foi digitado agora. */
+export async function searchNotesAction(query: string): Promise<{ success: boolean; notes: NoteSearchResult[]; message?: string }> {
+    try {
+        const term = query.trim();
+        if (term.length < 2) return { success: true, notes: [] };
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/notes/search?q=${encodeURIComponent(term)}`, { headers, cache: "no-store" });
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            return { success: false, notes: [], message: errorData.message || "Falha ao buscar as anotações." };
+        }
+
+        const data = await res.json();
+
+        return { success: true, notes: data.notes ?? [] };
+    } catch (error) {
+        console.error("Erro interno ao buscar anotações:", error);
+        return { success: false, notes: [], message: "Ocorreu um erro inesperado ao buscar." };
     }
 }

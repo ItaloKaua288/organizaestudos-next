@@ -2,7 +2,9 @@ import https from "https";
 import mongoose from "mongoose";
 import Note, { MAX_NOTE_ATTACHMENTS, MAX_NOTE_TAGS, MAX_TAG_LENGTH } from "../models/note.model.js";
 import Subject from "../models/subject.model.js";
+import { subjectScope } from "../middleware/profile.js";
 import cloudinary from "../utils/cloudinary.js";
+import { buildPreview, buildSnippet, escapeRegex } from "../utils/noteText.js";
 
 export const ALLOWED_ATTACHMENT_TYPES = [
     "application/pdf",
@@ -131,6 +133,116 @@ export const getNotes = async (req, res) => {
         res.status(200).json({ success: true, notes: withBacklinks });
     } catch (error) {
         console.log("error in getNotes ", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+}
+
+const RECENT_NOTES_LIMIT = 5;
+const SEARCH_MIN_QUERY = 2;
+const SEARCH_MAX_QUERY = 80;
+const SEARCH_LIMIT = 30;
+
+/**
+ * Resumo para a página de Anotações: por matéria ativa (quantas notas, fixadas, anexos e a última edição)
+ * e as notas editadas mais recentemente, de qualquer matéria. Só matérias ativas entram.
+ */
+export const getNotesOverview = async (req, res) => {
+    try {
+        const activeSubjects = await Subject.find(subjectScope(req, { active: { $ne: false } })).select("_id").lean();
+        const subjectIds = activeSubjects.map((subject) => subject._id);
+
+        if (subjectIds.length === 0)
+            return res.status(200).json({ success: true, subjects: [], recent: [] });
+
+        const filter = { user_id: new mongoose.Types.ObjectId(String(req.userId)), subject_id: { $in: subjectIds } };
+
+        const [perSubject, recent] = await Promise.all([
+            Note.aggregate([
+                { $match: filter },
+                {
+                    $group: {
+                        _id: "$subject_id",
+                        count: { $sum: 1 },
+                        pinned: { $sum: { $cond: ["$isPinned", 1, 0] } },
+                        attachments: { $sum: { $size: { $ifNull: ["$attachments", []] } } },
+                        lastUpdatedAt: { $max: "$updatedAt" }
+                    }
+                }
+            ]),
+            Note.find(filter)
+                .select("title content subject_id isPinned updatedAt")
+                .sort({ updatedAt: -1 })
+                .limit(RECENT_NOTES_LIMIT)
+                .lean()
+        ]);
+
+        res.status(200).json({
+            success: true,
+            subjects: perSubject.map((item) => ({
+                subjectId: String(item._id),
+                count: item.count,
+                pinned: item.pinned,
+                attachments: item.attachments,
+                lastUpdatedAt: item.lastUpdatedAt
+            })),
+            recent: recent.map((note) => ({
+                id: String(note._id),
+                title: note.title,
+                preview: buildPreview(note.content),
+                subjectId: String(note.subject_id),
+                isPinned: Boolean(note.isPinned),
+                updatedAt: note.updatedAt
+            }))
+        });
+    } catch (error) {
+        console.log("error in getNotesOverview ", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+}
+
+/** Busca em todas as notas (título, conteúdo e tags) das matérias ativas. */
+export const searchNotes = async (req, res) => {
+    try {
+        const query = String(req.query.q ?? "").trim().slice(0, SEARCH_MAX_QUERY);
+
+        if (query.length < SEARCH_MIN_QUERY)
+            return res.status(200).json({ success: true, query, notes: [] });
+
+        const activeSubjects = await Subject.find(subjectScope(req, { active: { $ne: false } })).select("_id").lean();
+        const subjectIds = activeSubjects.map((subject) => subject._id);
+
+        if (subjectIds.length === 0)
+            return res.status(200).json({ success: true, query, notes: [] });
+
+        // Tags são guardadas sem "#": quem busca "#prova" também encontra a tag "prova".
+        const regex = new RegExp(escapeRegex(query), "i");
+        const tagRegex = new RegExp(escapeRegex(query.replace(/^#+/, "")), "i");
+
+        const notes = await Note.find({
+            user_id: req.userId,
+            subject_id: { $in: subjectIds },
+            $or: [{ title: regex }, { content: regex }, { tags: tagRegex }]
+        })
+            .select("title content subject_id isPinned tags updatedAt")
+            .sort({ updatedAt: -1 })
+            .limit(SEARCH_LIMIT)
+            .lean();
+
+        res.status(200).json({
+            success: true,
+            query,
+            notes: notes.map((note) => ({
+                id: String(note._id),
+                title: note.title,
+                snippet: buildSnippet(note.content, query),
+                subjectId: String(note.subject_id),
+                isPinned: Boolean(note.isPinned),
+                tags: note.tags ?? [],
+                updatedAt: note.updatedAt
+            }))
+        });
+    } catch (error) {
+        console.log("error in searchNotes ", error);
         res.status(500).json({ success: false, message: "Server error" });
     }
 }

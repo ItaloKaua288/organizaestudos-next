@@ -1,6 +1,8 @@
+import { getNotesOverviewAction } from "@/actions/notes.actions";
 import { getSubjectsAction } from "@/actions/subjects.actions";
 import { PageHeader } from "@/components/page-header";
-import { RedirectButton } from "./components/button-redirect";
+import { formatRelativeTime } from "@/lib/relative-time";
+import { NotesHome, type RecentNoteCard, type SubjectCard } from "./components/notes-home";
 import type { Metadata } from "next";
 
 
@@ -9,7 +11,31 @@ export const metadata: Metadata = {
 };
 
 export default async function NotasPage() {
-    const allSubjects = (await getSubjectsAction()).filter((subject) => subject.active !== false)
+    const [subjects, overview] = await Promise.all([getSubjectsAction(), getNotesOverviewAction()]);
+    const allSubjects = subjects.filter((subject) => subject.active !== false)
+
+    const summaryBySubject = new Map(overview.subjects.map((item) => [item.subjectId, item]))
+    const now = new Date()
+
+    const cards: SubjectCard[] = allSubjects.map((subject) => {
+        const item = summaryBySubject.get(subject.id)
+
+        return {
+            ...subject,
+            summary: {
+                count: item?.count ?? 0,
+                pinned: item?.pinned ?? 0,
+                attachments: item?.attachments ?? 0,
+                lastLabel: formatRelativeTime(item?.lastUpdatedAt, now),
+            },
+        }
+    })
+
+    // Só notas de matérias que aparecem na página (ativas e do perfil atual).
+    const subjectIds = new Set(allSubjects.map((subject) => subject.id))
+    const recent: RecentNoteCard[] = overview.recent
+        .filter((note) => subjectIds.has(note.subjectId))
+        .map((note) => ({ ...note, label: formatRelativeTime(note.updatedAt, now) }))
 
     return (
         <div className="introduction-Page flex flex-col">
@@ -22,15 +48,7 @@ export default async function NotasPage() {
                         <p className="mt-1 text-sm text-muted-foreground">Crie uma matéria para começar a anotar.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {allSubjects.map((subject, index) => (
-                            <RedirectButton
-                                key={subject.id}
-                                subject={subject}
-                                index={index}
-                            />
-                        ))}
-                    </div>
+                    <NotesHome subjects={cards} recent={recent} />
                 )}
             </section>
         </div>
