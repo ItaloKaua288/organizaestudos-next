@@ -5,9 +5,9 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronDown, ChevronRight, ExternalLink, PencilLine, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, EyeOff, ExternalLink, PencilLine, Plus, Trash2 } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.actions";
@@ -43,6 +43,28 @@ export default function SubjectBox({
     const [topicTitle, setTopicTitle] = useState("")
     const [isPending, setIsPending] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false)
+    const [hideDone, setHideDone] = useState(false)
+
+    const hideDoneKey = `oe:hide-done:${subject.id}`;
+
+    useEffect(() => {
+        try {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setHideDone(localStorage.getItem(hideDoneKey) === "1");
+        } catch {
+            // localStorage indisponível: segue com os concluídos visíveis
+        }
+    }, [hideDoneKey]);
+
+    const toggleHideDone = () => {
+        setHideDone((prev) => {
+            const next = !prev;
+            try {
+                localStorage.setItem(hideDoneKey, next ? "1" : "0");
+            } catch { }
+            return next;
+        });
+    };
 
     const handleSubjectFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,6 +124,19 @@ export default function SubjectBox({
 
     const { topics, moveTopic, getTopicMeta, isReordering, activeTopic, dndProps, getDragProps } = useTopicReorder(subject.id, subject.topics || []);
     const isActive = subject.active !== false;
+
+    // Progresso só conta assuntos "folha": pastas (com subassuntos) apenas organizam.
+    const leafTopics = topics.filter((topic) => !topic.isContainer);
+    const totalCount = leafTopics.length;
+    const doneCount = leafTopics.filter((topic) => topic.status === "CONCLUIDO").length;
+    const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+    // Com "ocultar concluídos": some assunto concluído e pasta cujos subassuntos já estão todos concluídos.
+    const isHiddenDone = (topic: (typeof topics)[number]) =>
+        topic.isContainer
+            ? (topic.subtopicsTotal ?? 0) > 0 && (topic.subtopicsDone ?? 0) >= (topic.subtopicsTotal ?? 0)
+            : topic.status === "CONCLUIDO";
+    const visibleTopics = hideDone ? topics.filter((topic) => !isHiddenDone(topic)) : topics;
 
     if (!isActive) {
         return (
@@ -214,11 +249,46 @@ export default function SubjectBox({
                 </div>
             </header>
 
+            {totalCount > 0 && (
+                <div className="mt-3 flex items-center gap-3">
+                    <div
+                        role="progressbar"
+                        aria-label={`Progresso em ${subject.title}`}
+                        aria-valuemin={0}
+                        aria-valuemax={totalCount}
+                        aria-valuenow={doneCount}
+                        aria-valuetext={`${doneCount} de ${totalCount} assuntos concluídos`}
+                        className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-foreground/10"
+                    >
+                        <div
+                            className="h-full rounded-full transition-[width] duration-300"
+                            style={{ width: `${percent}%`, backgroundColor: subject.color }}
+                        />
+                    </div>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {doneCount}/{totalCount} concluídos
+                    </span>
+                    {isExpanded && doneCount > 0 && (
+                        <button
+                            type="button"
+                            onClick={toggleHideDone}
+                            aria-pressed={hideDone}
+                            title={hideDone ? "Mostrar assuntos concluídos" : "Ocultar assuntos concluídos"}
+                            className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-foreground/8 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                        >
+                            {hideDone ? <Eye size={14} /> : <EyeOff size={14} />}
+                            <span className="max-sm:sr-only">{hideDone ? `Mostrar concluídos (${doneCount})` : "Ocultar concluídos"}</span>
+                        </button>
+                    )}
+                </div>
+            )}
+
             {isExpanded && (
                 <div className="mt-3 flex flex-col">
                     <DndContext {...dndProps}>
                         <div className="flex flex-col gap-1">
-                            {topics.map((topic, index) => {
+                            {visibleTopics.map((topic) => {
+                                const index = topics.indexOf(topic);
                                 const meta = getTopicMeta(topic.id);
 
                                 return (
@@ -241,6 +311,11 @@ export default function SubjectBox({
                         </div>
                         <TopicDragOverlay topic={activeTopic} />
                     </DndContext>
+                    {hideDone && topics.length > 0 && visibleTopics.length === 0 && (
+                        <p className="py-4 text-center text-sm text-muted-foreground">
+                            Todos os assuntos estão concluídos.
+                        </p>
+                    )}
                     {topics.length === 0 && (
                         <p className="py-4 text-center text-sm text-muted-foreground">
                             Nenhum assunto ainda. Adicione o primeiro abaixo.

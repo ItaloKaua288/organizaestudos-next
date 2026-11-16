@@ -6,7 +6,8 @@ import { KanbanTopicSheet } from "@/app/(private)/kanban/components/kanban-topic
 import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, ChevronDown, ChevronRight, Clock, Download, FileText, FolderOpen, GripVertical, Link as LinkLucide, ListPlus, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, CheckCircle2, ChevronDown, ChevronRight, Clock, Download, Ellipsis, FileText, FolderOpen, GripVertical, Link as LinkLucide, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { useCallback, useState } from "react";
 import toast from "react-hot-toast";
@@ -63,8 +64,57 @@ const ICON_BTN =
     "size-7 rounded-lg border-transparent bg-transparent p-0 text-muted-foreground shadow-none backdrop-blur-none hover:bg-foreground/8 hover:text-foreground aria-expanded:bg-foreground/8";
 const ICON_LINK =
     "flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none has-focus-visible:ring-3 has-focus-visible:ring-ring/40";
-const STATUS_SELECT =
-    "h-7 cursor-pointer rounded-full border border-input bg-foreground/4 text-xs text-foreground outline-none transition-colors duration-150 hover:bg-foreground/8 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 [&>option]:bg-background [&>option]:text-foreground";
+/**
+ * Ações da linha (anexar, editar, mais): em telas com mouse só aparecem ao passar o mouse ou com foco
+ * no teclado (e enquanto um menu da própria linha estiver aberto). Em telas de toque ficam sempre visíveis.
+ */
+const ROW_ACTIONS =
+    "transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/row:opacity-100 [@media(hover:hover)]:group-focus-within/row:opacity-100 [@media(hover:hover)]:has-[[aria-expanded=true]]:opacity-100";
+
+const STATUS_META: Record<TopicStatus, { label: string; dot: string }> = {
+    PENDENTE: { label: "Pendente", dot: "bg-muted-foreground/60" },
+    ESTUDANDO: { label: "Estudando", dot: "bg-amber-500" },
+    CONCLUIDO: { label: "Concluído", dot: "bg-emerald-500" },
+};
+const STATUS_ORDER: TopicStatus[] = ["PENDENTE", "ESTUDANDO", "CONCLUIDO"];
+
+/** Status do assunto como uma pílula colorida que abre um pequeno menu (no celular, só a bolinha). */
+function StatusMenu({ status, onChange }: { status: TopicStatus; onChange: (status: TopicStatus) => void }) {
+    const [open, setOpen] = useState(false);
+    const current = STATUS_META[status];
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+                aria-label={`Status do assunto: ${current.label}`}
+                title="Alterar status"
+                className="flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-input bg-foreground/4 px-2.5 text-xs text-foreground transition-colors duration-150 hover:bg-foreground/8 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none aria-expanded:bg-foreground/8"
+            >
+                <span className={`size-2 shrink-0 rounded-full ${current.dot}`} aria-hidden />
+                <span className="max-md:sr-only">{current.label}</span>
+                <ChevronDown size={12} className="shrink-0 opacity-60 max-md:hidden" aria-hidden />
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-40 gap-0.5 p-1.5">
+                {STATUS_ORDER.map((value) => (
+                    <button
+                        key={value}
+                        type="button"
+                        onClick={() => {
+                            setOpen(false);
+                            if (value !== status) onChange(value);
+                        }}
+                        aria-pressed={value === status}
+                        className="flex cursor-pointer items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-foreground/6 focus-visible:bg-foreground/6 focus-visible:outline-none"
+                    >
+                        <span className={`size-2 shrink-0 rounded-full ${STATUS_META[value].dot}`} aria-hidden />
+                        {STATUS_META[value].label}
+                        {value === status && <Check size={14} className="ml-auto text-muted-foreground" aria-hidden />}
+                    </button>
+                ))}
+            </PopoverContent>
+        </Popover>
+    );
+}
 
 type SubjectBoxProps = {
     subject: Subject;
@@ -133,6 +183,8 @@ export function TopicRow({
     const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(true);
     const [subtopicTitle, setSubtopicTitle] = useState('');
     const [isSubtopicDialogOpen, setIsSubtopicDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isMoreOpen, setIsMoreOpen] = useState(false);
 
     const handleSubtopicSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -305,7 +357,7 @@ export function TopicRow({
             <div
                 ref={setRowRef}
                 onClick={handleRowClick}
-                className={`border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isContainer ? "" : "cursor-pointer"} ${isDragging ? "opacity-40" : ""} ${isOver && !isDragging ? "ring-2 ring-primary" : ""}`}
+                className={`group/row border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isContainer ? "" : "cursor-pointer"} ${isDragging ? "opacity-40" : ""} ${isOver && !isDragging ? "ring-2 ring-primary" : ""}`}
             >
                 {dragProps && (
                     <span
@@ -322,7 +374,7 @@ export function TopicRow({
                 {isContainer ? (
                     <FolderOpen color={topic.subject.color} size={15} className="shrink-0 text-muted-foreground" />
                 ) : topic.status === "CONCLUIDO" ? (
-                    <CheckCircle2 size={15} className="shrink-0 text-primary" aria-label="Concluído" />
+                    <CheckCircle2 size={15} className="shrink-0 text-emerald-500" aria-label="Concluído" />
                 ) : (
                     <Clock size={15} className="shrink-0 text-muted-foreground" aria-label="Pendente" />
                 )}
@@ -340,7 +392,7 @@ export function TopicRow({
                         data-topic-open=""
                         aria-haspopup="dialog"
                         aria-label={`Ver informações de ${topic.title}`}
-                        className="block min-w-0 flex-1 cursor-pointer truncate rounded-md text-left font-medium focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                        className={`block min-w-0 flex-1 cursor-pointer truncate rounded-md text-left font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none ${topic.status === "CONCLUIDO" ? "text-muted-foreground" : ""}`}
                         title={topic.title}
                     >
                         {topic.title}
@@ -348,41 +400,8 @@ export function TopicRow({
                 )}
 
                 <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-                    {isContainer && (
-                        <span
-                            className="shrink-0 rounded-full bg-foreground/6 px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
-                            title={`${topic.subtopicsDone ?? 0} de ${topic.subtopicsTotal ?? 0} subassuntos concluídos`}
-                        >
-                            {topic.subtopicsDone ?? 0}/{topic.subtopicsTotal ?? 0}
-                        </span>
-                    )}
-
                     {!isContainer && (
                         <>
-                            {/* Mobile */}
-                            <select
-                                value={topic.status}
-                                onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
-                                aria-label="Status do assunto"
-                                className={`${STATUS_SELECT} w-9 appearance-none px-0 text-center md:hidden`}
-                            >
-                                <option value="PENDENTE">✖</option>
-                                <option value="ESTUDANDO">…</option>
-                                <option value="CONCLUIDO">✔</option>
-                            </select>
-
-                            {/* Desktop */}
-                            <select
-                                value={topic.status}
-                                onChange={(e) => handleTopicStatusChange?.(topic, e.target.value as TopicStatus)}
-                                aria-label="Status do assunto"
-                                className={`${STATUS_SELECT} mr-1 px-2.5 max-md:hidden`}
-                            >
-                                <option value="PENDENTE">Pendente</option>
-                                <option value="ESTUDANDO">Estudando</option>
-                                <option value="CONCLUIDO">Concluído</option>
-                            </select>
-
                             {topic.link && (
                                 <a
                                     href={topic.link}
@@ -395,7 +414,11 @@ export function TopicRow({
                                     <LinkLucide size={15} />
                                 </a>
                             )}
+                        </>
+                    )}
 
+                    <div className={`flex items-center gap-0.5 sm:gap-1 ${ROW_ACTIONS}`}>
+                        {!isContainer && (
                             <label
                                 className={ICON_LINK}
                                 title="Anexar PDF"
@@ -411,15 +434,101 @@ export function TopicRow({
                                 />
                                 <Paperclip size={15} />
                             </label>
-                        </>
+                        )}
+
+                        <DialogDemo
+                            title={`Editar ${kind.toLowerCase()}`}
+                            description={`Modifique os detalhes deste ${kind.toLowerCase()}.`}
+                            contentBtn={<><PencilLine size={15} /><span className="sr-only">Editar {kind.toLowerCase()}</span></>}
+                            classNameBtn={ICON_BTN}
+                            nameConfirmBtn="Salvar"
+                            onSubmit={handleEditSubmit}
+                            open={isEditDialogOpen}
+                            onOpenChange={handleOpenChange}
+                        >
+                            <FieldGroup>
+                                <Field>
+                                    <Label htmlFor="topic-title">Título</Label>
+                                    <Input
+                                        id="topic-title"
+                                        value={editedTitle}
+                                        onChange={(e) => setEditedTitle(e.target.value)}
+                                    />
+                                </Field>
+                                {!isContainer && (
+                                    <Field>
+                                        <Label className="flex gap-1" htmlFor="topic-link">Link<span className="text-muted-foreground">(opcional)</span></Label>
+                                        <Input
+                                            id="topic-link"
+                                            value={editedLink}
+                                            onChange={(e) => setEditedLink(e.target.value)}
+                                            placeholder="https://..."
+                                        />
+                                    </Field>
+                                )}
+                                {!isContainer && topic.status === 'CONCLUIDO' && (
+                                    <Field>
+                                        <Label htmlFor="topic-first-review-date">Data da primeira revisão</Label>
+                                        <Input
+                                            type="date"
+                                            id="topic-first-review-date"
+                                            value={editedFirstReviewDate}
+                                            onChange={(e) => setEditedFirstReviewDate(e.target.value)}
+                                        />
+                                    </Field>
+                                )}
+                            </FieldGroup>
+                        </DialogDemo>
+
+                        {/* Menu "mais": ações menos frequentes ou destrutivas, longe do botão de editar. */}
+                        <Popover open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+                            <PopoverTrigger
+                                aria-label="Mais ações"
+                                title="Mais ações"
+                                className={`${ICON_LINK} aria-expanded:bg-foreground/8`}
+                            >
+                                <Ellipsis size={16} />
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-52 gap-0.5 p-1.5">
+                                {!isSubtopic && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsMoreOpen(false); setIsSubtopicDialogOpen(true); }}
+                                        className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-foreground/6 focus-visible:bg-foreground/6 focus-visible:outline-none"
+                                    >
+                                        <Plus size={15} className="text-muted-foreground" /> Adicionar subassunto
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => { setIsMoreOpen(false); setIsDeleteDialogOpen(true); }}
+                                    className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:outline-none"
+                                >
+                                    <Trash2 size={15} /> Excluir {kind.toLowerCase()}
+                                </button>
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    {isContainer && (
+                        <span
+                            className="shrink-0 rounded-full bg-foreground/6 px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
+                            title={`${topic.subtopicsDone ?? 0} de ${topic.subtopicsTotal ?? 0} subassuntos concluídos`}
+                        >
+                            {topic.subtopicsDone ?? 0}/{topic.subtopicsTotal ?? 0}
+                        </span>
                     )}
 
+                    {!isContainer && (
+                        <StatusMenu status={topic.status} onChange={(next) => handleTopicStatusChange(topic, next)} />
+                    )}
+
+                    {/* Diálogos abertos pelo menu "mais" (o botão de abrir deles fica escondido). */}
                     {!isSubtopic && (
                         <DialogDemo
                             title="Novo subassunto"
                             description={`Adicione um subassunto em "${topic.title}".`}
-                            contentBtn={<span title="Adicionar subassunto" className="flex"><Plus size={15} /><span className="sr-only">Adicionar subassunto</span></span>}
-                            classNameBtn={ICON_BTN}
+                            classNameBtn="hidden"
                             nameConfirmBtn="Adicionar"
                             onSubmit={handleSubtopicSubmit}
                             open={isSubtopicDialogOpen}
@@ -441,57 +550,14 @@ export function TopicRow({
                     )}
 
                     <DialogDemo
-                        title={`Editar ${kind.toLowerCase()}`}
-                        description={`Modifique os detalhes deste ${kind.toLowerCase()}.`}
-                        contentBtn={<><PencilLine size={15} /><span className="sr-only">Editar {kind.toLowerCase()}</span></>}
-                        classNameBtn={ICON_BTN}
-                        nameConfirmBtn="Salvar"
-                        onSubmit={handleEditSubmit}
-                        open={isEditDialogOpen}
-                        onOpenChange={handleOpenChange}
-                    >
-                        <FieldGroup>
-                            <Field>
-                                <Label htmlFor="topic-title">Título</Label>
-                                <Input
-                                    id="topic-title"
-                                    value={editedTitle}
-                                    onChange={(e) => setEditedTitle(e.target.value)}
-                                />
-                            </Field>
-                            {!isContainer && (
-                                <Field>
-                                    <Label className="flex gap-1" htmlFor="topic-link">Link<span className="text-muted-foreground">(opcional)</span></Label>
-                                    <Input
-                                        id="topic-link"
-                                        value={editedLink}
-                                        onChange={(e) => setEditedLink(e.target.value)}
-                                        placeholder="https://..."
-                                    />
-                                </Field>
-                            )}
-                            {!isContainer && topic.status === 'CONCLUIDO' && (
-                                <Field>
-                                    <Label htmlFor="topic-first-review-date">Data da primeira revisão</Label>
-                                    <Input
-                                        type="date"
-                                        id="topic-first-review-date"
-                                        value={editedFirstReviewDate}
-                                        onChange={(e) => setEditedFirstReviewDate(e.target.value)}
-                                    />
-                                </Field>
-                            )}
-                        </FieldGroup>
-                    </DialogDemo>
-
-                    <DialogDemo
                         title={`Excluir ${kind.toLowerCase()}`}
                         description={`Tem certeza que deseja deletar este ${kind.toLowerCase()}? Esta ação é irreversível.${childCount > 0 ? ` Os ${childCount} subassunto${childCount > 1 ? "s" : ""} dele também ${childCount > 1 ? "serão excluídos" : "será excluído"}.` : ""}`}
-                        contentBtn={<><Trash2 size={15} /><span className="sr-only">Excluir {kind.toLowerCase()}</span></>}
-                        classNameBtn={`${ICON_BTN} hover:text-destructive`}
+                        classNameBtn="hidden"
                         nameConfirmBtn="Excluir"
                         variantConfirmBtn={"destructive"}
                         onSubmit={(e) => { e.preventDefault(); handleTopicDelete(topic.id); }}
+                        open={isDeleteDialogOpen}
+                        onOpenChange={setIsDeleteDialogOpen}
                     >
                     </DialogDemo>
                 </div>
