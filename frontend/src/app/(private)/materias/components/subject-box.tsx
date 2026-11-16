@@ -14,6 +14,7 @@ import { deleteSubjectAction, updateSubjectAction } from "@/actions/subjects.act
 import { createTopicAction } from "@/actions/topics.actions";
 import { SubjectActiveToggle } from "../../../../components/subject-active-toggle";
 import { TopicDragOverlay, TopicRow } from "@/components/topic-row";
+import { useCollapsedFolders } from "@/hooks/use-collapsed-folders";
 import { useTopicReorder } from "@/hooks/use-topic-reorder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export default function SubjectBox({
     const [isPending, setIsPending] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [hideDone, setHideDone] = useState(false)
+    const folders = useCollapsedFolders(subject.id);
 
     const hideDoneKey = `oe:hide-done:${subject.id}`;
 
@@ -136,7 +138,10 @@ export default function SubjectBox({
         topic.isContainer
             ? (topic.subtopicsTotal ?? 0) > 0 && (topic.subtopicsDone ?? 0) >= (topic.subtopicsTotal ?? 0)
             : topic.status === "CONCLUIDO";
-    const visibleTopics = hideDone ? topics.filter((topic) => !isHiddenDone(topic)) : topics;
+    // Subassuntos de pastas recolhidas também ficam escondidos.
+    const visibleTopics = topics.filter(
+        (topic) => !(hideDone && isHiddenDone(topic)) && !(topic.parentId && folders.isCollapsed(topic.parentId))
+    );
 
     if (!isActive) {
         return (
@@ -300,6 +305,8 @@ export default function SubjectBox({
                                         isLast={meta.isLast}
                                         isSubtopic={meta.isSubtopic}
                                         childCount={meta.childCount}
+                                        isCollapsed={folders.isCollapsed(topic.id)}
+                                        onToggleCollapse={() => folders.toggle(topic.id)}
                                         subject={subject}
                                         isReordering={isReordering}
                                         dragProps={getDragProps(topic.id)}

@@ -7,7 +7,7 @@ import { Field, FieldGroup } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Check, CheckCircle2, ChevronDown, ChevronRight, Clock, Download, Ellipsis, FileText, FolderOpen, GripVertical, Link as LinkLucide, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
+import { Check, CheckCircle2, ChevronDown, ChevronRight, Clock, Download, Ellipsis, FileText, Folder, FolderOpen, GripVertical, Link as LinkLucide, Paperclip, PencilLine, Plus, Trash2 } from "lucide-react";
 
 import { useCallback, useState } from "react";
 import toast from "react-hot-toast";
@@ -138,6 +138,10 @@ type TopicRowProps = {
     isSubtopic?: boolean;
     /** Quantos subassuntos este assunto tem (usado no aviso ao excluir). */
     childCount?: number;
+    /** Pasta recolhida (subassuntos escondidos). Só vale para assuntos com subassuntos. */
+    isCollapsed?: boolean;
+    /** Sem isto a pasta não mostra a seta de recolher. */
+    onToggleCollapse?: () => void;
 } & Omit<SubjectBoxProps, "subject">;
 
 export function TopicRow({
@@ -152,6 +156,8 @@ export function TopicRow({
     dragProps,
     isSubtopic = false,
     childCount = 0,
+    isCollapsed = false,
+    onToggleCollapse,
 }: TopicRowProps) {
     // A linha é, ao mesmo tempo, o item arrastado e o alvo onde outro item pode ser solto.
     // Só a alça (o ícone de seis pontos) inicia o arrasto, então botões e links da linha seguem normais.
@@ -180,7 +186,7 @@ export function TopicRow({
     const [initialFirstReviewDate, setInitialFirstReviewDate] = useState('');
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
-    const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(true);
+    const [isAttachmentsOpen, setIsAttachmentsOpen] = useState(false);
     const [subtopicTitle, setSubtopicTitle] = useState('');
     const [isSubtopicDialogOpen, setIsSubtopicDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -371,8 +377,25 @@ export function TopicRow({
                     </span>
                 )}
 
+                {isContainer && onToggleCollapse && (
+                    <button
+                        type="button"
+                        onClick={onToggleCollapse}
+                        aria-expanded={!isCollapsed}
+                        aria-label={isCollapsed ? `Expandir ${topic.title}` : `Recolher ${topic.title}`}
+                        title={isCollapsed ? "Expandir" : "Recolher"}
+                        className="-mr-1 flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 hover:bg-foreground/8 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                    >
+                        {isCollapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
+                    </button>
+                )}
+
                 {isContainer ? (
-                    <FolderOpen color={topic.subject.color} size={15} className="shrink-0 text-muted-foreground" />
+                    isCollapsed ? (
+                        <Folder color={topic.subject.color} size={15} className="shrink-0 text-muted-foreground" />
+                    ) : (
+                        <FolderOpen color={topic.subject.color} size={15} className="shrink-0 text-muted-foreground" />
+                    )
                 ) : topic.status === "CONCLUIDO" ? (
                     <CheckCircle2 size={15} className="shrink-0 text-emerald-500" aria-label="Concluído" />
                 ) : (
@@ -387,36 +410,49 @@ export function TopicRow({
                         {topic.title}
                     </span>
                 ) : (
-                    <button
-                        type="button"
-                        data-topic-open=""
-                        aria-haspopup="dialog"
-                        aria-label={`Ver informações de ${topic.title}`}
-                        className={`block min-w-0 flex-1 cursor-pointer truncate rounded-md text-left font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none ${topic.status === "CONCLUIDO" ? "text-muted-foreground" : ""}`}
-                        title={topic.title}
-                    >
-                        {topic.title}
-                    </button>
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                        <button
+                            type="button"
+                            data-topic-open=""
+                            aria-haspopup="dialog"
+                            aria-label={`Ver informações de ${topic.title}`}
+                            className={`block min-w-0 cursor-pointer truncate rounded-md text-left font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none ${topic.status === "CONCLUIDO" ? "text-muted-foreground" : ""}`}
+                            title={topic.title}
+                        >
+                            {topic.title}
+                        </button>
+
+                        {hasAttachments && (
+                            <button
+                                type="button"
+                                onClick={() => setIsAttachmentsOpen((open) => !open)}
+                                aria-expanded={isAttachmentsOpen}
+                                aria-controls={`attachments-${topic.id}`}
+                                title={isAttachmentsOpen ? "Ocultar anexos" : "Mostrar anexos"}
+                                className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-xs tabular-nums transition-colors duration-150 hover:bg-foreground/10 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none ${isAttachmentsOpen ? "bg-foreground/10 text-foreground" : "bg-foreground/6 text-muted-foreground"}`}
+                            >
+                                <Paperclip size={12} aria-hidden />
+                                {topic.attachments!.length}
+                                <span className="max-sm:sr-only">{topic.attachments!.length === 1 ? "anexo" : "anexos"}</span>
+                            </button>
+                        )}
+
+                        {topic.link && (
+                            <a
+                                href={topic.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground/6 text-muted-foreground transition-colors duration-150 hover:bg-foreground/10 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                                aria-label="Abrir link do assunto"
+                                title="Abrir link"
+                            >
+                                <LinkLucide size={12} />
+                            </a>
+                        )}
+                    </div>
                 )}
 
                 <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-                    {!isContainer && (
-                        <>
-                            {topic.link && (
-                                <a
-                                    href={topic.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={ICON_LINK}
-                                    aria-label="Abrir link do assunto"
-                                    title="Abrir link"
-                                >
-                                    <LinkLucide size={15} />
-                                </a>
-                            )}
-                        </>
-                    )}
-
                     <div className={`flex items-center gap-0.5 sm:gap-1 ${ROW_ACTIONS}`}>
                         {!isContainer && (
                             <label
@@ -563,19 +599,13 @@ export function TopicRow({
                 </div>
             </div>
 
-            {hasAttachments && (
-                <div className="flex flex-col gap-0.5 pb-1.5 pl-8 pr-2">
-                    <button
-                        type="button"
-                        onClick={() => setIsAttachmentsOpen((open) => !open)}
-                        aria-expanded={isAttachmentsOpen}
-                        aria-label={isAttachmentsOpen ? "Reduzir anexos" : "Expandir anexos"}
-                        className="flex w-fit cursor-pointer items-center gap-1 rounded-md py-0.5 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-                    >
-                        {isAttachmentsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                        Anexos ({topic.attachments!.length})
-                    </button>
-                    {isAttachmentsOpen && topic.attachments!.map((attachment, index) => (
+            {hasAttachments && isAttachmentsOpen && (
+                <div
+                    id={`attachments-${topic.id}`}
+                    className="mt-1 mb-1.5 ml-[2.4rem] flex flex-col gap-0.5 border-l-2 border-dotted pr-2 pl-3"
+                    style={{ borderLeftColor: topic.subject.color }}
+                >
+                    {topic.attachments!.map((attachment, index) => (
                         <div key={attachment.id || index} className="flex w-full items-center gap-1">
                             <button
                                 type="button"
