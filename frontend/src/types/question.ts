@@ -49,11 +49,33 @@ export interface QuestionTrendPoint {
     percent: number;
 }
 
+/** Questões e acertos somados em um dia (fuso de São Paulo). `date` vem como AAAA-MM-DD. */
+export interface QuestionDailyPoint {
+    date: string;
+    total: number;
+    correct: number;
+    percent: number;
+}
+
+/** Questões e acertos somados em uma hora de hoje (0 a 23, fuso de São Paulo). */
+export interface QuestionHourlyPoint {
+    hour: number;
+    total: number;
+    correct: number;
+    percent: number;
+}
+
 export interface QuestionStats {
     overall: { total: number; correct: number; wrong: number; percent: number };
     subjects: QuestionSubjectStat[];
     /** Evolução semanal das últimas 12 semanas (só semanas com questões), da mais antiga para a mais nova. */
     trend: QuestionTrendPoint[];
+    /** Dia de hoje em São Paulo (AAAA-MM-DD). Âncora dos filtros do gráfico. */
+    today: string;
+    /** Evolução diária (só dias com questões), do mais antigo para o mais novo. */
+    daily: QuestionDailyPoint[];
+    /** Hoje, hora a hora (só horas com questões). */
+    hourly: QuestionHourlyPoint[];
     recent: QuestionRecentLog[];
 }
 

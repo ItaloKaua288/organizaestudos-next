@@ -206,7 +206,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:items-start">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 {/* Evolução */}
                 <Card className="lg:col-span-2 h-full">
                     <CardHeader>
@@ -214,22 +214,22 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                             <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
                         </CardTitle>
                         <CardDescription>
-                            Acertos sobre questões feitas em cada semana (últimas 12). A linha tracejada marca {LEVEL_WEAK_BELOW}%.
+                            Acertos sobre as questões feitas no período escolhido. A linha tracejada marca {LEVEL_WEAK_BELOW}%.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {stats.trend.length === 0 ? (
+                        {!hasData ? (
                             <p className="py-10 text-center text-sm text-muted-foreground">
-                                Nada por aqui ainda. Registre questões para ver sua evolução semana a semana.
+                                Nada por aqui ainda. Registre questões para ver sua evolução.
                             </p>
                         ) : (
-                            <TrendChart points={stats.trend} />
+                            <TrendChart today={stats.today} daily={stats.daily} hourly={stats.hourly} />
                         )}
                     </CardContent>
                 </Card>
 
                 {/* Pontos fracos */}
-                <Card className="max-h-105 h-full">
+                <Card className="max-h-105 lg:h-0 lg:max-h-none lg:min-h-full">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4 text-muted-foreground" /> Pontos fracos
@@ -239,7 +239,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                             Menos de {LEVEL_WEAK_BELOW}% de acerto, com pelo menos {WEAK_MIN_QUESTIONS} questões feitas.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="overflow-auto">
+                    <CardContent className="min-h-0 flex-1 overflow-auto">
                         {weakTopics.length === 0 ? (
                             <p className="py-6 text-center text-sm text-muted-foreground">
                                 {hasData ? "Nenhum assunto fraco por enquanto." : "Os assuntos fracos aparecem aqui depois de registrar questões."}

@@ -25,6 +25,9 @@ export async function getQuestionStatsAction(): Promise<QuestionStats> {
             overall: data.overall,
             subjects: data.subjects,
             trend: data.trend ?? [],
+            today: data.today ?? new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
+            daily: data.daily ?? [],
+            hourly: data.hourly ?? [],
             recent: data.recent,
         };
     } catch (error) {

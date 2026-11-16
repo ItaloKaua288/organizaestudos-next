@@ -7,6 +7,9 @@ import Topic from "../models/topic.model.js";
 const MAX_QUESTIONS = 10000;
 const MAX_ENTRIES = 30;
 const TREND_WEEKS = 12;
+// Série diária usada pelos filtros do gráfico (Hoje, 7 dias, 30 dias, Sempre). "Sempre" vai até 3 anos para a resposta não crescer sem limite.
+const DAILY_MAX_DAYS = 365 * 3;
+const HOURLY_LOOKBACK_MS = 36 * 60 * 60 * 1000;
 const TIMEZONE = "America/Sao_Paulo";
 
 const isId = (v) => mongoose.isValidObjectId(v);
@@ -135,8 +138,14 @@ export const getQuestionStats = async (req, res) => {
         const subjectIds = subjects.map((s) => s._id);
 
         const trendSince = new Date(Date.now() - TREND_WEEKS * 7 * 24 * 60 * 60 * 1000);
+        const dailySince = new Date(Date.now() - DAILY_MAX_DAYS * 24 * 60 * 60 * 1000);
+        const hourlySince = new Date(Date.now() - HOURLY_LOOKBACK_MS);
+        const userObjectId = new mongoose.Types.ObjectId(req.userId);
 
-        const [topics, byTopic, recent, byWeek] = await Promise.all([
+        // "Hoje" no fuso de São Paulo (AAAA-MM-DD). O front usa este valor como âncora dos filtros.
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+
+        const [topics, byTopic, recent, byWeek, byDay, byHour] = await Promise.all([
             Topic.find({ subject_id: { $in: subjectIds } }).select("title subject_id order parent_id").sort({ order: 1 }).lean(),
             QuestionLog.aggregate([
                 { $match: { user_id: new mongoose.Types.ObjectId(req.userId), subject_id: { $in: subjectIds } } },
@@ -173,7 +182,48 @@ export const getQuestionStats = async (req, res) => {
                 },
                 { $sort: { _id: 1 } },
             ]),
+            // Evolução diária: questões e acertos somados por dia (fuso de São Paulo).
+            QuestionLog.aggregate([
+                { $match: { user_id: userObjectId, subject_id: { $in: subjectIds }, answeredAt: { $gte: dailySince } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$answeredAt", timezone: TIMEZONE } },
+                        total: { $sum: "$total" },
+                        correct: { $sum: "$correct" },
+                    },
+                },
+                { $sort: { _id: 1 } },
+            ]),
+            // Hoje, hora a hora: pega as últimas 36h e filtra pelo dia de hoje no fuso de São Paulo.
+            QuestionLog.aggregate([
+                { $match: { user_id: userObjectId, subject_id: { $in: subjectIds }, answeredAt: { $gte: hourlySince } } },
+                {
+                    $project: {
+                        total: 1,
+                        correct: 1,
+                        day: { $dateToString: { format: "%Y-%m-%d", date: "$answeredAt", timezone: TIMEZONE } },
+                        hour: { $hour: { date: "$answeredAt", timezone: TIMEZONE } },
+                    },
+                },
+                { $match: { day: today } },
+                { $group: { _id: "$hour", total: { $sum: "$total" }, correct: { $sum: "$correct" } } },
+                { $sort: { _id: 1 } },
+            ]),
         ]);
+
+        const daily = byDay.map((day) => ({
+            date: day._id,
+            total: day.total,
+            correct: day.correct,
+            percent: percentOf(day.correct, day.total),
+        }));
+
+        const hourly = byHour.map((hour) => ({
+            hour: hour._id,
+            total: hour.total,
+            correct: hour.correct,
+            percent: percentOf(hour.correct, hour.total),
+        }));
 
         const trend = byWeek.map((week) => ({
             weekStart: week._id,
@@ -243,6 +293,9 @@ export const getQuestionStats = async (req, res) => {
             },
             subjects: result,
             trend,
+            today,
+            daily,
+            hourly,
             recent: recent.map((log) => ({
                 id: String(log._id),
                 subjectId: String(log.subject_id),
