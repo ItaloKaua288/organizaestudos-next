@@ -26,6 +26,7 @@ import {
     type Announcements,
     type CollisionDetection,
     type DragEndEvent,
+    type DragOverEvent,
     type DragStartEvent,
 } from "@dnd-kit/core";
 import Link from "next/link";
@@ -91,6 +92,8 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
     const [, startTransition] = useTransition();
     const [subjectFilter, setSubjectFilter] = useState<string>(ALL_SUBJECTS);
     const [activeId, setActiveId] = useState<string | null>(null);
+    // Coluna sob o ponteiro durante o arrasto (usada para mostrar o fantasma de onde o card vai cair).
+    const [hoverStatus, setHoverStatus] = useState<TopicStatus | null>(null);
     const [orderMode, setOrderMode] = useState<KanbanOrderMode>(initialOrderMode);
     const [limits, setLimits] = useState<Record<string, number>>({});
     const [confirm, setConfirm] = useState<PendingMove | null>(null);
@@ -134,22 +137,37 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
     };
     const activeOrder = orderAvailable[orderMode] ? orderMode : "padrao";
 
+    const sortColumn = (status: TopicStatus, items: Topic[]) => {
+        if (status === "CONCLUIDO") return sortByReviewUrgency(items);
+        if (status === "PENDENTE" && activeOrder !== "padrao") return orderTopicsBySubject(items, subjectOrders[activeOrder]);
+        return items;
+    };
+
+    const activeTopic = activeId ? boardTopics.find((topic) => topic.id === activeId) ?? null : null;
+    // Só há fantasma quando o card está sobre uma coluna diferente da dele.
+    const ghostStatus = activeTopic && hoverStatus && hoverStatus !== activeTopic.status ? hoverStatus : null;
+
     const topicsByStatus = KANBAN_COLUMNS.map((column) => {
         const inColumn = visibleTopics.filter((topic) => topic.status === column.status);
 
-        if (column.status === "CONCLUIDO") return { column, topics: sortByReviewUrgency(inColumn) };
-        if (column.status === "PENDENTE" && activeOrder !== "padrao") {
-            return { column, topics: orderTopicsBySubject(inColumn, subjectOrders[activeOrder]) };
+        // Posição em que o card cairia nesta coluna: aplica a mesma ordenação com o card já incluído.
+        let ghostIndex: number | null = null;
+        if (activeTopic && ghostStatus === column.status) {
+            const moved: Topic = {
+                ...activeTopic,
+                status: column.status,
+                reviews: column.status === "CONCLUIDO" ? getScheduledReviews() : getClearedReviews(),
+            };
+            ghostIndex = sortColumn(column.status, [...inColumn, moved]).findIndex((topic) => topic.id === moved.id);
         }
-        return { column, topics: inColumn };
+
+        return { column, topics: sortColumn(column.status, inColumn), ghostIndex };
     });
 
     function changeOrderMode(mode: KanbanOrderMode) {
         setOrderMode(mode);
         document.cookie = `${ORDER_COOKIE}=${mode}; path=/; max-age=${ONE_YEAR}; SameSite=Lax`;
     }
-
-    const activeTopic = activeId ? boardTopics.find((topic) => topic.id === activeId) ?? null : null;
 
     function moveTopic(topic: Topic, to: TopicStatus) {
         if (topic.status === to) return;
@@ -204,8 +222,14 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
         setActiveId(String(event.active.id));
     }
 
+    function handleDragOver(event: DragOverEvent) {
+        const target = event.over ? String(event.over.id) : null;
+        setHoverStatus(target && KANBAN_STATUSES.has(target) ? (target as TopicStatus) : null);
+    }
+
     function handleDragEnd(event: DragEndEvent) {
         setActiveId(null);
+        setHoverStatus(null);
 
         const topic = boardTopics.find((item) => item.id === event.active.id);
         const target = event.over ? String(event.over.id) : null;
@@ -288,8 +312,12 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
                 // Rolagem automática mais lenta: no celular as colunas são largas e o padrão passava direto da coluna do meio.
                 autoScroll={{ acceleration: 4, threshold: { x: 0.18, y: 0.2 } }}
                 onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
-                onDragCancel={() => setActiveId(null)}
+                onDragCancel={() => {
+                    setActiveId(null);
+                    setHoverStatus(null);
+                }}
             >
                 {/*
                   * Durante o arrasto o snap fica desligado: com `snap-mandatory`, cada passo da rolagem automática
@@ -301,11 +329,12 @@ export function KanbanBoard({ topics, subjectOrders, initialOrderMode }: KanbanB
                         activeId === null ? "snap-x snap-mandatory" : "snap-none"
                     )}
                 >
-                    {topicsByStatus.map(({ column, topics: columnTopics }) => (
+                    {topicsByStatus.map(({ column, topics: columnTopics, ghostIndex }) => (
                         <div key={column.status} className="w-[86%] shrink-0 snap-center sm:w-[60%] lg:w-auto">
                             <KanbanColumn
                                 config={column}
                                 topics={columnTopics}
+                                ghostIndex={ghostIndex}
                                 visibleCount={limits[column.status] ?? COLUMN_PAGE_SIZE}
                                 isDragActive={activeId !== null}
                                 headerExtra={

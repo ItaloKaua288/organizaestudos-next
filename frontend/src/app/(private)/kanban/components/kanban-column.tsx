@@ -15,6 +15,8 @@ type KanbanColumnProps = {
     visibleCount: number;
     /** Algum card está sendo arrastado: as colunas mostram onde dá para soltar. */
     isDragActive: boolean;
+    /** Posição (na lista ordenada) onde o card arrastado vai cair nesta coluna; null = não vai cair aqui. */
+    ghostIndex?: number | null;
     /** Controles extras sob o título da coluna (ex.: a escolha de ordem). */
     headerExtra?: ReactNode;
     onShowMore: (status: TopicStatus) => void;
@@ -22,12 +24,25 @@ type KanbanColumnProps = {
     onOpen: (topic: Topic) => void;
 };
 
-export function KanbanColumn({ config, topics, visibleCount, isDragActive, headerExtra, onShowMore, onMove, onOpen }: KanbanColumnProps) {
+export function KanbanColumn({ config, topics, visibleCount, isDragActive, ghostIndex = null, headerExtra, onShowMore, onMove, onOpen }: KanbanColumnProps) {
     const { setNodeRef, isOver } = useDroppable({ id: config.status });
     const Icon = config.icon;
     const visible = topics.slice(0, visibleCount);
     const hidden = topics.length - visible.length;
     const headingId = `kanban-col-${config.status}`;
+
+    // Fantasma: espaço pontilhado mostrando onde o card arrastado vai ficar. Se a posição está além dos cards
+    // visíveis ("Mostrar mais" escondendo o resto), ele aparece no fim só quando a lista já está toda à mostra.
+    const ghost = (
+        <div
+            key="kanban-ghost"
+            aria-hidden
+            className="h-16 shrink-0 rounded-xl border-2 border-dashed border-primary/60 bg-primary/10"
+        />
+    );
+    const ghostAt = ghostIndex === null ? null : ghostIndex < visible.length ? ghostIndex : hidden === 0 ? visible.length : null;
+    const cards = visible.map((topic) => <KanbanCard key={topic.id} topic={topic} onMove={onMove} onOpen={onOpen} />);
+    if (ghostAt !== null) cards.splice(ghostAt, 0, ghost);
 
     return (
         <section
@@ -60,12 +75,12 @@ export function KanbanColumn({ config, topics, visibleCount, isDragActive, heade
             {headerExtra && <div className="px-4 pb-3">{headerExtra}</div>}
 
             <div className="flex min-h-48 max-h-[calc(100dvh-20rem)] flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-3 pb-3">
-                {visible.length === 0 ? (
+                {cards.length === 0 ? (
                     <p className="grid flex-1 place-items-center rounded-xl border border-dashed px-4 py-8 text-center text-sm text-balance text-muted-foreground">
                         {config.empty}
                     </p>
                 ) : (
-                    visible.map((topic) => <KanbanCard key={topic.id} topic={topic} onMove={onMove} onOpen={onOpen} />)
+                    cards
                 )}
 
                 {hidden > 0 && (

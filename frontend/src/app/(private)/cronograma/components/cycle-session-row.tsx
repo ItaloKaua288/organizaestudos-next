@@ -31,7 +31,7 @@ type CycleSessionRowProps = {
  */
 export function CycleSessionRow({ session, index, isCurrent, isBusy, onOpenDetail }: CycleSessionRowProps) {
     const { setNodeRef: setDragRef, setActivatorNodeRef, listeners, isDragging } = useDraggable({ id: session.id, disabled: isBusy });
-    const { setNodeRef: setDropRef, isOver } = useDroppable({ id: session.id });
+    const { setNodeRef: setDropRef } = useDroppable({ id: session.id });
     const setRowRef = useCallback(
         (node: HTMLElement | null) => {
             setDragRef(node);
@@ -48,8 +48,8 @@ export function CycleSessionRow({ session, index, isCurrent, isBusy, onOpenDetai
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-foreground/6",
                 isCurrent && "bg-primary/8 ring-1 ring-primary/30",
                 session.inactive && "opacity-50",
-                isDragging && "opacity-40",
-                isOver && !isDragging && "ring-2 ring-primary"
+                // Linha arrastada = fantasma: espaço pontilhado do mesmo tamanho, mostrando onde ela vai ficar.
+                isDragging && "bg-primary/10 outline-2 -outline-offset-2 outline-dashed outline-primary/60 ring-0 hover:bg-primary/10 [&>*]:invisible"
             )}
         >
             <span

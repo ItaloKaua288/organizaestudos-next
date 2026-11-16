@@ -132,7 +132,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
         }
     };
 
-    const { activeSession, dndProps } = useCycleReorder(cycle?.sessions ?? [], handleReorder);
+    const { activeSession, sessions: listSessions, dndProps } = useCycleReorder(cycle?.sessions ?? [], handleReorder);
 
     const reviewsSection = (
         <Card>
@@ -398,7 +398,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                 <CardContent className="space-y-2">
                     <DndContext {...dndProps}>
                         <ol className="space-y-0.5">
-                            {cycle.sessions.map((session, index) => {
+                            {listSessions.map((session, index) => {
                                 // Com "matérias por dia" > 0, cada grupo ganha um título e uma linha separadora.
                                 const perDay = cycle.sessionsPerDay;
                                 const startsDay = perDay > 0 && index % perDay === 0;

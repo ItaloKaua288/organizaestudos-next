@@ -4,7 +4,7 @@ import { reorderTopicsAction } from "@/actions/topics.actions";
 import { rowCollisionDetection, useRowSensors } from "@/lib/drag-kit";
 import { sortTopicsHierarchically } from "@/lib/topic-tree";
 import { Topic } from "@/types/topic";
-import type { Announcements, DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import { MeasuringStrategy, type Announcements, type DragOverEvent, type DragStartEvent } from "@dnd-kit/core";
 import { useCallback, useId, useMemo, useOptimistic, useState, useTransition } from "react";
 import toast from "react-hot-toast";
 
@@ -33,6 +33,8 @@ export type TopicMeta = {
  * `<DndContext {...dndProps}>` e cada linha usa `getDragProps` no `TopicRow`.
  * A lista é atualizada na tela na hora (otimista) e o servidor é chamado em seguida;
  * se a chamada falhar, a ordem anterior volta sozinha.
+ * Durante o arrasto, `topics` já vem na ordem de prévia: o assunto arrastado vira um espaço vazio (fantasma)
+ * na posição onde vai cair e os irmãos se reorganizam ao vivo. Soltar confirma; cancelar (Esc) volta.
  */
 export function useTopicReorder(subjectId: string, topics: Topic[]) {
     const [isPending, startTransition] = useTransition();
@@ -47,6 +49,10 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
         (_current: Topic[], next: Topic[]) => next
     );
 
+    // Ordem de prévia enquanto arrasta (null = sem arrasto ou nada mudou ainda).
+    const [previewTopics, setPreviewTopics] = useState<Topic[] | null>(null);
+    const viewTopics = previewTopics ?? optimisticTopics;
+
     const topicIds = useMemo(() => new Set(optimisticTopics.map((topic) => topic.id)), [optimisticTopics]);
 
     // Grupo de irmãos: id do pai (quando ele está na lista) ou "" para assuntos principais.
@@ -55,23 +61,24 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
         [topicIds]
     );
 
-    const getSiblings = (topic: Topic) => {
+    const getSiblings = (topic: Topic, list: Topic[] = viewTopics) => {
         const group = groupOf(topic);
-        return optimisticTopics.filter((item) => groupOf(item) === group);
+        return list.filter((item) => groupOf(item) === group);
     };
 
     // Tira o assunto "fromId" do lugar e o coloca no lugar do "toId" (os dois precisam ser irmãos).
-    const moveBefore = (fromId: string, toId: string) => {
-        if (isPending || fromId === toId) return;
+    // Devolve a lista inteira já reordenada (subassuntos após o pai) e os ids dos irmãos na nova ordem.
+    const computeMove = (list: Topic[], fromId: string, toId: string) => {
+        if (fromId === toId) return null;
 
-        const from = optimisticTopics.find((topic) => topic.id === fromId);
-        const to = optimisticTopics.find((topic) => topic.id === toId);
-        if (!from || !to || groupOf(from) !== groupOf(to)) return;
+        const from = list.find((topic) => topic.id === fromId);
+        const to = list.find((topic) => topic.id === toId);
+        if (!from || !to || groupOf(from) !== groupOf(to)) return null;
 
-        const siblings = getSiblings(from);
+        const siblings = getSiblings(from, list);
         const fromIndex = siblings.findIndex((topic) => topic.id === fromId);
         const toIndex = siblings.findIndex((topic) => topic.id === toId);
-        if (fromIndex < 0 || toIndex < 0) return;
+        if (fromIndex < 0 || toIndex < 0) return null;
 
         const nextSiblings = [...siblings];
         const [moved] = nextSiblings.splice(fromIndex, 1);
@@ -80,13 +87,18 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
         // Renumera só os irmãos (0..n-1): evita problemas com ordens repetidas ou com "buracos".
         const reindexed = nextSiblings.map((topic, order) => ({ ...topic, order }));
         const reindexedById = new Map(reindexed.map((topic) => [topic.id, topic]));
-        const next = sortTopicsHierarchically(optimisticTopics.map((topic) => reindexedById.get(topic.id) ?? topic));
+        const next = sortTopicsHierarchically(list.map((topic) => reindexedById.get(topic.id) ?? topic));
 
+        return { next, orderedIds: reindexed.map((topic) => topic.id) };
+    };
+
+    // Salva a nova ordem: atualiza a tela na hora e chama o servidor.
+    const commitOrder = (next: Topic[], orderedIds: string[]) => {
         startTransition(async () => {
             setOptimisticTopics(next);
 
             try {
-                const result = await reorderTopicsAction(subjectId, reindexed.map((topic) => topic.id));
+                const result = await reorderTopicsAction(subjectId, orderedIds);
 
                 if (!result.success) toast.error(result.message, { id: "reorder-topics" });
             } catch (error) {
@@ -96,8 +108,16 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
         });
     };
 
+    // Setas: troca de lugar com o irmão ao lado.
+    const moveBefore = (fromId: string, toId: string) => {
+        if (isPending) return;
+
+        const result = computeMove(optimisticTopics, fromId, toId);
+        if (result) commitOrder(result.next, result.orderedIds);
+    };
+
     const moveTopic = (topicId: string, direction: MoveDirection) => {
-        const topic = optimisticTopics.find((item) => item.id === topicId);
+        const topic = viewTopics.find((item) => item.id === topicId);
         if (!topic) return;
 
         const siblings = getSiblings(topic);
@@ -108,7 +128,7 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
     };
 
     const getTopicMeta = (topicId: string): TopicMeta => {
-        const topic = optimisticTopics.find((item) => item.id === topicId);
+        const topic = viewTopics.find((item) => item.id === topicId);
         if (!topic) return { isFirst: true, isLast: true, isSubtopic: false, childCount: 0 };
 
         const siblings = getSiblings(topic);
@@ -118,16 +138,16 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
             isFirst: index === 0,
             isLast: index === siblings.length - 1,
             isSubtopic: groupOf(topic) !== "",
-            childCount: optimisticTopics.filter((item) => groupOf(item) === topicId).length,
+            childCount: viewTopics.filter((item) => groupOf(item) === topicId).length,
         };
     };
 
-    const activeTopic = activeId ? optimisticTopics.find((topic) => topic.id === activeId) ?? null : null;
+    const activeTopic = activeId ? viewTopics.find((topic) => topic.id === activeId) ?? null : null;
     const activeGroup = activeTopic ? groupOf(activeTopic) : null;
 
     // Só dá para soltar entre irmãos: durante o arrasto, as outras linhas deixam de ser alvo.
     const getDragProps = (topicId: string): TopicDragProps => {
-        const topic = optimisticTopics.find((item) => item.id === topicId);
+        const topic = viewTopics.find((item) => item.id === topicId);
 
         return {
             disabled: isPending,
@@ -135,7 +155,7 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
         };
     };
 
-    const titleOf = (id: string | number) => optimisticTopics.find((topic) => topic.id === id)?.title ?? "assunto";
+    const titleOf = (id: string | number) => viewTopics.find((topic) => topic.id === id)?.title ?? "assunto";
 
     const announcements: Announcements = {
         onDragStart: ({ active }) => `Segurando ${titleOf(active.id)}.`,
@@ -152,17 +172,43 @@ export function useTopicReorder(subjectId: string, topics: Topic[]) {
         id: dndId,
         sensors,
         collisionDetection: rowCollisionDetection,
+        // As linhas mudam de lugar durante o arrasto: as posições precisam ser remedidas.
+        measuring: { droppable: { strategy: MeasuringStrategy.Always } },
         accessibility: { announcements },
-        onDragStart: (event: DragStartEvent) => setActiveId(String(event.active.id)),
-        onDragEnd: ({ active, over }: DragEndEvent) => {
-            setActiveId(null);
-            if (over) moveBefore(String(active.id), String(over.id));
+        onDragStart: (event: DragStartEvent) => {
+            setActiveId(String(event.active.id));
+            setPreviewTopics(null);
         },
-        onDragCancel: () => setActiveId(null),
+        // Ao passar sobre um irmão, a prévia coloca o assunto arrastado na posição dele.
+        onDragOver: ({ active, over }: DragOverEvent) => {
+            if (!over || over.id === active.id) return;
+
+            setPreviewTopics((current) => computeMove(current ?? optimisticTopics, String(active.id), String(over.id))?.next ?? current);
+        },
+        // Soltar confirma a posição mostrada pelo fantasma.
+        onDragEnd: ({ active }: { active: { id: string | number } }) => {
+            const preview = previewTopics;
+            setActiveId(null);
+            setPreviewTopics(null);
+            if (!preview || isPending) return;
+
+            const moved = preview.find((topic) => topic.id === active.id);
+            if (!moved) return;
+
+            const orderedIds = getSiblings(moved, preview).map((topic) => topic.id);
+            const originalIds = getSiblings(moved, optimisticTopics).map((topic) => topic.id);
+            if (orderedIds.every((id, index) => id === originalIds[index])) return;
+
+            commitOrder(preview, orderedIds);
+        },
+        onDragCancel: () => {
+            setActiveId(null);
+            setPreviewTopics(null);
+        },
     };
 
     return {
-        topics: optimisticTopics,
+        topics: viewTopics,
         moveTopic,
         getTopicMeta,
         isReordering: isPending,

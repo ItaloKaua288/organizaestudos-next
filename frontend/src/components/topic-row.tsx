@@ -167,7 +167,7 @@ export function TopicRow({
         listeners,
         isDragging,
     } = useDraggable({ id: topic.id, disabled: !dragProps || dragProps.disabled });
-    const { setNodeRef: setDropRef, isOver } = useDroppable({ id: topic.id, disabled: !dragProps || dragProps.dropDisabled });
+    const { setNodeRef: setDropRef } = useDroppable({ id: topic.id, disabled: !dragProps || dragProps.dropDisabled });
     const setRowRef = useCallback(
         (node: HTMLElement | null) => {
             setDragRef(node);
@@ -363,7 +363,7 @@ export function TopicRow({
             <div
                 ref={setRowRef}
                 onClick={handleRowClick}
-                className={`group/row border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isContainer ? "" : "cursor-pointer"} ${isDragging ? "opacity-40" : ""} ${isOver && !isDragging ? "ring-2 ring-primary" : ""}`}
+                className={`group/row border flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 hover:bg-foreground/6 ${isContainer ? "" : "cursor-pointer"} ${isDragging ? "border-dashed border-primary/60 bg-primary/10 hover:bg-primary/10 [&>*]:invisible" : ""}`}
             >
                 {dragProps && (
                     <span
