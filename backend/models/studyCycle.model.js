@@ -34,11 +34,22 @@ const studyCycleSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
-    // Um ciclo por perfil (e não mais um por usuário).
+    // Cada perfil de estudo pode ter vários ciclos (ex.: "Ciclo pré-edital", "Ciclo reta final").
     profile_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Profile",
         default: null
+    },
+    // Nome do ciclo. Ciclos criados antes deste recurso ficam com o nome padrão "Ciclo".
+    name: {
+        type: String,
+        trim: true,
+        default: "Ciclo",
+        maxlength: [60, "O nome do ciclo não pode exceder 60 caracteres"]
+    },
+    // Nome normalizado (minúsculo, sem acentos) só para impedir dois ciclos com o mesmo nome no perfil.
+    nameKey: {
+        type: String
     },
     // A ordem do array é a ordem oficial do ciclo.
     sessions: [cycleSessionSchema],
@@ -72,7 +83,15 @@ const studyCycleSchema = new mongoose.Schema({
     optimisticConcurrency: true
 });
 
-studyCycleSchema.index({ user_id: 1, profile_id: 1 }, { unique: true });
+export const normalizeCycleName = (name = "") =>
+    String(name).trim().replace(/\s+/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+studyCycleSchema.pre("validate", function () {
+    this.nameKey = normalizeCycleName(this.name);
+});
+
+// Nome único por perfil (o antigo índice único user_id + profile_id é removido em conectDB.js).
+studyCycleSchema.index({ user_id: 1, profile_id: 1, nameKey: 1 }, { unique: true });
 
 const StudyCycle = mongoose.model("StudyCycle", studyCycleSchema);
 

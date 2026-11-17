@@ -163,8 +163,13 @@ export const deleteProfile = async (req, res) => {
             }
         }
 
-        const cycle = await StudyCycle.findOneAndDelete({ user_id: req.userId, profile_id: profile._id });
-        if (cycle) await CycleHistory.deleteMany({ cycle_id: cycle._id });
+        // O perfil pode ter vários ciclos: apaga todos e o histórico de cada um.
+        const cycles = await StudyCycle.find({ user_id: req.userId, profile_id: profile._id }).select("_id").lean();
+        if (cycles.length > 0) {
+            const cycleIds = cycles.map((cycle) => cycle._id);
+            await CycleHistory.deleteMany({ cycle_id: { $in: cycleIds } });
+            await StudyCycle.deleteMany({ _id: { $in: cycleIds } });
+        }
 
         await deleteNotesWithAttachments({ subject_id: { $in: subjectIds } });
         await TimeLine.deleteMany({ subject_id: { $in: subjectIds } });

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import StudyCycle from "../models/studyCycle.model.js";
+import StudyCycle, { normalizeCycleName } from "../models/studyCycle.model.js";
 import CycleHistory from "../models/cycleHistory.model.js";
 import Subject from "../models/subject.model.js";
 import QuestionLog from "../models/questionLog.model.js";
@@ -38,8 +38,32 @@ const MAX_SESSIONS = 50;
 
 const isId = (v) => mongoose.isValidObjectId(v);
 
-// Cada perfil tem o próprio ciclo e só enxerga as matérias do próprio perfil.
+const MAX_CYCLES = 20;
+
+// Cada perfil tem os próprios ciclos e só enxerga as matérias do próprio perfil.
 const cycleScope = (req) => ({ user_id: req.userId, profile_id: req.profileId });
+
+// Ciclo ATIVO da requisição: o do header `x-cycle-id` (se for deste usuário e deste perfil); caso
+// contrário, o primeiro ciclo do perfil. Null quando o perfil ainda não tem nenhum ciclo.
+const resolveCycle = async (req) => {
+    const requested = req.headers["x-cycle-id"];
+    if (typeof requested === "string" && isId(requested)) {
+        const found = await StudyCycle.findOne({ _id: requested, ...cycleScope(req) });
+        if (found) return found;
+    }
+    return StudyCycle.findOne(cycleScope(req)).sort({ createdAt: 1, _id: 1 });
+};
+
+const cleanName = (value) => String(value ?? "").trim().replace(/\s+/g, " ");
+
+// "Ciclo 1", "Ciclo 2"... o primeiro nome ainda livre no perfil.
+const nextDefaultName = async (req) => {
+    const rows = await StudyCycle.find(cycleScope(req)).select("nameKey").lean();
+    const used = new Set(rows.map((row) => row.nameKey));
+    let n = rows.length + 1;
+    while (used.has(normalizeCycleName(`Ciclo ${n}`))) n += 1;
+    return `Ciclo ${n}`;
+};
 
 const loadSubjectMap = async (req) => {
     const subjects = await Subject.find(subjectScope(req)).select("title color active").lean();
@@ -111,6 +135,7 @@ const buildView = async (cycle, subjectMap) => {
 
     return {
         id: String(cycle._id),
+        name: cycle.name || "Ciclo",
         lap: cycle.lap,
         sessionsPerDay: cycle.sessionsPerDay ?? 0,
         totalCompleted: cycle.totalCompleted,
@@ -149,7 +174,7 @@ const handleError = (res, error, label) => {
 
 // Carrega o ciclo + matérias e normaliza a posição. Responde 404 quando não existe.
 const loadCycle = async (req, res) => {
-    const cycle = await StudyCycle.findOne(cycleScope(req));
+    const cycle = await resolveCycle(req);
     if (!cycle) {
         res.status(404).json({ success: false, message: "Você ainda não criou um ciclo de estudos." });
         return null;
@@ -161,7 +186,7 @@ const loadCycle = async (req, res) => {
 
 export const getCycle = async (req, res) => {
     try {
-        const cycle = await StudyCycle.findOne(cycleScope(req));
+        const cycle = await resolveCycle(req);
         if (!cycle) return res.status(200).json({ success: true, cycle: null });
 
         const subjectMap = await loadSubjectMap(req);
@@ -192,7 +217,7 @@ export const saveCycle = async (req, res) => {
         }
 
         const subjectMap = await loadSubjectMap(req);
-        let cycle = await StudyCycle.findOne(cycleScope(req));
+        let cycle = await resolveCycle(req);
         const existing = new Map((cycle?.sessions ?? []).map((s) => [String(s._id), s]));
         const seenIds = new Set();
         const next = [];
@@ -241,7 +266,9 @@ export const saveCycle = async (req, res) => {
         }
 
         if (!cycle) {
-            cycle = new StudyCycle({ user_id: req.userId, profile_id: req.profileId, sessions: next, lap: 1, totalCompleted: 0, sessionsPerDay: sessionsPerDay ?? 0 });
+            // Perfil sem nenhum ciclo ainda: cria o primeiro (com o nome enviado ou "Ciclo 1").
+            const name = cleanName(req.body?.name) || await nextDefaultName(req);
+            cycle = new StudyCycle({ user_id: req.userId, profile_id: req.profileId, name, sessions: next, lap: 1, totalCompleted: 0, sessionsPerDay: sessionsPerDay ?? 0 });
             cycle.currentSessionId = next[0]._id;
         } else {
             cycle.sessions = next;
@@ -261,9 +288,18 @@ export const saveCycle = async (req, res) => {
     }
 };
 
+// Exclui o ciclo ativo (ou o indicado em /:id) e o histórico dele. Os outros ciclos do perfil ficam intactos.
 export const deleteCycle = async (req, res) => {
     try {
-        const cycle = await StudyCycle.findOneAndDelete(cycleScope(req));
+        let target;
+        if (req.params?.id !== undefined) {
+            target = isId(req.params.id) ? await StudyCycle.findOne({ _id: req.params.id, ...cycleScope(req) }) : null;
+        } else {
+            target = await resolveCycle(req);
+        }
+        if (!target) return res.status(404).json({ success: false, message: "Ciclo não encontrado." });
+
+        const cycle = await StudyCycle.findOneAndDelete({ _id: target._id });
         if (!cycle) return res.status(404).json({ success: false, message: "Ciclo não encontrado." });
 
         await CycleHistory.deleteMany({ cycle_id: cycle._id });
@@ -439,7 +475,7 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
     } catch (error) {
         if (error?.name === "VersionError") {
             // Outro clique/aba já avançou o ciclo: devolve a posição atual sem contabilizar de novo.
-            const fresh = await StudyCycle.findOne(cycleScope(req));
+            const fresh = await resolveCycle(req);
             if (fresh) {
                 const subjectMap = await loadSubjectMap(req);
                 return await staleResponse(res, fresh, subjectMap);
@@ -465,5 +501,90 @@ export const restartLap = async (req, res) => {
         return await respond(res, 200, cycle, subjectMap, { message: "Volta reiniciada." });
     } catch (error) {
         return handleError(res, error, "restartLap");
+    }
+};
+
+
+// ---------------------------------------------------------------------------
+// Perfis de ciclo: vários ciclos por perfil de estudo, com troca rápida entre eles.
+// ---------------------------------------------------------------------------
+
+const presentSummary = (cycle) => ({
+    id: String(cycle._id),
+    name: cycle.name || "Ciclo",
+    sessionsCount: cycle.sessions?.length ?? 0,
+    lap: cycle.lap,
+});
+
+// Lista os ciclos do perfil ativo e informa qual é o ativo.
+export const listCycles = async (req, res) => {
+    try {
+        const [cycles, active] = await Promise.all([
+            StudyCycle.find(cycleScope(req)).sort({ createdAt: 1, _id: 1 }).select("name sessions lap").lean(),
+            resolveCycle(req),
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            activeCycleId: active ? String(active._id) : null,
+            cycles: cycles.map(presentSummary),
+        });
+    } catch (error) {
+        return handleError(res, error, "listCycles");
+    }
+};
+
+// Cria um ciclo vazio (as sessões são montadas no editor logo em seguida).
+export const createCycle = async (req, res) => {
+    try {
+        const name = cleanName(req.body?.name) || await nextDefaultName(req);
+        if (name.length > 60) return res.status(400).json({ success: false, message: "O nome do ciclo pode ter no máximo 60 caracteres." });
+
+        const total = await StudyCycle.countDocuments(cycleScope(req));
+        if (total >= MAX_CYCLES) {
+            return res.status(400).json({ success: false, message: `Você pode ter no máximo ${MAX_CYCLES} ciclos por perfil.` });
+        }
+
+        const cycle = await StudyCycle.create({
+            user_id: req.userId,
+            profile_id: req.profileId,
+            name,
+            sessions: [],
+            lap: 1,
+            totalCompleted: 0,
+            sessionsPerDay: 0,
+        });
+
+        const subjectMap = await loadSubjectMap(req);
+        return await respond(res, 201, cycle, subjectMap, { message: "Ciclo criado com sucesso!" });
+    } catch (error) {
+        if (error?.code === 11000) {
+            return res.status(409).json({ success: false, message: "Já existe um ciclo com esse nome neste perfil." });
+        }
+        return handleError(res, error, "createCycle");
+    }
+};
+
+export const renameCycle = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const name = cleanName(req.body?.name);
+
+        if (!isId(id)) return res.status(404).json({ success: false, message: "Ciclo não encontrado." });
+        if (!name) return res.status(400).json({ success: false, message: "O nome do ciclo é obrigatório." });
+        if (name.length > 60) return res.status(400).json({ success: false, message: "O nome do ciclo pode ter no máximo 60 caracteres." });
+
+        const cycle = await StudyCycle.findOne({ _id: id, ...cycleScope(req) });
+        if (!cycle) return res.status(404).json({ success: false, message: "Ciclo não encontrado." });
+
+        cycle.name = name;
+        await cycle.save();
+
+        return res.status(200).json({ success: true, message: "Ciclo renomeado com sucesso!", cycle: presentSummary(cycle) });
+    } catch (error) {
+        if (error?.code === 11000) {
+            return res.status(409).json({ success: false, message: "Já existe um ciclo com esse nome neste perfil." });
+        }
+        return handleError(res, error, "renameCycle");
     }
 };

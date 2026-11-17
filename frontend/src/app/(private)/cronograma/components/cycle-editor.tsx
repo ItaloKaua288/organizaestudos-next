@@ -32,7 +32,7 @@ let rowCounter = 0;
 const newKey = () => `row-${++rowCounter}`;
 
 function buildRows(cycle: Cycle | null): Row[] {
-    if (!cycle) return [{ key: newKey(), subject_id: "", duration: DEFAULT_DURATION }];
+    if (!cycle || cycle.sessions.length === 0) return [{ key: newKey(), subject_id: "", duration: DEFAULT_DURATION }];
 
     // Sessões de matérias removidas não podem ser editadas: ficam de fora ao salvar.
     return cycle.sessions
@@ -124,7 +124,7 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
         try {
             const result = await saveCycleAction(sessions, sessionsPerDay);
             if (result.success && result.cycle) {
-                toast.success(cycle ? "Ciclo atualizado!" : "Ciclo criado!", { id: "save-cycle" });
+                toast.success(cycle && cycle.sessions.length > 0 ? "Ciclo atualizado!" : "Ciclo criado!", { id: "save-cycle" });
                 onSaved(result.cycle);
                 onClose();
             } else {
@@ -141,7 +141,7 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
         <DialogContent className="sm:max-w-xl">
             <form onSubmit={handleSubmit} className="min-w-0">
                 <DialogHeader>
-                    <DialogTitle>{cycle ? "Editar ciclo de estudos" : "Criar ciclo de estudos"}</DialogTitle>
+                    <DialogTitle>{cycle && cycle.sessions.length > 0 ? "Editar ciclo de estudos" : "Criar ciclo de estudos"}</DialogTitle>
                     <DialogDescription>
                         Escolha as matérias e a duração de cada sessão. A ordem da lista é a ordem do ciclo.
                     </DialogDescription>

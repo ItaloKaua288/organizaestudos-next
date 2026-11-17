@@ -24,6 +24,8 @@ export interface CycleHistoryItem {
 
 export interface Cycle {
     id: string;
+    /** Nome do ciclo (ex.: "Ciclo pré-edital"). */
+    name: string;
     /** Volta atual (começa em 1). */
     lap: number;
     /** Quantas sessões formam um "dia" na lista (0 = sem divisão por dia). */
@@ -50,4 +52,24 @@ export interface CycleActionResult {
     cycle?: Cycle | null;
     /** A sessão já havia sido atualizada (clique duplicado/outra aba). */
     stale?: boolean;
+}
+
+/** Resumo de um ciclo do perfil, usado no seletor de ciclos. */
+export interface CycleSummary {
+    id: string;
+    name: string;
+    sessionsCount: number;
+    lap: number;
+}
+
+export interface CyclesState {
+    cycles: CycleSummary[];
+    activeCycleId: string | null;
+}
+
+export interface CycleProfileActionResult {
+    success: boolean;
+    message: string;
+    /** Ciclo que ficou ativo depois da ação (null = o perfil ficou sem ciclos). */
+    cycle?: Cycle | null;
 }

@@ -30,6 +30,7 @@ import toast from "react-hot-toast";
 import { CycleDragGhost } from "./cycle-drag-ghost";
 import { CycleEditor } from "./cycle-editor";
 import { CycleSessionRow } from "./cycle-session-row";
+import { CycleSwitcher } from "./cycle-switcher";
 import { formatMinutes, TodayReview } from "./cycle-utils";
 import { TopicDetailDialog } from "./topic-detail-dialog";
 import { useCycleReorder } from "./use-cycle-reorder";
@@ -134,6 +135,26 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
 
     const { activeSession, sessions: listSessions, dndProps } = useCycleReorder(cycle?.sessions ?? [], handleReorder);
 
+    const switcher = (
+        <div className="flex items-center">
+            <CycleSwitcher
+                activeCycleId={cycle?.id ?? null}
+                disabled={isBusy}
+                onCycleChange={(next) => {
+                    setCycle(next);
+                    setShowUpcoming(false);
+                    setShowHistory(false);
+                }}
+                onCycleCreated={(created) => {
+                    setCycle(created);
+                    setShowUpcoming(false);
+                    setShowHistory(false);
+                    setIsEditorOpen(true); // ciclo novo está vazio: já abre o editor para montar as sessões
+                }}
+            />
+        </div>
+    );
+
     const reviewsSection = (
         <Card>
             <CardHeader>
@@ -168,12 +189,14 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
         </Card>
     );
 
-    if (!cycle) {
+    // Perfil sem ciclo, ou ciclo recém-criado ainda sem sessões: mostra o passo de montar o ciclo.
+    if (!cycle || cycle.sessions.length === 0) {
         return (
             <section className="flex flex-col gap-4">
+                {switcher}
                 <Card className="max-w-xl">
                     <CardHeader>
-                        <CardTitle>Ciclo de estudos</CardTitle>
+                        <CardTitle>{cycle ? cycle.name : "Ciclo de estudos"}</CardTitle>
                         <CardDescription>
                             Monte uma sequência de matérias com a duração de cada sessão. O ciclo avança conforme você conclui
                             as sessões, sem depender de dias fixos: se você parar, continua exatamente de onde parou.
@@ -181,7 +204,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     </CardHeader>
                     <CardContent>
                         <Button onClick={() => setIsEditorOpen(true)} disabled={subjects.length === 0}>
-                            <Plus className="h-4 w-4" /> Criar ciclo
+                            <Plus className="h-4 w-4" /> {cycle ? "Montar ciclo" : "Criar ciclo"}
                         </Button>
                         {subjects.length === 0 && (
                             <p className="mt-2 text-sm text-muted-foreground">Cadastre ao menos uma matéria ativa para criar o ciclo.</p>
@@ -189,7 +212,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     </CardContent>
                 </Card>
                 {reviewsSection}
-                <CycleEditor open={isEditorOpen} onOpenChange={setIsEditorOpen} cycle={null} subjects={subjects} onSaved={setCycle} />
+                <CycleEditor open={isEditorOpen} onOpenChange={setIsEditorOpen} cycle={cycle} subjects={subjects} onSaved={setCycle} />
             </section>
         );
     }
@@ -233,6 +256,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     return (
         <section className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2">
+                {switcher}
                 <Button variant="outline" size="sm" onClick={() => setIsEditorOpen(true)} disabled={isBusy}>
                     <Pencil className="h-4 w-4" /> Editar ciclo
                 </Button>
@@ -255,8 +279,8 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     size="sm"
                     disabled={isBusy}
                     onClick={() => confirmAndRun({
-                        title: "Excluir o ciclo de estudos?",
-                        description: "O ciclo e todo o seu histórico serão apagados. Essa ação não pode ser desfeita.",
+                        title: `Excluir o ciclo "${cycle.name}"?`,
+                        description: "O ciclo e todo o seu histórico serão apagados. Os outros ciclos do perfil não são afetados. Essa ação não pode ser desfeita.",
                         confirmLabel: "Excluir ciclo",
                         destructive: true,
                         action: () => deleteCycleAction(),

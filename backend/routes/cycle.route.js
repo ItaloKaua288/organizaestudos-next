@@ -8,12 +8,19 @@ import {
     skipSession,
     cancelSession,
     restartLap,
+    listCycles,
+    createCycle,
+    renameCycle,
 } from '../controllers/cycle.controller.js';
 import { verifyToken } from '../middleware/verifyToken.js';
 
 const router = express.Router();
 
 router.get('/', verifyToken, getCycle)
+router.get('/list', verifyToken, listCycles)
+router.post('/', verifyToken, createCycle)
+router.put('/:id/rename', verifyToken, renameCycle)
+router.delete('/:id', verifyToken, deleteCycle)
 router.put('/', verifyToken, saveCycle)
 router.delete('/', verifyToken, deleteCycle)
 router.post('/sessions/start', verifyToken, startSession)
