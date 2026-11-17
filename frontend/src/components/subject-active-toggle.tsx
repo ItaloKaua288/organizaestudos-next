@@ -10,9 +10,11 @@ import toast from "react-hot-toast";
 type SubjectActiveToggleProps = {
     subjectId: string;
     active: boolean;
+    /** Classes do botão de ícone (padrão: o estilo antigo, transparente). */
+    iconClassName?: string;
 };
 
-export function SubjectActiveToggle({ subjectId, active }: SubjectActiveToggleProps) {
+export function SubjectActiveToggle({ subjectId, active, iconClassName }: SubjectActiveToggleProps) {
     const [isPending, setIsPending] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -62,8 +64,8 @@ export function SubjectActiveToggle({ subjectId, active }: SubjectActiveTogglePr
         <DialogDemo
             title="Desativar matéria"
             description="Ao desativar, a matéria some das revisões, do cronograma, do dashboard e das anotações, e não poderá receber novos assuntos ou notas. Nada é apagado: ao reativar, tudo volta como estava."
-            contentBtn={<PowerOff size={15} />}
-            classNameBtn="border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"
+            contentBtn={<><PowerOff size={15} /><span className="sr-only">Desativar matéria</span></>}
+            classNameBtn={iconClassName ?? "border-none dark:bg-transparent bg-transparent dark:hover:bg-transparent cursor-pointer"}
             nameConfirmBtn={isPending ? "Desativando..." : "Desativar"}
             variantConfirmBtn="destructive"
             open={isOpen}

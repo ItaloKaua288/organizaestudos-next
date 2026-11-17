@@ -18,6 +18,7 @@ import { Topic } from "@/types/topic";
 import DOMPurify from "isomorphic-dompurify";
 import { CalendarClock, CheckCircle2, Clock, CornerDownLeft } from "lucide-react";
 import Link from "next/link";
+import { SubjectCardActions } from "../components/subject-card-actions";
 import { CreateTopicForm } from "./components/create-topic-form";
 import { TopicList } from "./components/topic-list";
 import type { Metadata } from "next";
@@ -214,9 +215,12 @@ export default async function DetailMateriaPage({
                 }
                 description="Assuntos, notas e revisões desta matéria."
                 actions={
-                    <Link href="/materias" className={buttonVariants({ variant: "outline", size: "sm" })}>
-                        <CornerDownLeft /> Matérias
-                    </Link>
+                    <>
+                        <SubjectCardActions subject={subject} redirectAfterDelete="/materias" />
+                        <Link href="/materias" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                            <CornerDownLeft /> Matérias
+                        </Link>
+                    </>
                 }
             />
             <section className="flex flex-col gap-6">
