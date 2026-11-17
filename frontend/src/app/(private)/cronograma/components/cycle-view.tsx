@@ -32,6 +32,8 @@ import { CycleEditor } from "./cycle-editor";
 import { CycleSessionRow } from "./cycle-session-row";
 import { CycleSwitcher } from "./cycle-switcher";
 import { formatMinutes, TodayReview } from "./cycle-utils";
+import { ReviewsDialog } from "./reviews-dialog";
+import { SessionMarker } from "./session-marker";
 import { TopicDetailDialog } from "./topic-detail-dialog";
 import { useCycleReorder } from "./use-cycle-reorder";
 
@@ -63,6 +65,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     const [showHistory, setShowHistory] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
     const [isQuestionsOpen, setIsQuestionsOpen] = useState(false);
+    const [isReviewsOpen, setIsReviewsOpen] = useState(false);
     const [detailSubject, setDetailSubject] = useState<CycleSession["subject"] | null>(null);
     // Trava síncrona: setState é assíncrono, então dois cliques rápidos passariam sem isto.
     const lockRef = useRef(false);
@@ -241,7 +244,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     // Sessão de revisão: não tem matéria nem assunto; mostra as revisões do dia no lugar do assunto.
     const isReviewSession = current?.kind === "REVISAO";
     const currentTopic = current && !isReviewSession ? pendingTopicsBySubject[current.subject.id] : undefined;
-    const scrollToReviews = () => document.getElementById("revisoes-do-dia")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const openReviews = () => setIsReviewsOpen(true);
 
     // Conclui a sessão atual (e o assunto pendente mostrado nela); com `questions`, também grava as questões feitas por assunto.
     // `markTopic` false = conclui a sessão sem concluir o assunto (ele continua pendente).
@@ -305,11 +308,11 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                             <CardTitle className="text-2xl">
                                 <button
                                     type="button"
-                                    onClick={() => (isReviewSession ? scrollToReviews() : setDetailSubject(current.subject))}
+                                    onClick={() => (isReviewSession ? openReviews() : setDetailSubject(current.subject))}
                                     title={isReviewSession ? "Ver as revisões de hoje" : "Ver assunto a ser estudado"}
                                     className="flex max-w-full cursor-pointer items-center gap-2 rounded-lg text-left transition-colors hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                                 >
-                                    <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: current.subject.color }} />
+                                    <SessionMarker session={current} size="lg" />
                                     <span className="truncate">{current.subject.title}</span>
                                 </button>
                             </CardTitle>
@@ -393,8 +396,8 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                                             )}
                                             {upcoming.map(({ session, nextLap }) => (
                                                 <li key={session.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
-                                                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
-                                                    <button type="button" onClick={() => (session.kind === "REVISAO" ? scrollToReviews() : setDetailSubject(session.subject))} className="cursor-pointer truncate rounded-md text-left transition-colors hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
+                                                    <SessionMarker session={session} />
+                                                    <button type="button" onClick={() => (session.kind === "REVISAO" ? openReviews() : setDetailSubject(session.subject))} className="cursor-pointer truncate rounded-md text-left transition-colors hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
                                                         {session.subject.title}
                                                     </button>
                                                     <span className="tabular-nums text-muted-foreground">{formatMinutes(session.duration)}</span>
@@ -470,7 +473,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                                             isCurrent={session.id === cycle.currentSessionId}
                                             isBusy={isBusy}
                                             onOpenDetail={setDetailSubject}
-                                            onOpenReviews={scrollToReviews}
+                                            onOpenReviews={openReviews}
                                             reviewCount={todayReviews.length}
                                         />
                                     </Fragment>
@@ -540,6 +543,8 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                     onSkip={(markTopic) => completeCurrent(undefined, markTopic)}
                 />
             )}
+
+            <ReviewsDialog open={isReviewsOpen} onOpenChange={setIsReviewsOpen} reviews={todayReviews} />
 
             <TopicDetailDialog
                 open={detailSubject !== null}

@@ -7,6 +7,7 @@ import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
 import { useCallback } from "react";
 import { formatMinutes } from "./cycle-utils";
+import { SessionMarker } from "./session-marker";
 
 const STATUS_LABEL: Record<CycleSession["status"], string> = {
     PENDENTE: "Pendente",
@@ -70,7 +71,7 @@ export function CycleSessionRow({ session, index, isCurrent, isBusy, onOpenDetai
                 <GripVertical size={16} />
             </span>
             <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">{index + 1}</span>
-            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
+            <SessionMarker session={session} />
             <button
                 type="button"
                 disabled={session.inactive}

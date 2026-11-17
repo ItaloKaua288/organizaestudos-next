@@ -30,7 +30,7 @@ type CycleEditorProps = {
 const DEFAULT_DURATION = "60";
 /** Opção especial do seletor: a sessão que mostra as revisões do dia. */
 const ReviewIcon = ({ className = "" }: { className?: string }) => (
-    <RotateCw className={`h-4 w-4 shrink-0 ${className}`} style={{ color: REVIEW_OPTION.color }} aria-hidden="true" />
+    <RotateCw className={`h-4 w-4 shrink-0 text-primary ${className}`} aria-hidden="true" />
 );
 const REVIEW_OPTION: Subject = { id: REVIEW_SUBJECT_ID, title: "Revisão", color: "#8b5cf6" };
 let rowCounter = 0;

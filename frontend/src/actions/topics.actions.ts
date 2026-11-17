@@ -505,6 +505,7 @@ export async function updateTopicReviewStatusAction(formData: FormData) {
 
         revalidatePath("/")
         revalidatePath("/revisoes")
+        revalidatePath("/cronograma")
         revalidateSubjectPages(subjectId)
 
         return { success: true, message: "Status da revisão atualizado com sucesso!", nextReview };
