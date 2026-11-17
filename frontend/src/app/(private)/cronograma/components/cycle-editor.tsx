@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Cycle } from "@/types/cycle";
+import { Cycle, REVIEW_SUBJECT_ID } from "@/types/cycle";
 import { Subject } from "@/types/subject";
-import { ArrowDown, ArrowUp, ListPlus, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ListPlus, Plus, RotateCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { formatMinutes } from "./cycle-utils";
@@ -28,6 +28,11 @@ type CycleEditorProps = {
 };
 
 const DEFAULT_DURATION = "60";
+/** Opção especial do seletor: a sessão que mostra as revisões do dia. */
+const ReviewIcon = ({ className = "" }: { className?: string }) => (
+    <RotateCw className={`h-4 w-4 shrink-0 ${className}`} style={{ color: REVIEW_OPTION.color }} aria-hidden="true" />
+);
+const REVIEW_OPTION: Subject = { id: REVIEW_SUBJECT_ID, title: "Revisão", color: "#8b5cf6" };
 let rowCounter = 0;
 const newKey = () => `row-${++rowCounter}`;
 
@@ -56,9 +61,10 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
 
     // Matérias desativadas que já estão no ciclo continuam aparecendo para poderem ser trocadas/removidas.
     const options: Subject[] = [
+        REVIEW_OPTION,
         ...subjects,
         ...(cycle?.sessions ?? [])
-            .filter((s) => !s.removed && !subjects.some((sub) => sub.id === s.subject.id))
+            .filter((s) => s.kind !== "REVISAO" && !s.removed && !subjects.some((sub) => sub.id === s.subject.id))
             .map((s) => ({ id: s.subject.id, title: `${s.subject.title} (desativada)`, color: s.subject.color }))
             .filter((s, i, arr) => arr.findIndex((o) => o.id === s.id) === i),
     ];
@@ -78,6 +84,11 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
         });
 
     const addRow = () => setRows((prev) => [...prev, { key: newKey(), subject_id: "", duration: DEFAULT_DURATION }]);
+
+    const addReview = () => setRows((prev) => {
+        const cleaned = prev.length === 1 && prev[0].subject_id === "" ? [] : prev;
+        return [...cleaned, { key: newKey(), subject_id: REVIEW_SUBJECT_ID, duration: DEFAULT_DURATION }];
+    });
 
     const addAllSubjects = () =>
         setRows((prev) => {
@@ -175,14 +186,21 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
                                 <SelectTrigger className="flex-1 min-w-0">
                                     <SelectValue render={(value) => {
                                         const subject = options.find((s) => s.id === value.children);
-                                        return <span className="truncate">{subject?.title ?? "Selecione uma matéria"}</span>;
+                                        return (
+                                            <span className="flex items-center gap-2 truncate">
+                                                {subject?.id === REVIEW_SUBJECT_ID && <ReviewIcon />}
+                                                <span className="truncate">{subject?.title ?? "Selecione uma matéria"}</span>
+                                            </span>
+                                        );
                                     }} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         {options.map((subject) => (
                                             <SelectItem key={subject.id} value={subject.id}>
-                                                {subject.title}
+                                                {subject.id === REVIEW_SUBJECT_ID ? (
+                                                    <span className="flex items-center gap-2"><ReviewIcon />{subject.title}</span>
+                                                ) : subject.title}
                                             </SelectItem>
                                         ))}
                                     </SelectGroup>
@@ -225,6 +243,9 @@ function CycleEditorForm({ cycle, subjects, onSaved, onClose }: Omit<CycleEditor
                     <div className="flex flex-wrap gap-2 pt-2">
                         <Button type="button" variant="outline" size="sm" onClick={addRow} disabled={isSaving}>
                             <Plus className="h-4 w-4" /> Adicionar sessão
+                        </Button>
+                        <Button type="button" variant="outline" size="sm" onClick={addReview} disabled={isSaving}>
+                            <RotateCw className="h-4 w-4" /> Adicionar revisão
                         </Button>
                         <Button type="button" variant="outline" size="sm" onClick={addAllSubjects} disabled={isSaving || subjects.length === 0}>
                             <ListPlus className="h-4 w-4" /> Adicionar todas as matérias

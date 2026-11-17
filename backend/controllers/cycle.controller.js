@@ -28,6 +28,9 @@ import { getTodayBR } from "../utils/date.js";
  * - Assunto: ao concluir, o corpo também pode trazer `topic_id` (o assunto pendente mostrado na sessão).
  *   Se ele for da matéria da sessão, não for organizador (com subassuntos) e ainda não estiver
  *   concluído, vira CONCLUIDO e agenda as revisões (mesma regra de PUT /topics/:id). Pular não conclui.
+ * - Revisão: uma sessão especial (`kind: "REVISAO"`, sem matéria) que funciona como qualquer outra no
+ *   ciclo (ordem, duração, concluir/pular), mas que na tela mostra as revisões do dia. Nunca fica
+ *   inativa, não registra questões e não conclui assunto. O front a envia como `subject_id: "__revisao__"`.
  * - Idempotência: concluir/pular exigem { sessionId, lap } da sessão atual. Um clique duplicado
  *   encontra outra sessão como atual e vira no-op (409 com o estado atual). Além disso há
  *   optimisticConcurrency no ciclo e índice único no histórico (ciclo + volta + sessão).
@@ -37,6 +40,12 @@ const OPEN_STATUS = ["PENDENTE", "EM_ANDAMENTO"];
 const MAX_SESSIONS = 50;
 
 const isId = (v) => mongoose.isValidObjectId(v);
+
+// Id "virtual" usado pelo front para a sessão de revisão (ela não tem matéria no banco).
+const REVIEW_ID = "__revisao__";
+const REVIEW_SUBJECT = { title: "Revisão", color: "#8b5cf6" };
+
+const isReviewSession = (session) => session?.kind === "REVISAO";
 
 const MAX_CYCLES = 20;
 
@@ -71,6 +80,7 @@ const loadSubjectMap = async (req) => {
 };
 
 const isUsable = (session, subjectMap) => {
+    if (isReviewSession(session)) return true;
     const subject = subjectMap.get(String(session.subject_id));
     return !!subject && subject.active !== false;
 };
@@ -108,9 +118,23 @@ const resolvePointer = (cycle, subjectMap) => {
 
 const buildView = async (cycle, subjectMap) => {
     const sessions = cycle.sessions.map((s) => {
+        if (isReviewSession(s)) {
+            return {
+                id: String(s._id),
+                kind: "REVISAO",
+                subject: { id: REVIEW_ID, ...REVIEW_SUBJECT },
+                duration: s.duration,
+                status: s.status,
+                startedAt: s.startedAt,
+                inactive: false,
+                removed: false,
+            };
+        }
+
         const subject = subjectMap.get(String(s.subject_id));
         return {
             id: String(s._id),
+            kind: "MATERIA",
             subject: {
                 id: String(s.subject_id),
                 title: subject ? subject.title : "Matéria removida",
@@ -227,13 +251,34 @@ export const saveCycle = async (req, res) => {
             if (!Number.isInteger(duration) || duration < 1 || duration > 720) {
                 return res.status(400).json({ success: false, message: "A duração de cada sessão deve ser de 1 a 720 minutos." });
             }
-            if (!isId(item?.subject_id)) {
+            const isReview = item?.kind === "REVISAO" || item?.subject_id === REVIEW_ID;
+            if (!isReview && !isId(item?.subject_id)) {
                 return res.status(400).json({ success: false, message: "Selecione a matéria de todas as sessões." });
+            }
+
+            const old = item.id && existing.has(String(item.id)) ? existing.get(String(item.id)) : null;
+
+            if (isReview) {
+                // Sessão de revisão: sem matéria. Se já existia como revisão, preserva status e início.
+                const oldReview = old && isReviewSession(old) ? old : null;
+                if (old) {
+                    if (seenIds.has(String(old._id))) {
+                        return res.status(400).json({ success: false, message: "Sessão duplicada na requisição." });
+                    }
+                    seenIds.add(String(old._id));
+                }
+                next.push({
+                    _id: oldReview ? oldReview._id : new mongoose.Types.ObjectId(),
+                    kind: "REVISAO",
+                    duration,
+                    status: oldReview ? oldReview.status : "PENDENTE",
+                    startedAt: oldReview ? oldReview.startedAt : null,
+                });
+                continue;
             }
 
             const subjectId = String(item.subject_id);
             const subject = subjectMap.get(subjectId);
-            const old = item.id && existing.has(String(item.id)) ? existing.get(String(item.id)) : null;
 
             if (old) {
                 if (seenIds.has(String(old._id))) {
@@ -241,18 +286,20 @@ export const saveCycle = async (req, res) => {
                 }
                 seenIds.add(String(old._id));
                 // Sessão cuja matéria foi removida e que não foi alterada: descarta em silêncio.
-                if (!subject && String(old.subject_id) === subjectId) continue;
+                if (!subject && !isReviewSession(old) && String(old.subject_id) === subjectId) continue;
             }
 
             if (!subject) return res.status(404).json({ success: false, message: "Matéria não encontrada." });
 
-            const subjectChanged = !old || String(old.subject_id) !== subjectId;
+            // Uma sessão que era de revisão e virou matéria conta como troca (volta para PENDENTE).
+            const subjectChanged = !old || isReviewSession(old) || String(old.subject_id) !== subjectId;
             if (subjectChanged && subject.active === false) {
                 return res.status(403).json({ success: false, message: `A matéria "${subject.title}" está desativada. Reative-a para usá-la no ciclo.` });
             }
 
             next.push({
                 _id: old ? old._id : new mongoose.Types.ObjectId(),
+                kind: "MATERIA",
                 subject_id: subject._id,
                 duration,
                 // Trocar a matéria de uma sessão em andamento a cancela.
@@ -408,7 +455,8 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
 
         const lap = cycle.lap;
         const session = cycle.sessions.id(cycle.currentSessionId);
-        const subject = subjectMap.get(String(session.subject_id));
+        const isReview = isReviewSession(session);
+        const subject = isReview ? REVIEW_SUBJECT : subjectMap.get(String(session.subject_id));
         const finishedAt = new Date();
         const startedAt = session.startedAt; // capturado antes: uma nova volta zera startedAt
         let concludedTopicTitle = null;
@@ -416,7 +464,7 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
         // Questões feitas na sessão (opcional, só ao concluir). Validadas antes de mexer no ciclo.
         let questionEntries = [];
         const rawQuestions = req.body?.questions;
-        if (status === "CONCLUIDA" && Array.isArray(rawQuestions) && rawQuestions.length > 0) {
+        if (!isReview && status === "CONCLUIDA" && Array.isArray(rawQuestions) && rawQuestions.length > 0) {
             const parsed = await parseQuestionEntries(rawQuestions, req.userId, session.subject_id);
             if (parsed.error) return res.status(400).json({ success: false, message: parsed.error });
             questionEntries = parsed.entries;
@@ -435,7 +483,7 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
                 user_id: req.userId,
                 cycle_id: cycle._id,
                 session_id: session._id,
-                subject_id: session.subject_id,
+                subject_id: isReview ? undefined : session.subject_id,
                 subject_title: subject?.title ?? "",
                 subject_color: subject?.color ?? "#000000",
                 lap,
@@ -460,7 +508,7 @@ const finishSession = (status, successMessage, label) => async (req, res) => {
             }
 
             // Só chega aqui se a sessão foi contabilizada agora (duplicata cai no catch abaixo).
-            if (status === "CONCLUIDA") {
+            if (status === "CONCLUIDA" && !isReview) {
                 concludedTopicTitle = await concludeSessionTopic(req.body?.topic_id, session.subject_id);
             }
         } catch (e) {

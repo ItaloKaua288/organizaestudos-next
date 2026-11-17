@@ -52,7 +52,7 @@ export function getTimelineSubjectOrder(timelines: Timeline[], todayName: string
 export function getCycleSubjectOrder(cycle: Cycle | null): string[] {
     if (!cycle) return [];
 
-    const usable = cycle.sessions.filter((session) => !session.inactive && !session.removed);
+    const usable = cycle.sessions.filter((session) => !session.inactive && !session.removed && session.kind !== "REVISAO");
     const currentIndex = usable.findIndex((session) => session.id === cycle.currentSessionId);
     const rotated = currentIndex > 0 ? [...usable.slice(currentIndex), ...usable.slice(0, currentIndex)] : usable;
 

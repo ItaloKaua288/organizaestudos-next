@@ -1,7 +1,15 @@
 export type CycleSessionStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "PULADA";
 
+/** Id "virtual" da sessão de revisão (ela não tem matéria): é o `subject.id` e o valor enviado ao salvar o ciclo. */
+export const REVIEW_SUBJECT_ID = "__revisao__";
+
+/** MATERIA = estuda uma matéria · REVISAO = mostra as revisões do dia. */
+export type CycleSessionKind = "MATERIA" | "REVISAO";
+
 export interface CycleSession {
     id: string;
+    /** Sessões antigas podem vir sem `kind` (= MATERIA). */
+    kind?: CycleSessionKind;
     subject: { id: string; title: string; color: string };
     /** Duração planejada em minutos. */
     duration: number;

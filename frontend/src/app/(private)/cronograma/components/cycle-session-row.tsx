@@ -23,13 +23,18 @@ type CycleSessionRowProps = {
     /** Enquanto uma ação ou o salvamento da ordem está em andamento, ninguém é arrastado. */
     isBusy: boolean;
     onOpenDetail: (subject: CycleSession["subject"]) => void;
+    /** Clique no nome de uma sessão de revisão (leva até a lista de revisões do dia). */
+    onOpenReviews?: () => void;
+    /** Quantidade de revisões de hoje (mostrada na sessão de revisão). */
+    reviewCount?: number;
 };
 
 /**
  * Linha de uma sessão do ciclo. É, ao mesmo tempo, o item arrastado e o alvo onde outra sessão
  * pode ser solta. Só a alça inicia o arrasto, então o botão do nome continua clicável.
  */
-export function CycleSessionRow({ session, index, isCurrent, isBusy, onOpenDetail }: CycleSessionRowProps) {
+export function CycleSessionRow({ session, index, isCurrent, isBusy, onOpenDetail, onOpenReviews, reviewCount }: CycleSessionRowProps) {
+    const isReview = session.kind === "REVISAO";
     const { setNodeRef: setDragRef, setActivatorNodeRef, listeners, isDragging } = useDraggable({ id: session.id, disabled: isBusy });
     const { setNodeRef: setDropRef } = useDroppable({ id: session.id });
     const setRowRef = useCallback(
@@ -69,8 +74,8 @@ export function CycleSessionRow({ session, index, isCurrent, isBusy, onOpenDetai
             <button
                 type="button"
                 disabled={session.inactive}
-                onClick={() => onOpenDetail(session.subject)}
-                title="Ver assunto a ser estudado"
+                onClick={() => (isReview ? onOpenReviews?.() : onOpenDetail(session.subject))}
+                title={isReview ? "Ver as revisões de hoje" : "Ver assunto a ser estudado"}
                 className={cn(
                     "flex-1 truncate rounded-md text-left font-medium transition-colors enabled:cursor-pointer enabled:hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
                     session.status === "CONCLUIDA" && "line-through text-muted-foreground"
@@ -78,6 +83,9 @@ export function CycleSessionRow({ session, index, isCurrent, isBusy, onOpenDetai
             >
                 {session.subject.title}
             </button>
+            {isReview && reviewCount !== undefined && (
+                <Badge variant="outline" className="shrink-0">{reviewCount} {reviewCount === 1 ? "revisão" : "revisões"}</Badge>
+            )}
             <span className="shrink-0 tabular-nums text-muted-foreground">{formatMinutes(session.duration)}</span>
             {session.inactive ? (
                 <Badge variant="outline">{session.removed ? "Removida" : "Desativada"}</Badge>

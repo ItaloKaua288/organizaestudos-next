@@ -156,7 +156,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     );
 
     const reviewsSection = (
-        <Card>
+        <Card id="revisoes-do-dia" className="scroll-mt-20">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <RotateCw className="h-4 w-4 text-muted-foreground" /> Revisões de hoje
@@ -238,7 +238,10 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
     const { completed, skipped, total, percent } = cycle.progress;
     const inactiveCount = cycle.sessions.length - countedSessions.length;
 
-    const currentTopic = current ? pendingTopicsBySubject[current.subject.id] : undefined;
+    // Sessão de revisão: não tem matéria nem assunto; mostra as revisões do dia no lugar do assunto.
+    const isReviewSession = current?.kind === "REVISAO";
+    const currentTopic = current && !isReviewSession ? pendingTopicsBySubject[current.subject.id] : undefined;
+    const scrollToReviews = () => document.getElementById("revisoes-do-dia")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
     // Conclui a sessão atual (e o assunto pendente mostrado nela); com `questions`, também grava as questões feitas por assunto.
     // `markTopic` false = conclui a sessão sem concluir o assunto (ele continua pendente).
@@ -302,8 +305,8 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                             <CardTitle className="text-2xl">
                                 <button
                                     type="button"
-                                    onClick={() => setDetailSubject(current.subject)}
-                                    title="Ver assunto a ser estudado"
+                                    onClick={() => (isReviewSession ? scrollToReviews() : setDetailSubject(current.subject))}
+                                    title={isReviewSession ? "Ver as revisões de hoje" : "Ver assunto a ser estudado"}
                                     className="flex max-w-full cursor-pointer items-center gap-2 rounded-lg text-left transition-colors hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                                 >
                                     <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: current.subject.color }} />
@@ -321,18 +324,43 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                                     Duração planejada de <span className="font-medium text-foreground">{formatMinutes(current.duration)}</span>, sessão {currentIndex + 1} de {countedSessions.length}.
                                 </p>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setDetailSubject(current.subject)}
-                                    className="flex w-full cursor-pointer items-center gap-2 rounded-xl bg-foreground/5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-foreground/8 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
-                                >
-                                    <BookOpen className="h-4 w-4 shrink-0" style={{ color: current.subject.color }} />
-                                    <span className="truncate">
-                                        {currentTopic
-                                            ? <>Assunto: <span className="font-medium">{currentTopic.title}</span></>
-                                            : <span className="text-muted-foreground">Sem assunto pendente nesta matéria</span>}
-                                    </span>
-                                </button>
+                                {isReviewSession ? (
+                                    <div className="rounded-xl bg-foreground/5 p-1.5">
+                                        {todayReviews.length === 0 ? (
+                                            <p className="px-2 py-1.5 text-sm text-muted-foreground">Nenhuma revisão para hoje nem atrasada.</p>
+                                        ) : (
+                                            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto">
+                                                {todayReviews.map(({ topic, number, overdueDays }) => (
+                                                    <TopicSheetTrigger
+                                                        key={topic.id}
+                                                        topic={topic}
+                                                        className="flex h-auto w-full justify-start truncate rounded-lg border-transparent bg-transparent px-2 py-1.5 shadow-none hover:bg-foreground/6"
+                                                    >
+                                                        <span className="flex w-full items-center gap-2 truncate text-sm">
+                                                            <BookOpen className="h-3.5 w-3.5 shrink-0" color={topic.subject.color} />
+                                                            <span className="truncate">{topic.title}</span>
+                                                            {overdueDays > 0 && <OverdueBadge days={overdueDays} label="Atrasada" className="ml-auto shrink-0" />}
+                                                            <Badge variant="outline" className={overdueDays > 0 ? "shrink-0" : "ml-auto shrink-0"}>{number}ª revisão</Badge>
+                                                        </span>
+                                                    </TopicSheetTrigger>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => setDetailSubject(current.subject)}
+                                        className="flex w-full cursor-pointer items-center gap-2 rounded-xl bg-foreground/5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-foreground/8 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                                    >
+                                        <BookOpen className="h-4 w-4 shrink-0" style={{ color: current.subject.color }} />
+                                        <span className="truncate">
+                                            {currentTopic
+                                                ? <>Assunto: <span className="font-medium">{currentTopic.title}</span></>
+                                                : <span className="text-muted-foreground">Sem assunto pendente nesta matéria</span>}
+                                        </span>
+                                    </button>
+                                )}
 
                                 <div className="flex flex-wrap gap-2">
                                     {current.status === "PENDENTE" && (
@@ -340,7 +368,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                                             <Play className="h-4 w-4" /> Iniciar
                                         </Button>
                                     )}
-                                    <Button disabled={isBusy} onClick={() => setIsQuestionsOpen(true)}>
+                                    <Button disabled={isBusy} onClick={() => (isReviewSession ? void completeCurrent(undefined, false) : setIsQuestionsOpen(true))}>
                                         <Check className="h-4 w-4" /> Concluir sessão
                                     </Button>
                                     {current.status === "EM_ANDAMENTO" && (
@@ -366,7 +394,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                                             {upcoming.map(({ session, nextLap }) => (
                                                 <li key={session.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
                                                     <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: session.subject.color }} />
-                                                    <button type="button" onClick={() => setDetailSubject(session.subject)} className="cursor-pointer truncate rounded-md text-left transition-colors hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
+                                                    <button type="button" onClick={() => (session.kind === "REVISAO" ? scrollToReviews() : setDetailSubject(session.subject))} className="cursor-pointer truncate rounded-md text-left transition-colors hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">
                                                         {session.subject.title}
                                                     </button>
                                                     <span className="tabular-nums text-muted-foreground">{formatMinutes(session.duration)}</span>
@@ -442,6 +470,8 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                                             isCurrent={session.id === cycle.currentSessionId}
                                             isBusy={isBusy}
                                             onOpenDetail={setDetailSubject}
+                                            onOpenReviews={scrollToReviews}
+                                            reviewCount={todayReviews.length}
                                         />
                                     </Fragment>
                                 );
@@ -493,7 +523,7 @@ export function CycleView({ initialCycle, subjects, pendingTopicsBySubject, topi
                 )}
             </Card>
 
-            {current && (
+            {current && !isReviewSession && (
                 <QuestionLogDialog
                     open={isQuestionsOpen}
                     onOpenChange={setIsQuestionsOpen}

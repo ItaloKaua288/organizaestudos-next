@@ -98,11 +98,13 @@ export default async function DashboardPage() {
         return cycle.sessions.slice(currentIndex).filter(isOpen).slice(0, CYCLE_TODAY_LIMIT);
     })();
 
-    type TodayStudyItem = { key: string; subject: { id: string; title: string; color: string }; meta?: string; badge?: string };
+    type TodayStudyItem = { key: string; subject: { id: string; title: string; color: string }; meta?: string; badge?: string; href?: string };
     const todayStudyItems: TodayStudyItem[] = studyMode === "ciclo"
         ? cycleTodaySessions.map((session) => ({
             key: session.id,
             subject: session.subject,
+            // A sessão de revisão não tem matéria: leva para a página de revisões.
+            href: session.kind === "REVISAO" ? "/revisoes" : undefined,
             meta: formatMinutes(session.duration),
             badge: session.id === cycle?.currentSessionId
                 ? (session.status === "EM_ANDAMENTO" ? "Estudando agora" : "Agora")
@@ -360,7 +362,7 @@ export default async function DashboardPage() {
                                         {todayStudyItems.map((item) => (
                                             <Link
                                                 key={item.key}
-                                                href={`/materias/${item.subject.id}`}
+                                                href={item.href ?? `/materias/${item.subject.id}`}
                                                 className="group/row flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 transition-colors hover:bg-foreground/6 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
                                             >
                                                 <span className="flex min-w-0 items-center gap-2.5">

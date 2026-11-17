@@ -3,11 +3,21 @@ import mongoose from "mongoose";
 // Estados possíveis de uma sessão dentro da volta atual do ciclo.
 export const SESSION_STATUS = ["PENDENTE", "EM_ANDAMENTO", "CONCLUIDA", "PULADA"];
 
+// Tipo da sessão: MATERIA (padrão) estuda uma matéria; REVISAO mostra as revisões do dia e não tem matéria.
+export const SESSION_KIND = ["MATERIA", "REVISAO"];
+
 const cycleSessionSchema = new mongoose.Schema({
+    // Sessões antigas não têm `kind`: contam como MATERIA.
+    kind: {
+        type: String,
+        enum: SESSION_KIND,
+        default: "MATERIA"
+    },
+    // Obrigatória só nas sessões de matéria (a sessão de revisão não tem matéria).
     subject_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Subject",
-        required: true
+        required: function () { return this.kind !== "REVISAO"; }
     },
     // Duração planejada em minutos.
     duration: {
