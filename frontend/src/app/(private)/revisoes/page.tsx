@@ -1,6 +1,9 @@
+import { getProfilesAction } from "@/actions/profiles.actions";
 import { getTopicsAction } from "@/actions/topics.actions";
 import { ReviewSection, ReviewSectionSkeleton } from "@/components/reviewSection";
 import { PageHeader } from "@/components/page-header";
+import { ReviewLimitControl } from "@/components/review-limit-control";
+import { buildReviewLoad } from "@/lib/review-limit";
 import { buttonVariants } from "@/components/ui/button";
 import { Topic } from "@/types/topic";
 import { CheckCircle2, Clock } from "lucide-react";
@@ -13,8 +16,22 @@ export const metadata: Metadata = {
     title: "Revisões",
 };
 
+// Botão do limite diário de revisões (precisa do perfil ativo, por isso busca por conta própria).
+async function ReviewLimitAction() {
+    const { profiles, activeProfileId } = await getProfilesAction();
+    const activeProfile = profiles.find(profile => profile.id === activeProfileId);
+
+    if (!activeProfile) return null;
+
+    return <ReviewLimitControl profileId={activeProfile.id} limit={activeProfile.reviewDailyLimit ?? null} />;
+}
+
 async function RevisaoContent() {
-    const topics = (await getTopicsAction()).filter(topic => topic.status === "CONCLUIDO");
+    const [allTopics, profilesState] = await Promise.all([getTopicsAction(), getProfilesAction()]);
+    const topics = allTopics.filter(topic => topic.status === "CONCLUIDO");
+    const activeProfile = profilesState.profiles.find(profile => profile.id === profilesState.activeProfileId);
+    const reviewLimit = activeProfile?.reviewDailyLimit ?? null;
+    const reviewLoad = buildReviewLoad(topics);
 
     if (topics.length === 0) {
         return (
@@ -84,6 +101,8 @@ async function RevisaoContent() {
                     reviewIndex={sec.reviewIndex!}
                     icon={sec.icon}
                     topics={sec.topics}
+                    reviewLimit={reviewLimit}
+                    reviewLoad={reviewLoad}
                 />
             ))}
         </div>
@@ -95,6 +114,11 @@ export default function RevisaoPage() {
         <div>
             <PageHeader
                 title="Revisões"
+                actions={
+                    <Suspense fallback={null}>
+                        <ReviewLimitAction />
+                    </Suspense>
+                }
                 description="Assuntos concluídos entram aqui com revisões em 1, 7 e 30 dias. Ao marcar “Feito”, você avalia como foi e a próxima data se ajusta: “Bom” mantém o padrão (7 e 30 dias), “Muito difícil” traz de volta em 2 e 7 dias e “Fácil” espaça mais. A 3ª revisão se repete com intervalo que cresce ou encolhe."
             />
             <Suspense

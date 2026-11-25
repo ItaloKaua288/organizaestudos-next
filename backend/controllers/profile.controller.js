@@ -12,6 +12,7 @@ import { deleteNotesWithAttachments } from "../utils/noteAttachments.js";
 import Deck from "../models/deck.model.js";
 import Flashcard from "../models/flashcard.model.js";
 import { clearProfileCache } from "../middleware/profile.js";
+import { parseReviewDailyLimit } from "../utils/reviewLimit.js";
 
 const MAX_PROFILES = 20;
 
@@ -23,6 +24,8 @@ const present = (profile, subjectsCount = 0) => ({
     subjectsCount,
     // Dia da prova no formato AAAA-MM-DD (ou null).
     examDate: profile.examDate ? new Date(profile.examDate).toISOString().slice(0, 10) : null,
+    // Máximo de revisões por dia (ou null = sem limite).
+    reviewDailyLimit: Number.isInteger(profile.reviewDailyLimit) ? profile.reviewDailyLimit : null,
 });
 
 // Converte "AAAA-MM-DD" (ou vazio/null para limpar) em Date. Rejeita datas inexistentes (ex.: 2026-02-31).
@@ -90,16 +93,17 @@ export const createProfile = async (req, res) => {
     }
 };
 
-// Atualiza o nome e/ou a data da prova do perfil (envie só o que quer mudar).
+// Atualiza o nome, a data da prova e/ou o limite diário de revisões do perfil (envie só o que quer mudar).
 export const updateProfile = async (req, res) => {
     try {
         const { id } = req.params;
         const body = req.body ?? {};
         const hasName = body.name !== undefined;
         const hasExamDate = body.examDate !== undefined;
+        const hasReviewLimit = body.reviewDailyLimit !== undefined;
 
         if (!mongoose.isValidObjectId(id)) return res.status(404).json({ success: false, message: "Perfil não encontrado." });
-        if (!hasName && !hasExamDate) return res.status(400).json({ success: false, message: "Nada para atualizar." });
+        if (!hasName && !hasExamDate && !hasReviewLimit) return res.status(400).json({ success: false, message: "Nada para atualizar." });
 
         let name;
         if (hasName) {
@@ -115,12 +119,27 @@ export const updateProfile = async (req, res) => {
             examDate = parsed.date;
         }
 
+        let reviewDailyLimit;
+        if (hasReviewLimit) {
+            const parsed = parseReviewDailyLimit(body.reviewDailyLimit);
+            if (!parsed.ok) return res.status(400).json({ success: false, message: "O limite diário deve ser um número inteiro de 1 a 200." });
+            reviewDailyLimit = parsed.limit;
+        }
+
         const profile = await Profile.findOne({ _id: id, user_id: req.userId });
         if (!profile) return res.status(404).json({ success: false, message: "Perfil não encontrado." });
 
         if (hasName) profile.name = name;
         if (hasExamDate) profile.examDate = examDate;
+        if (hasReviewLimit) profile.reviewDailyLimit = reviewDailyLimit;
         await profile.save();
+
+        if (hasReviewLimit && !hasName && !hasExamDate) {
+            const limitMessage = reviewDailyLimit
+                ? `Limite de ${reviewDailyLimit} ${reviewDailyLimit === 1 ? "revisão" : "revisões"} por dia salvo!`
+                : "Limite diário removido.";
+            return res.status(200).json({ success: true, message: limitMessage, profile: present(profile) });
+        }
 
         const message = hasName && hasExamDate
             ? "Perfil atualizado com sucesso!"

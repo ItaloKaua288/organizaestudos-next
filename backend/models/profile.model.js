@@ -25,6 +25,14 @@ const profileSchema = new mongoose.Schema({
     examDate: {
         type: Date,
         default: null
+    },
+    // Máximo de revisões em um mesmo dia (para não acumular). null = sem limite.
+    // Ao agendar uma revisão em um dia cheio, ela vai para o dia seguinte mais próximo com vaga.
+    reviewDailyLimit: {
+        type: Number,
+        default: null,
+        min: 1,
+        max: 200
     }
 }, { timestamps: true });
 

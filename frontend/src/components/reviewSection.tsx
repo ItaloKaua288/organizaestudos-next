@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { getTodayBR } from "@/lib/date";
+import { placeReviewDays, type ReviewLoad } from "@/lib/review-limit";
 import { Topic, TopicStatus } from "@/types/topic";
 import { CalendarRange, CheckCircle2, ChevronRight, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,12 +23,25 @@ interface ReviewSectionProps {
     icon: React.ReactNode;
     reviewIndex?: number;
     topics: Topic[];
+    /** Máximo de revisões por dia no perfil (null = sem limite). */
+    reviewLimit?: number | null;
+    /** Revisões pendentes por dia (AAAA-MM-DD), usado para mostrar o dia real da próxima revisão. */
+    reviewLoad?: ReviewLoad;
 }
 
 interface ReviewItemProps {
     item: Topic;
     reviewIndex?: number;
+    reviewLimit?: number | null;
+    reviewLoad?: ReviewLoad;
 }
+
+// Quais datas do assunto deixam de contar no limite ao concluir cada revisão (a concluída e a reagendada).
+const SKIPPED_SLOTS = {
+    1: ["first", "second"],
+    2: ["second", "third"],
+    3: ["third"],
+} as const;
 
 // Avaliação ao concluir uma revisão: errou volta antes, acertou espaça mais.
 const PERFORMANCE_OPTIONS: { value: ReviewPerformance; label: string; hint: string; className: string }[] = [
@@ -69,7 +83,7 @@ const formatDays = (days: number) => `em ${days} ${days === 1 ? "dia" : "dias"}`
 const formatShortDate = (value: string) =>
     new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC", day: "2-digit", month: "2-digit" });
 
-export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
+export function ReviewItem({ item, reviewIndex, reviewLimit = null, reviewLoad = {} }: ReviewItemProps) {
     const [isPending, startTransition] = useTransition();
     const [isRating, setIsRating] = useState(false);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
@@ -120,9 +134,13 @@ export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                 }
 
                 setIsRating(false);
+
+                const next = result.nextReview;
+                const shifted = !!next && next.days > next.idealDays;
+
                 toast.success(
-                    result.nextReview
-                        ? `Revisão concluída! Próxima em ${result.nextReview.days} dias (${formatShortDate(result.nextReview.date)}).`
+                    next
+                        ? `Revisão concluída! Próxima em ${next.days} dias (${formatShortDate(next.date)}).${shifted ? ` Adiada em ${next.days - next.idealDays} ${next.days - next.idealDays === 1 ? "dia" : "dias"} pelo limite diário.` : ""}`
                         : "Revisão concluída!",
                     { id: toastId }
                 );
@@ -258,7 +276,17 @@ export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                         <span className="text-xs text-muted-foreground">Como foi essa revisão? Isso ajusta a data da próxima. Atalho: teclas 1 a 4.</span>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                             {PERFORMANCE_OPTIONS.map((option) => {
-                                const days = reviewIndex ? getNextReviewDays(item, reviewIndex, option.value) : null;
+                                const idealDays = reviewIndex ? getNextReviewDays(item, reviewIndex, option.value) : null;
+                                const days = idealDays !== null && reviewIndex
+                                    ? placeReviewDays({
+                                        idealDays,
+                                        limit: reviewLimit,
+                                        load: reviewLoad,
+                                        topic: item,
+                                        skipSlots: [...SKIPPED_SLOTS[reviewIndex as 1 | 2 | 3]],
+                                    })
+                                    : null;
+                                const isShifted = days !== null && idealDays !== null && days > idealDays;
 
                                 return (
                                 <Button
@@ -274,7 +302,13 @@ export function ReviewItem({ item, reviewIndex }: ReviewItemProps) {
                                     <span className="font-medium">{option.label}</span>
                                     <span className="text-xs font-normal text-muted-foreground transition-colors group-hover/button:text-current group-hover/button:opacity-80">{option.hint}</span>
                                     {days !== null && (
-                                        <span className="mt-1 rounded-full bg-foreground/10 px-2 py-0.5 text-[11px] font-semibold text-foreground transition-colors group-hover/button:bg-current/15 group-hover/button:text-current">
+                                        <span
+                                            title={isShifted ? `Ajustado pelo limite diário: o dia ideal (${formatDays(idealDays!)}) já está cheio.` : undefined}
+                                            className={cn(
+                                                "mt-1 rounded-full bg-foreground/10 px-2 py-0.5 text-[11px] font-semibold text-foreground transition-colors group-hover/button:bg-current/15 group-hover/button:text-current",
+                                                isShifted && "bg-amber-500/20 text-amber-700 dark:text-amber-300"
+                                            )}
+                                        >
                                             {formatDays(days)}
                                         </span>
                                     )}
@@ -342,7 +376,7 @@ function OrganizeMonthButton() {
     );
 }
 
-export function ReviewSection({ title, icon, reviewIndex, topics }: ReviewSectionProps) {
+export function ReviewSection({ title, icon, reviewIndex, topics, reviewLimit = null, reviewLoad = {} }: ReviewSectionProps) {
     const hasTopics = topics && topics.length > 0;
 
     return (
@@ -364,7 +398,7 @@ export function ReviewSection({ title, icon, reviewIndex, topics }: ReviewSectio
                 <div className="flex w-full flex-col ">
                     {topics.map((item, index) => (
                         <div key={item.id || index} className="py-1 first:pt-0 last:pb-0">
-                            <ReviewItem item={item} reviewIndex={reviewIndex} />
+                            <ReviewItem item={item} reviewIndex={reviewIndex} reviewLimit={reviewLimit} reviewLoad={reviewLoad} />
                         </div>
                     ))}
                 </div>

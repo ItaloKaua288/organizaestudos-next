@@ -5,6 +5,7 @@ import { subjectScope } from "../middleware/profile.js";
 import Topic from "../models/topic.model.js";
 import cloudinary from '../utils/cloudinary.js';
 import { getTodayBR } from '../utils/date.js';
+import { createReviewPlanner } from '../utils/reviewLimit.js';
 
 // Documentos antigos não têm o campo "active": só conta como inativa quando é explicitamente false.
 const isInactive = (subject) => subject?.active === false;
@@ -159,9 +160,18 @@ export const updateTopic = async (req, res) => {
             if (status === "CONCLUIDO") {
                 const today = getTodayBR()
 
-                topic.review1 = new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000);
-                topic.review2 = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-                topic.review3 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                // Respeita o limite diário de revisões do perfil (se houver): cada revisão vai para o dia
+                // ideal (+1, +7, +30) ou para o dia mais próximo depois dele que ainda tem vaga.
+                const planner = await createReviewPlanner({
+                    userId: req.userId,
+                    profileId: topic.subject_id.profile_id,
+                    topicId: topic._id,
+                    skipKeys: allowedReviews,
+                });
+
+                topic.review1 = planner.place(new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000));
+                topic.review2 = planner.place(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), topic.review1);
+                topic.review3 = planner.place(new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000), topic.review2);
                 topic.review3_interval = 30;
                 topic.reviewLog = [];
             } else {
@@ -178,9 +188,18 @@ export const updateTopic = async (req, res) => {
             if (review1) {
                 const baseDate = new Date(review1);
 
+                // A data da 1ª revisão foi escolhida à mão e fica como está; a 2ª e a 3ª respeitam o limite diário.
+                const planner = await createReviewPlanner({
+                    userId: req.userId,
+                    profileId: topic.subject_id.profile_id,
+                    topicId: topic._id,
+                    skipKeys: allowedReviews,
+                });
+                planner.reserve(baseDate);
+
                 topic.review1 = baseDate;
-                topic.review2 = new Date(baseDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-                topic.review3 = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+                topic.review2 = planner.place(new Date(baseDate.getTime() + 7 * 24 * 60 * 60 * 1000), baseDate);
+                topic.review3 = planner.place(new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000), topic.review2);
             }
         }
 
@@ -395,6 +414,16 @@ export const concludedReview = async (req, res) => {
         const entry = { review, performance: rating, at: new Date(), target: null, prevDate: null, prevInterval: null, nextDate: null };
         let nextReview = null;
 
+        // Limite diário de revisões do perfil: a data da revisão que está sendo reagendada (e a que acabou
+        // de ser concluída) não contam; as demais do perfil, sim.
+        const planner = await createReviewPlanner({
+            userId: req.userId,
+            profileId: topic.subject_id.profile_id,
+            topicId: topic._id,
+            skipKeys: review === "review3" ? ["review3"] : [review, nextReviewKey[review]],
+        });
+        const daysFromToday = (date) => Math.round((date.getTime() - getTodayBR().getTime()) / REVIEW_DAY_MS);
+
         if (review === "review3") {
             const currentInterval = topic.review3_interval || DEFAULT_RECURRING_DAYS;
             let nextInterval = currentInterval;
@@ -408,12 +437,13 @@ export const concludedReview = async (req, res) => {
             entry.prevDate = topic.review3;
             entry.prevInterval = currentInterval;
 
-            topic.review3 = addDaysFromToday(nextInterval);
+            // O intervalo guardado é o ideal; o deslocamento pelo limite vale só para esta data.
+            topic.review3 = planner.place(addDaysFromToday(nextInterval));
             topic.review3_concluded = false;
             topic.review3_interval = nextInterval;
 
             entry.nextDate = topic.review3;
-            nextReview = { key: "review3", date: topic.review3, days: nextInterval };
+            nextReview = { key: "review3", date: topic.review3, days: daysFromToday(topic.review3), idealDays: nextInterval };
         } else {
             topic[`${review}_concluded`] = true;
 
@@ -424,9 +454,9 @@ export const concludedReview = async (req, res) => {
 
                 entry.target = target;
                 entry.prevDate = topic[target];
-                topic[target] = addDaysFromToday(days);
+                topic[target] = planner.place(addDaysFromToday(days));
                 entry.nextDate = topic[target];
-                nextReview = { key: target, date: topic[target], days };
+                nextReview = { key: target, date: topic[target], days: daysFromToday(topic[target]), idealDays: days };
             }
         }
 

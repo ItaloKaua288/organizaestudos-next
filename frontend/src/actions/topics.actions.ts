@@ -500,7 +500,11 @@ export async function updateTopicReviewStatusAction(formData: FormData) {
         const responseData = await res.json();
         const subjectId = responseData.topic?.subject_id
         const nextReview = responseData.nextReview
-            ? { date: String(responseData.nextReview.date), days: Number(responseData.nextReview.days) }
+            ? {
+                date: String(responseData.nextReview.date),
+                days: Number(responseData.nextReview.days),
+                idealDays: Number(responseData.nextReview.idealDays ?? responseData.nextReview.days),
+            }
             : undefined;
 
         revalidatePath("/")

@@ -151,6 +151,35 @@ export async function updateProfileExamDateAction(profileId: string, examDate: s
     }
 }
 
+/** Define (inteiro de 1 a 200) ou remove (null) o limite diário de revisões do perfil. */
+export async function updateProfileReviewLimitAction(profileId: string, limit: number | null): Promise<ProfileActionResult> {
+    try {
+        if (!profileId) return { success: false, message: "Perfil inválido." };
+        if (limit !== null && (!Number.isInteger(limit) || limit < 1 || limit > 200)) {
+            return { success: false, message: "Informe um número inteiro de 1 a 200." };
+        }
+
+        const baseUrl = await getBaseUrl();
+        const headers = await getAuthHeaders();
+
+        const res = await fetch(`${baseUrl}/profiles/${profileId}`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify({ reviewDailyLimit: limit }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) return { success: false, message: data.message || "Falha da API ao salvar o limite diário." };
+
+        revalidateEverything();
+
+        return { success: true, message: data.message || "Limite diário salvo!", profile: data.profile };
+    } catch (error) {
+        console.error("Erro interno ao salvar o limite diário de revisões:", error);
+        return { success: false, message: "Ocorreu um erro inesperado." };
+    }
+}
+
 export async function deleteProfileAction(profileId: string): Promise<ProfileActionResult> {
     try {
         const baseUrl = await getBaseUrl();
