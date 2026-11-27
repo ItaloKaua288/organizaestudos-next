@@ -6,15 +6,23 @@ export type Level = {
     stroke: string;
 };
 
-/** Faixas de desempenho: abaixo de 60% é fraco, de 60% a 79% é regular, de 80% para cima é forte. */
-export const LEVEL_WEAK_BELOW = 60;
-export const LEVEL_STRONG_FROM = 80;
+/**
+ * Faixas de desempenho a partir da meta de acerto: da meta para cima é forte, até 19 pontos abaixo dela é regular,
+ * e 20 pontos ou mais abaixo é fraco. Com a meta padrão (80%): fraco abaixo de 60%, regular de 60% a 79%.
+ */
+export const DEFAULT_TARGET = 80;
+export const TARGET_MIN = 60;
+export const TARGET_MAX = 100;
+export const TARGET_PRESETS = [70, 80, 85, 90, 95];
+const WEAK_GAP = 20;
 
-export function getLevel(percent: number): Level {
-    if (percent < LEVEL_WEAK_BELOW) {
+export const weakBelowOf = (target: number) => target - WEAK_GAP;
+
+export function getLevel(percent: number, target: number = DEFAULT_TARGET): Level {
+    if (percent < weakBelowOf(target)) {
         return { label: "Fraco", text: "text-red-600 dark:text-red-400", bar: "bg-red-500", stroke: "stroke-red-500" };
     }
-    if (percent < LEVEL_STRONG_FROM) {
+    if (percent < target) {
         return { label: "Regular", text: "text-amber-600 dark:text-amber-400", bar: "bg-amber-500", stroke: "stroke-amber-500" };
     }
     return { label: "Forte", text: "text-primary dark:primary", bar: "bg-primary", stroke: "stroke-primary" };

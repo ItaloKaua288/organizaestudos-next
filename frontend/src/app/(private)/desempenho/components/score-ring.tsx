@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatPercent, getLevel } from "./performance-utils";
+import { useTarget } from "./target";
 
 type ScoreRingProps = {
     percent: number;
@@ -14,7 +15,8 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 /** Anel com o % de acerto geral no centro e a faixa (Fraco/Regular/Forte) escrita embaixo. */
 export function ScoreRing({ percent, empty = false }: ScoreRingProps) {
-    const level = getLevel(percent);
+    const target = useTarget();
+    const level = getLevel(percent, target);
     const value = Math.min(100, Math.max(0, percent));
 
     return (

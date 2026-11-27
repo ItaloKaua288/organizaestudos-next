@@ -5,6 +5,7 @@ import { QuestionLogDialog } from "@/components/question-log-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { describeFailure, toastError, toastUndo } from "@/lib/toast-feedback";
 import { cn } from "@/lib/utils";
@@ -16,7 +17,9 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { PercentBar } from "./percent-bar";
 import {
-    LEVEL_WEAK_BELOW,
+    TARGET_MAX,
+    TARGET_MIN,
+    TARGET_PRESETS,
     SMALL_SAMPLE_BELOW,
     STALE_AFTER_DAYS,
     SUBJECT_SORTS,
@@ -29,9 +32,11 @@ import {
     normalizeText,
     sortComparator,
     summarizeActivity,
+    weakBelowOf,
     type SubjectSort,
 } from "./performance-utils";
 import { ScoreRing } from "./score-ring";
+import { TargetProvider, useTargetStorage } from "./target";
 import { TrendChart } from "./trend-chart";
 
 type DesempenhoClientProps = {
@@ -59,6 +64,8 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
     const [defaultTopicId, setDefaultTopicId] = useState<string | undefined>(undefined);
     const [sort, setSort] = useState<SubjectSort>("weakest");
     const [query, setQuery] = useState("");
+    const [target, setTarget] = useTargetStorage();
+    const weakBelow = weakBelowOf(target);
     const [attentionTab, setAttentionTab] = useState<"weak" | "stale">("weak");
 
     const hasData = stats.overall.total > 0;
@@ -97,7 +104,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
         .filter((topic) => topic.total >= WEAK_MIN_QUESTIONS)
         .sort((a, b) => a.percent - b.percent)
         .slice(0, WEAK_LIMIT);
-    const belowCutoff = lowestTopics.filter((topic) => topic.percent < LEVEL_WEAK_BELOW).length;
+    const belowCutoff = lowestTopics.filter((topic) => topic.percent < weakBelow).length;
 
     // Assuntos já praticados, mas parados há muito tempo: os mais antigos primeiro.
     const staleTopics = allTopics
@@ -197,14 +204,51 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
     };
 
     return (
+        <TargetProvider value={target}>
         <section className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">
                     As questões são registradas ao concluir uma sessão do ciclo. Você também pode lançar por aqui.
                 </p>
+                <div className="flex items-center gap-2">
+                <Popover>
+                    <PopoverTrigger render={<Button variant="outline" size="sm" />}>
+                        <Target className="h-4 w-4" /> Meta: {target}%
+                    </PopoverTrigger>
+                    <PopoverContent align="end">
+                        <p className="font-medium">Meta de acerto</p>
+                        <p className="text-xs text-muted-foreground">
+                            {target}% ou mais é Forte. De {weakBelow}% até menos de {target}% é Regular. Abaixo de {weakBelow}% é Fraco. A meta fica salva neste navegador.
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {TARGET_PRESETS.map((preset) => (
+                                <Button key={preset} type="button" size="sm" variant={preset === target ? "default" : "outline"} onClick={() => setTarget(preset)}>
+                                    {preset}%
+                                </Button>
+                            ))}
+                        </div>
+                        <label className="flex items-center gap-2 text-sm">
+                            Outra
+                            <Input
+                                type="number"
+                                min={TARGET_MIN}
+                                max={TARGET_MAX}
+                                value={target}
+                                onChange={(event) => {
+                                    const next = Number(event.target.value);
+                                    if (Number.isFinite(next) && next >= TARGET_MIN && next <= TARGET_MAX) setTarget(next);
+                                }}
+                                className="w-20"
+                                aria-label="Meta de acerto em porcentagem"
+                            />
+                            %
+                        </label>
+                    </PopoverContent>
+                </Popover>
                 <Button variant={"outline"} size="sm" onClick={() => openDialog()} disabled={isBusy || stats.subjects.length === 0}>
                     <Plus className="h-4 w-4" /> Registrar questões
                 </Button>
+                </div>
             </div>
 
             {/* Resumo geral */}
@@ -234,7 +278,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         <p className="text-sm text-muted-foreground">Esta semana</p>
                         {thisWeek.percent !== null ? (
                             <>
-                                <p className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(thisWeek.percent).text)}>
+                                <p className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(thisWeek.percent, target).text)}>
                                     {formatPercent(thisWeek.percent)}
                                 </p>
                                 <p className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -283,7 +327,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                             <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
                         </CardTitle>
                         <CardDescription>
-                            Acertos sobre as questões feitas no período escolhido. A linha tracejada marca {LEVEL_WEAK_BELOW}%.
+                            Acertos sobre as questões feitas no período escolhido. A linha tracejada marca {weakBelow}%.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -310,8 +354,8 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         <CardDescription>
                             {attentionTab === "weak"
                                 ? belowCutoff > 0
-                                    ? `Os menores % com pelo menos ${WEAK_MIN_QUESTIONS} questões. Abaixo de ${LEVEL_WEAK_BELOW}% é ponto fraco.`
-                                    : `Nenhum assunto abaixo de ${LEVEL_WEAK_BELOW}%. Estes são os menores % com pelo menos ${WEAK_MIN_QUESTIONS} questões.`
+                                    ? `Os menores % com pelo menos ${WEAK_MIN_QUESTIONS} questões. Abaixo de ${weakBelow}% é ponto fraco.`
+                                    : `Nenhum assunto abaixo de ${weakBelow}%. Estes são os menores % com pelo menos ${WEAK_MIN_QUESTIONS} questões.`
                                 : `Assuntos que você já praticou, mas sem questões há ${STALE_AFTER_DAYS} dias ou mais.`}
                         </CardDescription>
                         <div role="tablist" aria-label="Tipo de atenção" className="mt-2 grid grid-cols-2 gap-1 rounded-xl border border-border bg-foreground/4 p-1">
@@ -344,7 +388,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         ) : (
                             <ul className="divide-y divide-border">
                                 {attentionTopics.map((topic) => {
-                                    const level = getLevel(topic.percent);
+                                    const level = getLevel(topic.percent, target);
                                     const idleDays = "idleDays" in topic ? (topic.idleDays as number) : null;
                                     return (
                                         <li key={topic.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
@@ -432,7 +476,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
 
                         <div className="divide-y divide-border">
                             {subjects.map((subject) => {
-                                const level = getLevel(subject.percent);
+                                const level = getLevel(subject.percent, target);
                                 const subjectHasData = subject.total > 0;
                                 const isOpen = searching || !!expanded[subject.id];
                                 const topics = [...subject.topics].sort(sortComparator(sort));
@@ -476,7 +520,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                                                     <li className="text-sm text-muted-foreground">Esta matéria ainda não tem assuntos.</li>
                                                 )}
                                                 {topics.map((topic) => {
-                                                    const topicLevel = getLevel(topic.percent);
+                                                    const topicLevel = getLevel(topic.percent, target);
                                                     const topicHasData = topic.total > 0;
                                                     return (
                                                         <li key={topic.id} className="space-y-1.5 border-l-2 pl-3" style={{ borderColor: subject.color }}>
@@ -547,7 +591,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                                             </p>
                                         </div>
                                         <div className="shrink-0 text-right">
-                                            <p className={cn("text-sm font-semibold tabular-nums", getLevel(log.percent).text)}>{formatPercent(log.percent)}</p>
+                                            <p className={cn("text-sm font-semibold tabular-nums", getLevel(log.percent, target).text)}>{formatPercent(log.percent)}</p>
                                             <p className="text-xs tabular-nums text-muted-foreground">{log.correct}/{log.total}</p>
                                         </div>
                                         <Button type="button" variant="ghost" size="icon-sm" onClick={() => handleDelete(log)} disabled={isBusy} aria-label={`Remover registro de ${log.topicTitle}`}>
@@ -574,5 +618,6 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                 onSubmit={handleCreate}
             />
         </section>
+        </TargetProvider>
     );
 }

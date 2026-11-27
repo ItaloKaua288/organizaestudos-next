@@ -1,6 +1,7 @@
 "use client";
 
-import { LEVEL_WEAK_BELOW, formatPercent, getLevel } from "./performance-utils";
+import { formatPercent, getLevel, weakBelowOf } from "./performance-utils";
+import { useTarget } from "./target";
 import { DEFAULT_TREND_RANGE, TREND_RANGES, buildTrendSeries, type TrendBucket, type TrendRange, type TrendSource } from "./trend-buckets";
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
@@ -67,6 +68,8 @@ function Stat({ label, hint, children }: { label: string; hint?: string; childre
  * Passe o mouse, arraste o dedo ou use Tab nos pontos para ver os números. As barras de baixo mostram o volume de questões.
  */
 export function TrendChart({ today, daily, hourly }: TrendChartProps) {
+    const target = useTarget();
+    const weakBelow = weakBelowOf(target);
     const [range, setRange] = useState<TrendRange>(DEFAULT_TREND_RANGE);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const plotRef = useRef<HTMLDivElement>(null);
@@ -88,7 +91,7 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
     const maxTotal = Math.max(1, ...points.map((point) => point.bucket.total));
 
     // Eixo Y se ajusta aos dados (sempre incluindo a linha dos 60%), assim variações pequenas continuam visíveis.
-    const lowest = Math.min(LEVEL_WEAK_BELOW, ...points.map((point) => point.percent));
+    const lowest = Math.min(weakBelow, ...points.map((point) => point.percent));
     const rawMin = Math.floor((lowest - 10) / 10) * 10;
     const yMin = rawMin <= 10 ? 0 : rawMin;
     const span = 100 - yMin;
@@ -115,7 +118,7 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
     const hitSize = dense ? "h-5 w-5" : "h-8 w-8";
 
     const active = activeIndex === null ? null : (points[activeIndex] ?? null);
-    const activeLevel = active ? getLevel(active.percent) : null;
+    const activeLevel = active ? getLevel(active.percent, target) : null;
 
     const selectRange = (next: TrendRange) => {
         setRange(next);
@@ -169,7 +172,7 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                     {/* Resumo do período */}
                     <dl className="grid grid-cols-3 gap-4">
                         <Stat label="Acerto no período">
-                            <span className={getLevel(periodPercent).text}>{formatPercent(periodPercent)}</span>
+                            <span className={getLevel(periodPercent, target).text}>{formatPercent(periodPercent)}</span>
                         </Stat>
                         <Stat label="Questões feitas" hint={`${correct} acertos`}>
                             {total}
@@ -206,7 +209,8 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                                 {yTicks.map((tick) => (
                                     <line key={tick} x1={0} x2={100} y1={yOf(tick)} y2={yOf(tick)} vectorEffect="non-scaling-stroke" className="stroke-border" strokeWidth={1} />
                                 ))}
-                                <line x1={0} x2={100} y1={yOf(LEVEL_WEAK_BELOW)} y2={yOf(LEVEL_WEAK_BELOW)} vectorEffect="non-scaling-stroke" className="stroke-destructive/60" strokeWidth={1} strokeDasharray="4 4" />
+                                <line x1={0} x2={100} y1={yOf(weakBelow)} y2={yOf(weakBelow)} vectorEffect="non-scaling-stroke" className="stroke-destructive/60" strokeWidth={1} strokeDasharray="4 4" />
+                                <line x1={0} x2={100} y1={yOf(target)} y2={yOf(target)} vectorEffect="non-scaling-stroke" className="stroke-primary/60" strokeWidth={1} />
                                 {area && <path d={area} fill={`url(#${gradientId})`} />}
                                 {coords.length > 1 && <path d={line} fill="none" vectorEffect="non-scaling-stroke" stroke="currentColor" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />}
                             </svg>
@@ -245,7 +249,7 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                                         className={cn(
                                             "block rounded-full border-2 border-background transition-shadow duration-150 group-hover:ring-4 group-hover:ring-primary/25 group-focus-visible:ring-4 group-focus-visible:ring-primary/40 motion-reduce:transition-none",
                                             dotSize,
-                                            getLevel(point.percent).bar,
+                                            getLevel(point.percent, target).bar,
                                             activeIndex === index && "ring-4 ring-primary/25"
                                         )}
                                     />
@@ -288,7 +292,7 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                     </div>
 
                     <p className="text-xs text-muted-foreground">
-                        Linha: % de acerto · Barras: questões feitas · Tracejado: {LEVEL_WEAK_BELOW}%
+                        Linha: % de acerto · Barras: questões feitas · Tracejado: {weakBelow}% · Meta: {target}%
                     </p>
 
                     <details className="text-sm">
