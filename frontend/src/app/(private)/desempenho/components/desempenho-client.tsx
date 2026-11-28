@@ -328,7 +328,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                             <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
                         </CardTitle>
                         <CardDescription>
-                            Acertos sobre as questões feitas no período escolhido. A linha tracejada marca {weakBelow}%.
+                            Acertos sobre as questões feitas no período escolhido. A linha sólida marca a meta de {target}%.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

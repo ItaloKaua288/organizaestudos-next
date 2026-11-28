@@ -13,6 +13,10 @@ type Point = { bucket: TrendBucket; index: number; percent: number };
 
 // O gráfico usa coordenadas em % (0 a 100). Os pontos ficam um pouco longe das bordas para não serem cortados.
 const EDGE = 5;
+// Com muitos pontos, a margem lateral encolhe para o gráfico não ficar com faixas vazias nas pontas.
+const EDGE_DENSE = 2.5;
+// O corte de Fraco só entra na escala se estiver a até esta distância dos dados. A meta sempre entra.
+const REFERENCE_REACH = 15;
 const MAX_X_LABELS = 7;
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
@@ -82,6 +86,7 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
     const target = useTarget();
     const weakBelow = weakBelowOf(target);
     const [range, setRange] = useState<TrendRange>(DEFAULT_TREND_RANGE);
+    const [fullScale, setFullScale] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const plotRef = useRef<HTMLDivElement>(null);
     const gradientId = `trend-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
@@ -114,18 +119,24 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
     const rangeOf = (from: number, to: number) => (to - from > 1 ? `${buckets[from].label} a ${buckets[to - 1].label}` : buckets[from]?.label ?? "");
     const maxTotal = Math.max(1, ...points.map((point) => point.bucket.total));
 
-    // Eixo Y se ajusta aos dados (sempre incluindo a linha dos 60%), assim variações pequenas continuam visíveis.
-    const lowest = Math.min(weakBelow, ...points.map((point) => point.percent));
+    // Eixo Y se ajusta aos dados, assim variações pequenas continuam visíveis. As linhas de referência (meta e
+    // corte de fraco) ficam visíveis: a meta sempre aparece, o corte de Fraco só quando está perto dos dados; "Escala completa" mostra 0 a 100%.
+    const dataMin = points.length > 0 ? Math.min(...points.map((point) => point.percent)) : 0;
+    const nearData = (value: number) => value >= dataMin - REFERENCE_REACH;
+    const lowest = Math.min(dataMin, target, ...[weakBelow].filter(nearData));
     const rawMin = Math.floor((lowest - 10) / 10) * 10;
-    const yMin = rawMin <= 10 ? 0 : rawMin;
+    const yMin = fullScale || rawMin <= 10 ? 0 : rawMin;
+    const showWeakLine = weakBelow >= yMin;
+    const showTargetLine = target >= yMin;
     const span = 100 - yMin;
     const step = span <= 50 ? 10 : span <= 80 ? 20 : 25;
     const yTicks: number[] = [];
     for (let tick = 100; tick >= yMin; tick -= step) yTicks.push(tick);
 
     const yOf = (percent: number) => ((100 - Math.min(100, Math.max(yMin, percent))) / span) * 100;
-    const xOf = (index: number) => (count === 1 ? 50 : EDGE + (index / (count - 1)) * (100 - EDGE * 2));
-    const slot = count > 1 ? (100 - EDGE * 2) / (count - 1) : 100;
+    const edge = points.length > 20 ? EDGE_DENSE : EDGE;
+    const xOf = (index: number) => (count === 1 ? 50 : edge + (index / (count - 1)) * (100 - edge * 2));
+    const slot = count > 1 ? (100 - edge * 2) / (count - 1) : 100;
     const barWidth = Math.min(slot * 0.6, 4);
 
     const coords = points.map((point) => ({ x: xOf(point.index), y: yOf(point.percent) }));
@@ -253,8 +264,8 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                                 {yTicks.map((tick) => (
                                     <line key={tick} x1={0} x2={100} y1={yOf(tick)} y2={yOf(tick)} vectorEffect="non-scaling-stroke" className="stroke-border" strokeWidth={1} />
                                 ))}
-                                <line x1={0} x2={100} y1={yOf(weakBelow)} y2={yOf(weakBelow)} vectorEffect="non-scaling-stroke" className="stroke-destructive/60" strokeWidth={1} strokeDasharray="4 4" />
-                                <line x1={0} x2={100} y1={yOf(target)} y2={yOf(target)} vectorEffect="non-scaling-stroke" className="stroke-primary/60" strokeWidth={1} />
+                                {showWeakLine && <line x1={0} x2={100} y1={yOf(weakBelow)} y2={yOf(weakBelow)} vectorEffect="non-scaling-stroke" className="stroke-destructive/60" strokeWidth={1} strokeDasharray="4 4" />}
+                                {showTargetLine && <line x1={0} x2={100} y1={yOf(target)} y2={yOf(target)} vectorEffect="non-scaling-stroke" className="stroke-primary/60" strokeWidth={1} />}
                                 {area && <path d={area} fill={`url(#${gradientId})`} />}
                                 {coords.length > 1 && <path d={line} fill="none" vectorEffect="non-scaling-stroke" stroke="currentColor" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />}
                             </svg>
@@ -335,9 +346,22 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                         </div>
                     </div>
 
-                    <p className="text-xs text-muted-foreground">
-                        Linha: % de acerto · Barras: questões feitas · Tracejado: {weakBelow}% · Meta: {target}%
-                    </p>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs text-muted-foreground">
+                            Linha: % de acerto · Barras: questões feitas
+                            {showWeakLine && <> · Tracejado: {weakBelow}%</>}
+                            {showTargetLine && <> · Meta: {target}%</>}
+                            {!showWeakLine && <> · Corte de Fraco ({weakBelow}%) fora da escala</>}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => setFullScale((value) => !value)}
+                            aria-pressed={fullScale}
+                            className="cursor-pointer rounded-lg px-2 py-1 text-xs text-muted-foreground transition-colors duration-150 hover:bg-foreground/6 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none"
+                        >
+                            {fullScale ? "Ajustar escala aos dados" : "Escala completa (0 a 100%)"}
+                        </button>
+                    </div>
 
                     <details className="text-sm">
                         <summary className="w-fit cursor-pointer rounded-md text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none">Ver em tabela</summary>
