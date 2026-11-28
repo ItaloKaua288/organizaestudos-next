@@ -145,7 +145,7 @@ export const getQuestionStats = async (req, res) => {
         // "Hoje" no fuso de São Paulo (AAAA-MM-DD). O front usa este valor como âncora dos filtros.
         const today = new Date().toLocaleDateString("en-CA", { timeZone: TIMEZONE });
 
-        const [topics, byTopic, recent, byWeek, byDay, byHour] = await Promise.all([
+        const [topics, byTopic, recent, byWeek, byDay, byHour, bySubjectDay, bySubjectHour] = await Promise.all([
             Topic.find({ subject_id: { $in: subjectIds } }).select("title subject_id order parent_id").sort({ order: 1 }).lean(),
             QuestionLog.aggregate([
                 { $match: { user_id: new mongoose.Types.ObjectId(req.userId), subject_id: { $in: subjectIds } } },
@@ -209,7 +209,52 @@ export const getQuestionStats = async (req, res) => {
                 { $group: { _id: "$hour", total: { $sum: "$total" }, correct: { $sum: "$correct" } } },
                 { $sort: { _id: 1 } },
             ]),
+            // Mesma evolução diária, separada por matéria (o gráfico pode filtrar por uma matéria).
+            QuestionLog.aggregate([
+                { $match: { user_id: userObjectId, subject_id: { $in: subjectIds }, answeredAt: { $gte: dailySince } } },
+                {
+                    $group: {
+                        _id: {
+                            subject: "$subject_id",
+                            date: { $dateToString: { format: "%Y-%m-%d", date: "$answeredAt", timezone: TIMEZONE } },
+                        },
+                        total: { $sum: "$total" },
+                        correct: { $sum: "$correct" },
+                    },
+                },
+                { $sort: { "_id.date": 1 } },
+            ]),
+            // Hoje, hora a hora, por matéria.
+            QuestionLog.aggregate([
+                { $match: { user_id: userObjectId, subject_id: { $in: subjectIds }, answeredAt: { $gte: hourlySince } } },
+                {
+                    $project: {
+                        subject_id: 1,
+                        total: 1,
+                        correct: 1,
+                        day: { $dateToString: { format: "%Y-%m-%d", date: "$answeredAt", timezone: TIMEZONE } },
+                        hour: { $hour: { date: "$answeredAt", timezone: TIMEZONE } },
+                    },
+                },
+                { $match: { day: today } },
+                { $group: { _id: { subject: "$subject_id", hour: "$hour" }, total: { $sum: "$total" }, correct: { $sum: "$correct" } } },
+                { $sort: { "_id.hour": 1 } },
+            ]),
         ]);
+
+        const subjectDaily = bySubjectDay.map((row) => ({
+            subjectId: String(row._id.subject),
+            date: row._id.date,
+            total: row.total,
+            correct: row.correct,
+        }));
+
+        const subjectHourly = bySubjectHour.map((row) => ({
+            subjectId: String(row._id.subject),
+            hour: row._id.hour,
+            total: row.total,
+            correct: row.correct,
+        }));
 
         const daily = byDay.map((day) => ({
             date: day._id,
@@ -296,6 +341,8 @@ export const getQuestionStats = async (req, res) => {
             today,
             daily,
             hourly,
+            subjectDaily,
+            subjectHourly,
             recent: recent.map((log) => ({
                 id: String(log._id),
                 subjectId: String(log.subject_id),

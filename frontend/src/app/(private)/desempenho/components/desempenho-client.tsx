@@ -27,6 +27,7 @@ import {
     WEAK_MIN_QUESTIONS,
     formatDateTime,
     formatPercent,
+    percentOf,
     formatPoints,
     getLevel,
     daysSince,
@@ -65,6 +66,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
     const [defaultTopicId, setDefaultTopicId] = useState<string | undefined>(undefined);
     const [sort, setSort] = useState<SubjectSort>("weakest");
     const [query, setQuery] = useState("");
+    const [chartSubjectId, setChartSubjectId] = useState("");
     const [target, setTarget] = useTargetStorage();
     const weakBelow = weakBelowOf(target);
     const [attentionTab, setAttentionTab] = useState<"weak" | "stale">("weak");
@@ -86,6 +88,24 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
             .filter((subject): subject is QuestionSubjectStat => subject !== null)
             .sort(compare);
     })();
+
+    // Gráfico de evolução: todas as matérias juntas ou só a escolhida. Se a matéria sumiu (desativada), volta para todas.
+    const chartSubject = stats.subjects.find((subject) => subject.id === chartSubjectId) ?? null;
+    const chartDaily = chartSubject
+        ? stats.subjectDaily
+              .filter((point) => point.subjectId === chartSubject.id)
+              .map((point) => ({ date: point.date, total: point.total, correct: point.correct, percent: percentOf(point.correct, point.total) }))
+        : stats.daily;
+    const chartHourly = chartSubject
+        ? stats.subjectHourly
+              .filter((point) => point.subjectId === chartSubject.id)
+              .map((point) => ({ hour: point.hour, total: point.total, correct: point.correct, percent: percentOf(point.correct, point.total) }))
+        : stats.hourly;
+
+    const showSubjectInChart = (subjectId: string) => {
+        setChartSubjectId(subjectId);
+        document.getElementById("evolucao")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
 
     const allExpanded = subjects.length > 0 && subjects.every((subject) => searching || expanded[subject.id]);
     const toggleAll = () => setExpanded(Object.fromEntries(stats.subjects.map((subject) => [subject.id, !allExpanded])));
@@ -322,10 +342,11 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 {/* Evolução */}
-                <Card className="lg:col-span-2 h-full">
+                <Card id="evolucao" className="lg:col-span-2 h-full scroll-mt-4">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
+                            {chartSubject && <span className="min-w-0 truncate font-normal text-muted-foreground">· {chartSubject.title}</span>}
                         </CardTitle>
                         <CardDescription>
                             Acertos sobre as questões feitas no período escolhido. A linha sólida marca a meta de {target}%.
@@ -340,7 +361,20 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                                 </Button>
                             </div>
                         ) : (
-                            <TrendChart today={stats.today} daily={stats.daily} hourly={stats.hourly} />
+                            <div className="space-y-4">
+                                <select
+                                    value={chartSubject?.id ?? ""}
+                                    onChange={(event) => setChartSubjectId(event.target.value)}
+                                    aria-label="Matéria do gráfico"
+                                    className="h-9 w-full rounded-xl border border-input bg-foreground/4 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 sm:w-72"
+                                >
+                                    <option value="">Todas as matérias</option>
+                                    {stats.subjects.map((subject) => (
+                                        <option key={subject.id} value={subject.id}>{subject.title}</option>
+                                    ))}
+                                </select>
+                                <TrendChart today={stats.today} daily={chartDaily} hourly={chartHourly} />
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -517,6 +551,13 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
 
                                         {isOpen && (
                                             <ul className="space-y-3 px-3 pb-3 pt-1">
+                                                {subjectHasData && (
+                                                    <li>
+                                                        <Button type="button" variant="outline" size="sm" onClick={() => showSubjectInChart(subject.id)}>
+                                                            <TrendingUp className="h-4 w-4" /> Ver evolução no gráfico
+                                                        </Button>
+                                                    </li>
+                                                )}
                                                 {topics.length === 0 && (
                                                     <li className="text-sm text-muted-foreground">Esta matéria ainda não tem assuntos.</li>
                                                 )}

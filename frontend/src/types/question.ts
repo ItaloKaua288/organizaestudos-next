@@ -65,6 +65,21 @@ export interface QuestionHourlyPoint {
     percent: number;
 }
 
+/** Mesmo que QuestionDailyPoint, mas de uma matéria só. O % é calculado no front. */
+export interface QuestionSubjectDailyPoint {
+    subjectId: string;
+    date: string;
+    total: number;
+    correct: number;
+}
+
+export interface QuestionSubjectHourlyPoint {
+    subjectId: string;
+    hour: number;
+    total: number;
+    correct: number;
+}
+
 export interface QuestionStats {
     overall: { total: number; correct: number; wrong: number; percent: number };
     subjects: QuestionSubjectStat[];
@@ -76,6 +91,10 @@ export interface QuestionStats {
     daily: QuestionDailyPoint[];
     /** Hoje, hora a hora (só horas com questões). */
     hourly: QuestionHourlyPoint[];
+    /** Evolução diária por matéria, para filtrar o gráfico. */
+    subjectDaily: QuestionSubjectDailyPoint[];
+    /** Hoje, hora a hora, por matéria. */
+    subjectHourly: QuestionSubjectHourlyPoint[];
     recent: QuestionRecentLog[];
 }
 

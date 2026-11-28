@@ -28,6 +28,8 @@ export async function getQuestionStatsAction(): Promise<QuestionStats> {
             today: data.today ?? new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }),
             daily: data.daily ?? [],
             hourly: data.hourly ?? [],
+            subjectDaily: data.subjectDaily ?? [],
+            subjectHourly: data.subjectHourly ?? [],
             recent: data.recent,
         };
     } catch (error) {

@@ -144,3 +144,6 @@ export function daysSince(today: string, iso: string | null): number | null {
 
 /** Diferença entre dois percentuais, em pontos percentuais: "1,5%". Não confundir com variação relativa. */
 export const formatPoints = (value: number) => `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
+
+/** % de acerto com uma casa decimal (0 quando não há questões). */
+export const percentOf = (correct: number, total: number) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0);
