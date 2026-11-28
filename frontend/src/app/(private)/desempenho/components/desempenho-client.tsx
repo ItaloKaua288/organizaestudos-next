@@ -47,6 +47,7 @@ import {
 import { useExamSize } from "./exam-size";
 import { ScoreRing } from "./score-ring";
 import { TargetProvider, useTargetStorage } from "./target";
+import { StudyHeatmap } from "./study-heatmap";
 import { TrendChart } from "./trend-chart";
 
 type DesempenhoClientProps = {
@@ -76,6 +77,7 @@ export function DesempenhoClient({ stats, examDate }: DesempenhoClientProps) {
     const [defaultTopicId, setDefaultTopicId] = useState<string | undefined>(undefined);
     const [sort, setSort] = useState<SubjectSort>("weakest");
     const [query, setQuery] = useState("");
+    const [tab, setTab] = useState<"resumo" | "materias" | "prova">("resumo");
     const [chartSubjectId, setChartSubjectId] = useState("");
     const [examSize, setExamSize] = useExamSize();
     const [target, setTarget] = useTargetStorage();
@@ -115,7 +117,9 @@ export function DesempenhoClient({ stats, examDate }: DesempenhoClientProps) {
 
     const showSubjectInChart = (subjectId: string) => {
         setChartSubjectId(subjectId);
-        document.getElementById("evolucao")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        setTab("resumo");
+        // O painel do resumo estava oculto: espera ele aparecer antes de rolar até o gráfico.
+        requestAnimationFrame(() => document.getElementById("evolucao")?.scrollIntoView({ behavior: "smooth", block: "start" }));
     };
 
     const allExpanded = subjects.length > 0 && subjects.every((subject) => searching || expanded[subject.id]);
@@ -242,7 +246,26 @@ export function DesempenhoClient({ stats, examDate }: DesempenhoClientProps) {
     return (
         <TargetProvider value={target}>
         <section className="space-y-4">
-            <div className="flex flex-wrap items-center justify-end gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div role="tablist" aria-label="Seções do desempenho" className="grid grid-cols-3 gap-1 rounded-xl border border-border bg-foreground/4 p-1 text-sm sm:inline-grid sm:w-auto">
+                    {([["resumo", "Resumo"], ["materias", "Matérias e registros"], ["prova", "Prova"]] as const).map(([key, label]) => (
+                        <button
+                            key={key}
+                            type="button"
+                            role="tab"
+                            id={`tab-${key}`}
+                            aria-selected={tab === key}
+                            aria-controls={`panel-${key}`}
+                            onClick={() => setTab(key)}
+                            className={cn(
+                                "cursor-pointer rounded-lg px-4 py-1.5 transition-colors duration-150 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none motion-reduce:transition-none",
+                                tab === key ? "bg-primary/15 font-medium text-primary" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
                 <div className="flex items-center gap-2">
                 <Popover>
                     <PopoverTrigger render={<Button variant="outline" size="sm" />}>
@@ -284,289 +307,212 @@ export function DesempenhoClient({ stats, examDate }: DesempenhoClientProps) {
                 </div>
             </div>
 
-            {/* Resumo geral */}
-            <Card>
-                <CardContent className="flex flex-col gap-6 md:flex-row md:items-center md:gap-8">
-                    <div className="flex items-center gap-5">
-                        <ScoreRing percent={stats.overall.percent} empty={!hasData} />
-                        <div className="md:hidden">
-                            <p className="text-sm font-medium">Desempenho geral</p>
-                            {!hasData && <p className="text-sm text-muted-foreground">Sem questões registradas</p>}
+            {/* Resumo */}
+            <div role="tabpanel" id="panel-resumo" aria-labelledby="tab-resumo" className={cn("space-y-4", tab !== "resumo" && "hidden")}>
+                {/* Resumo geral */}
+                <Card>
+                    <CardContent className="flex flex-col gap-6 md:flex-row md:items-center md:gap-8">
+                        <div className="flex items-center gap-5">
+                            <ScoreRing percent={stats.overall.percent} empty={!hasData} />
+                            <div className="md:hidden">
+                                <p className="text-sm font-medium">Desempenho geral</p>
+                                {!hasData && <p className="text-sm text-muted-foreground">Sem questões registradas</p>}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className="flex-1 space-y-3">
-                        <p className="hidden text-sm font-medium md:block">
-                            Desempenho geral
-                            {!hasData && <span className="font-normal text-muted-foreground"> (sem questões registradas)</span>}
-                        </p>
-                        <dl className="grid grid-cols-3 gap-4">
-                            <Stat label="Feitas" value={stats.overall.total} />
-                            <Stat label="Acertos" value={stats.overall.correct} />
-                            <Stat label="Erros" value={stats.overall.wrong} />
+                        <div className="flex-1 space-y-3">
+                            <p className="hidden text-sm font-medium md:block">
+                                Desempenho geral
+                                {!hasData && <span className="font-normal text-muted-foreground"> (sem questões registradas)</span>}
+                            </p>
+                            <dl className="grid grid-cols-3 gap-4">
+                                <Stat label="Feitas" value={stats.overall.total} />
+                                <Stat label="Acertos" value={stats.overall.correct} />
+                                <Stat label="Erros" value={stats.overall.wrong} />
+                            </dl>
+                        </div>
+
+                        <div className="space-y-1 border-t border-border pt-4 md:w-56 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                            <p className="text-sm text-muted-foreground">Esta semana</p>
+                            {thisWeek.percent !== null ? (
+                                <>
+                                    <p className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(thisWeek.percent, target).text)}>
+                                        {formatPercent(thisWeek.percent)}
+                                    </p>
+                                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                                        {delta === null ? (
+                                            <>{thisWeek.correct} de {thisWeek.total} questões</>
+                                        ) : delta === 0 ? (
+                                            <><Minus className="h-4 w-4" /> Igual à semana passada</>
+                                        ) : delta > 0 ? (
+                                            <><ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> {formatPoints(delta)} a mais que a semana passada</>
+                                        ) : (
+                                            <><ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" /> {formatPoints(Math.abs(delta))} a menos que a semana passada</>
+                                        )}
+                                    </p>
+                                </>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    {hasData ? "Nenhuma questão registrada nesta semana ainda." : "Registre questões para acompanhar a semana."}
+                                </p>
+                            )}
+                        </div>
+                    </CardContent>
+                    {hasData && (
+                        <dl className="grid grid-cols-3 gap-3 border-t border-border px-6 pt-4 text-sm">
+                            <div>
+                                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Target className="h-3.5 w-3.5" /> Hoje</dt>
+                                <dd className="font-semibold tabular-nums">{activity.todayTotal}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
+                            </div>
+                            <div>
+                                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><TrendingUp className="h-3.5 w-3.5" /> 7 dias</dt>
+                                <dd className="font-semibold tabular-nums">{activity.last7Total}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
+                            </div>
+                            <div>
+                                <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5" /> Sequência</dt>
+                                <dd className="font-semibold tabular-nums">{activity.streak}<span className="ml-1 text-xs font-normal text-muted-foreground">{activity.streak === 1 ? "dia" : "dias"}</span></dd>
+                            </div>
                         </dl>
-                    </div>
-
-                    <div className="space-y-1 border-t border-border pt-4 md:w-56 md:border-l md:border-t-0 md:pl-8 md:pt-0">
-                        <p className="text-sm text-muted-foreground">Esta semana</p>
-                        {thisWeek.percent !== null ? (
-                            <>
-                                <p className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(thisWeek.percent, target).text)}>
-                                    {formatPercent(thisWeek.percent)}
-                                </p>
-                                <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                                    {delta === null ? (
-                                        <>{thisWeek.correct} de {thisWeek.total} questões</>
-                                    ) : delta === 0 ? (
-                                        <><Minus className="h-4 w-4" /> Igual à semana passada</>
-                                    ) : delta > 0 ? (
-                                        <><ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> {formatPoints(delta)} a mais que a semana passada</>
-                                    ) : (
-                                        <><ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" /> {formatPoints(Math.abs(delta))} a menos que a semana passada</>
-                                    )}
-                                </p>
-                            </>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">
-                                {hasData ? "Nenhuma questão registrada nesta semana ainda." : "Registre questões para acompanhar a semana."}
-                            </p>
-                        )}
-                    </div>
-                </CardContent>
-                {hasData && (
-                    <dl className="grid grid-cols-3 gap-3 border-t border-border px-6 pt-4 text-sm">
-                        <div>
-                            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Target className="h-3.5 w-3.5" /> Hoje</dt>
-                            <dd className="font-semibold tabular-nums">{activity.todayTotal}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
-                        </div>
-                        <div>
-                            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><TrendingUp className="h-3.5 w-3.5" /> 7 dias</dt>
-                            <dd className="font-semibold tabular-nums">{activity.last7Total}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
-                        </div>
-                        <div>
-                            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5" /> Sequência</dt>
-                            <dd className="font-semibold tabular-nums">{activity.streak}<span className="ml-1 text-xs font-normal text-muted-foreground">{activity.streak === 1 ? "dia" : "dias"}</span></dd>
-                        </div>
-                    </dl>
-                )}
-            </Card>
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                {/* Evolução */}
-                <Card id="evolucao" className="lg:col-span-2 h-full scroll-mt-4">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
-                            {chartSubject && <span className="min-w-0 truncate font-normal text-muted-foreground">· {chartSubject.title}</span>}
-                        </CardTitle>
-                        <CardDescription>A linha sólida marca a meta de {target}%.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {!hasData ? (
-                            <div className="flex flex-col items-center gap-3 py-10 text-center">
-                                <p className="text-sm text-muted-foreground">Nada por aqui ainda. Registre questões para ver sua evolução.</p>
-                                <Button variant="outline" size="sm" onClick={() => openDialog()} disabled={isBusy || stats.subjects.length === 0}>
-                                    <Plus className="h-4 w-4" /> Registrar questões
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                <select
-                                    value={chartSubject?.id ?? ""}
-                                    onChange={(event) => setChartSubjectId(event.target.value)}
-                                    aria-label="Matéria do gráfico"
-                                    className="h-9 w-full rounded-xl border border-input bg-foreground/4 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 sm:w-72"
-                                >
-                                    <option value="">Todas as matérias</option>
-                                    {stats.subjects.map((subject) => (
-                                        <option key={subject.id} value={subject.id}>{subject.title}</option>
-                                    ))}
-                                </select>
-                                <TrendChart today={stats.today} daily={chartDaily} hourly={chartHourly} />
-                            </div>
-                        )}
-                    </CardContent>
+                    )}
                 </Card>
 
-                {/* Pontos de atenção */}
-                <Card className="max-h-105 lg:h-0 lg:max-h-none lg:min-h-full">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <AlertTriangle className="h-4 w-4 text-muted-foreground" /> Onde melhorar
-                            {belowCutoff > 0 && attentionTab === "weak" && <Badge variant="secondary">{belowCutoff} fraco{belowCutoff === 1 ? "" : "s"}</Badge>}
-                        </CardTitle>
-                        <CardDescription>
-                            {attentionTab === "weak"
-                                ? belowCutoff > 0
-                                    ? `Menores % (mín. ${WEAK_MIN_QUESTIONS} questões). Abaixo de ${weakBelow}% é fraco.`
-                                    : `Nenhum abaixo de ${weakBelow}%. Menores % (mín. ${WEAK_MIN_QUESTIONS} questões).`
-                                : `Sem questões há ${STALE_AFTER_DAYS} dias ou mais.`}
-                        </CardDescription>
-                        <div role="tablist" aria-label="Tipo de atenção" className="mt-2 grid grid-cols-2 gap-1 rounded-xl border border-border bg-foreground/4 p-1">
-                            {([["weak", "Menor acerto", lowestTopics.length], ["stale", "Parados", staleTopics.length]] as const).map(([key, label, count]) => (
-                                <button
-                                    key={key}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={attentionTab === key}
-                                    onClick={() => setAttentionTab(key)}
-                                    className={cn(
-                                        "cursor-pointer rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
-                                        attentionTab === key ? "bg-primary/15 font-medium text-primary" : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    {label} <span className="tabular-nums">({count})</span>
-                                </button>
-                            ))}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="min-h-0 flex-1 overflow-auto">
-                        {attentionTopics.length === 0 ? (
-                            <p className="py-6 text-center text-sm text-muted-foreground">
-                                {!hasData
-                                    ? "Os assuntos de atenção aparecem aqui depois de registrar questões."
-                                    : attentionTab === "weak"
-                                        ? `Ainda não há assunto com ${WEAK_MIN_QUESTIONS} questões ou mais.`
-                                        : `Nenhum assunto parado há ${STALE_AFTER_DAYS} dias ou mais. Bom ritmo!`}
-                            </p>
-                        ) : (
-                            <ul className="divide-y divide-border">
-                                {attentionTopics.map((topic) => {
-                                    const level = getLevel(topic.percent, target);
-                                    const idleDays = "idleDays" in topic ? (topic.idleDays as number) : null;
-                                    return (
-                                        <li key={topic.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
-                                            <div className="flex items-start gap-2">
-                                                <span className="mt-1.5"><Dot color={topic.subjectColor} /></span>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-sm font-medium">{topic.title}</p>
-                                                    <p className="truncate text-xs text-muted-foreground">
-                                                        {topic.subjectTitle}, {topic.correct} de {topic.total}
-                                                        {topic.lastAnsweredAt && <> · {idleDays !== null ? `última vez ${formatRelativeTime(topic.lastAnsweredAt)}` : formatRelativeTime(topic.lastAnsweredAt)}</>}
-                                                    </p>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon-sm"
-                                                    onClick={() => openDialog(topic.id)}
-                                                    disabled={isBusy}
-                                                    aria-label={`Registrar questões de ${topic.title}`}
-                                                    title="Registrar questões deste assunto"
-                                                >
-                                                    <Plus className="h-4 w-4" />
-                                                </Button>
-                                                <span className={cn("shrink-0 text-sm font-semibold tabular-nums", level.text)}>
-                                                    {formatPercent(topic.percent)}
-                                                </span>
-                                            </div>
-                                            <PercentBar percent={topic.percent} className={level.bar} label={`Acerto em ${topic.title}`} />
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Projeção para a prova */}
-                {hasData && (
-                    <Card className="lg:col-span-3">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    {/* Evolução */}
+                    <Card id="evolucao" className="lg:col-span-2 h-full scroll-mt-4">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <CalendarClock className="h-4 w-4 text-muted-foreground" /> Projeção para a prova
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
+                                {chartSubject && <span className="min-w-0 truncate font-normal text-muted-foreground">· {chartSubject.title}</span>}
                             </CardTitle>
+                            <CardDescription>A linha sólida marca a meta de {target}%.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:divide-x md:divide-border">
-                                {/* Acertos estimados */}
-                                <div className="space-y-3">
-                                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        Acertos estimados em uma prova de
-                                        <Input
-                                            type="number"
-                                            min={EXAM_SIZE_MIN}
-                                            max={EXAM_SIZE_MAX}
-                                            value={examSize}
-                                            onChange={(event) => {
-                                                const next = Number(event.target.value);
-                                                if (Number.isFinite(next) && next >= EXAM_SIZE_MIN && next <= EXAM_SIZE_MAX) setExamSize(next);
-                                            }}
-                                            className="h-8 w-20"
-                                            aria-label="Quantidade de questões da prova"
-                                        />
-                                        questões
-                                    </label>
-                                    {scoreEstimate ? (
-                                        <dl className="grid grid-cols-3 gap-3">
-                                            <div>
-                                                <dt className="text-xs text-muted-foreground">Acerto geral ({formatPercent(scoreEstimate.percent)})</dt>
-                                                <dd className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(scoreEstimate.percent, target).text)}>
-                                                    {scoreEstimate.expected}<span className="ml-1 text-xs font-normal text-muted-foreground">de {examSize}</span>
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-xs text-muted-foreground" title="Intervalo com 95% de confiança. Fica mais estreito quanto mais questões você faz.">Faixa provável</dt>
-                                                <dd className="font-heading text-2xl font-semibold tabular-nums">{scoreEstimate.low} a {scoreEstimate.high}</dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-xs text-muted-foreground">14 dias{recentEstimate ? ` (${formatPercent(recentEstimate.percent)})` : ""}</dt>
-                                                {recentEstimate ? (
-                                                    <dd className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(recentEstimate.percent, target).text)}>
-                                                        {recentEstimate.expected}<span className="ml-1 text-xs font-normal text-muted-foreground">de {examSize}</span>
-                                                    </dd>
-                                                ) : (
-                                                    <dd className="text-sm text-muted-foreground">Sem questões</dd>
-                                                )}
-                                            </div>
-                                        </dl>
-                                    ) : null}
+                        <CardContent>
+                            {!hasData ? (
+                                <div className="flex flex-col items-center gap-3 py-10 text-center">
+                                    <p className="text-sm text-muted-foreground">Nada por aqui ainda. Registre questões para ver sua evolução.</p>
+                                    <Button variant="outline" size="sm" onClick={() => openDialog()} disabled={isBusy || stats.subjects.length === 0}>
+                                        <Plus className="h-4 w-4" /> Registrar questões
+                                    </Button>
                                 </div>
-
-                                {/* Ritmo até a prova */}
-                                <div className="space-y-3 md:pl-6">
-                                    <p className="text-sm text-muted-foreground">
-                                        Ritmo até a prova{projection.status === "ok" && <> (média dos últimos {projection.windowDays} {projection.windowDays === 1 ? "dia" : "dias"})</>}
-                                    </p>
-                                    {projection.status === "none" && (
-                                        <p className="text-sm text-muted-foreground">
-                                            Defina a data da prova no <Link href="/" className="underline underline-offset-2 hover:text-foreground">Dashboard</Link> para ver a projeção.
-                                        </p>
-                                    )}
-                                    {projection.status === "passed" && (
-                                        <p className="text-sm text-muted-foreground">
-                                            A prova ({formatExamDate(projection.examDate)}) já passou. Atualize a data no <Link href="/" className="underline underline-offset-2 hover:text-foreground">Dashboard</Link>.
-                                        </p>
-                                    )}
-                                    {projection.status === "ok" && (
-                                        <dl className="grid grid-cols-3 gap-3">
-                                            <div>
-                                                <dt className="text-xs text-muted-foreground">Prova em</dt>
-                                                <dd className="font-heading text-2xl font-semibold tabular-nums">
-                                                    {projection.daysLeft === 0 ? "Hoje" : <>{projection.daysLeft}<span className="ml-1 text-xs font-normal text-muted-foreground">{projection.daysLeft === 1 ? "dia" : "dias"}</span></>}
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-xs text-muted-foreground">Ritmo</dt>
-                                                <dd className="font-heading text-2xl font-semibold tabular-nums">
-                                                    {Math.round(projection.perDay)}<span className="ml-1 text-xs font-normal text-muted-foreground">/dia</span>
-                                                </dd>
-                                            </div>
-                                            <div>
-                                                <dt className="text-xs text-muted-foreground" title="Total de questões feitas até a prova, mantendo o ritmo atual">Feitas até lá</dt>
-                                                <dd className="font-heading text-2xl font-semibold tabular-nums">{projection.projectedTotal}</dd>
-                                            </div>
-                                        </dl>
-                                    )}
+                            ) : (
+                                <div className="space-y-4">
+                                    <select
+                                        value={chartSubject?.id ?? ""}
+                                        onChange={(event) => setChartSubjectId(event.target.value)}
+                                        aria-label="Matéria do gráfico"
+                                        className="h-9 w-full rounded-xl border border-input bg-foreground/4 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/35 sm:w-72"
+                                    >
+                                        <option value="">Todas as matérias</option>
+                                        {stats.subjects.map((subject) => (
+                                            <option key={subject.id} value={subject.id}>{subject.title}</option>
+                                        ))}
+                                    </select>
+                                    <TrendChart today={stats.today} daily={chartDaily} hourly={chartHourly} />
                                 </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                Estimativa simples: aplica seu % de acerto ao tamanho da prova. A prova real pode ter dificuldade e peso por matéria diferentes.
-                            </p>
+                            )}
                         </CardContent>
                     </Card>
-                )}
 
+                    {/* Pontos de atenção */}
+                    <Card className="max-h-105 lg:h-0 lg:max-h-none lg:min-h-full">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4 text-muted-foreground" /> Onde melhorar
+                                {belowCutoff > 0 && attentionTab === "weak" && <Badge variant="secondary">{belowCutoff} fraco{belowCutoff === 1 ? "" : "s"}</Badge>}
+                            </CardTitle>
+                            <CardDescription>
+                                {attentionTab === "weak"
+                                    ? belowCutoff > 0
+                                        ? `Menores % (mín. ${WEAK_MIN_QUESTIONS} questões). Abaixo de ${weakBelow}% é fraco.`
+                                        : `Nenhum abaixo de ${weakBelow}%. Menores % (mín. ${WEAK_MIN_QUESTIONS} questões).`
+                                    : `Sem questões há ${STALE_AFTER_DAYS} dias ou mais.`}
+                            </CardDescription>
+                            <div role="tablist" aria-label="Tipo de atenção" className="mt-2 grid grid-cols-2 gap-1 rounded-xl border border-border bg-foreground/4 p-1">
+                                {([["weak", "Menor acerto", lowestTopics.length], ["stale", "Parados", staleTopics.length]] as const).map(([key, label, count]) => (
+                                    <button
+                                        key={key}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={attentionTab === key}
+                                        onClick={() => setAttentionTab(key)}
+                                        className={cn(
+                                            "cursor-pointer rounded-lg px-2 py-1.5 text-sm transition-colors duration-150 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none",
+                                            attentionTab === key ? "bg-primary/15 font-medium text-primary" : "text-muted-foreground hover:text-foreground"
+                                        )}
+                                    >
+                                        {label} <span className="tabular-nums">({count})</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </CardHeader>
+                        <CardContent className="min-h-0 flex-1 overflow-auto">
+                            {attentionTopics.length === 0 ? (
+                                <p className="py-6 text-center text-sm text-muted-foreground">
+                                    {!hasData
+                                        ? "Os assuntos de atenção aparecem aqui depois de registrar questões."
+                                        : attentionTab === "weak"
+                                            ? `Ainda não há assunto com ${WEAK_MIN_QUESTIONS} questões ou mais.`
+                                            : `Nenhum assunto parado há ${STALE_AFTER_DAYS} dias ou mais. Bom ritmo!`}
+                                </p>
+                            ) : (
+                                <ul className="divide-y divide-border">
+                                    {attentionTopics.map((topic) => {
+                                        const level = getLevel(topic.percent, target);
+                                        const idleDays = "idleDays" in topic ? (topic.idleDays as number) : null;
+                                        return (
+                                            <li key={topic.id} className="space-y-2 py-3 first:pt-0 last:pb-0">
+                                                <div className="flex items-start gap-2">
+                                                    <span className="mt-1.5"><Dot color={topic.subjectColor} /></span>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-medium">{topic.title}</p>
+                                                        <p className="truncate text-xs text-muted-foreground">
+                                                            {topic.subjectTitle}, {topic.correct} de {topic.total}
+                                                            {topic.lastAnsweredAt && <> · {idleDays !== null ? `última vez ${formatRelativeTime(topic.lastAnsweredAt)}` : formatRelativeTime(topic.lastAnsweredAt)}</>}
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon-sm"
+                                                        onClick={() => openDialog(topic.id)}
+                                                        disabled={isBusy}
+                                                        aria-label={`Registrar questões de ${topic.title}`}
+                                                        title="Registrar questões deste assunto"
+                                                    >
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                    <span className={cn("shrink-0 text-sm font-semibold tabular-nums", level.text)}>
+                                                        {formatPercent(topic.percent)}
+                                                    </span>
+                                                </div>
+                                                <PercentBar percent={topic.percent} className={level.bar} label={`Acerto em ${topic.title}`} />
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Constância */}
+                    {hasData && (
+                        <Card className="lg:col-span-3">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Flame className="h-4 w-4 text-muted-foreground" /> Constância de estudo
+                                </CardTitle>
+                                <CardDescription>Cada quadrado é um dia: quanto mais escuro, mais questões.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <StudyHeatmap today={stats.today} daily={stats.daily} />
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+            </div>
+
+            {/* Matérias e registros */}
+            <div role="tabpanel" id="panel-materias" aria-labelledby="tab-materias" className={cn("grid grid-cols-1 gap-4 lg:grid-cols-3", tab !== "materias" && "hidden")}>
                 {/* Por matéria */}
                 <Card className="lg:col-span-2 h-full">
                     <CardHeader>
@@ -752,6 +698,116 @@ export function DesempenhoClient({ stats, examDate }: DesempenhoClientProps) {
                         )}
                     </CardContent>
                 </Card>
+            </div>
+
+            {/* Prova */}
+            <div role="tabpanel" id="panel-prova" aria-labelledby="tab-prova" className={cn("space-y-4", tab !== "prova" && "hidden")}>
+                    {/* Projeção para a prova */}
+                    {hasData && (
+                        <Card className="lg:col-span-3">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <CalendarClock className="h-4 w-4 text-muted-foreground" /> Projeção para a prova
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:divide-x md:divide-border">
+                                    {/* Acertos estimados */}
+                                    <div className="space-y-3">
+                                        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            Acertos estimados em uma prova de
+                                            <Input
+                                                type="number"
+                                                min={EXAM_SIZE_MIN}
+                                                max={EXAM_SIZE_MAX}
+                                                value={examSize}
+                                                onChange={(event) => {
+                                                    const next = Number(event.target.value);
+                                                    if (Number.isFinite(next) && next >= EXAM_SIZE_MIN && next <= EXAM_SIZE_MAX) setExamSize(next);
+                                                }}
+                                                className="h-8 w-20"
+                                                aria-label="Quantidade de questões da prova"
+                                            />
+                                            questões
+                                        </label>
+                                        {scoreEstimate ? (
+                                            <dl className="grid grid-cols-3 gap-3">
+                                                <div>
+                                                    <dt className="text-xs text-muted-foreground">Acerto geral ({formatPercent(scoreEstimate.percent)})</dt>
+                                                    <dd className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(scoreEstimate.percent, target).text)}>
+                                                        {scoreEstimate.expected}<span className="ml-1 text-xs font-normal text-muted-foreground">de {examSize}</span>
+                                                    </dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs text-muted-foreground" title="Intervalo com 95% de confiança. Fica mais estreito quanto mais questões você faz.">Faixa provável</dt>
+                                                    <dd className="font-heading text-2xl font-semibold tabular-nums">{scoreEstimate.low} a {scoreEstimate.high}</dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs text-muted-foreground">14 dias{recentEstimate ? ` (${formatPercent(recentEstimate.percent)})` : ""}</dt>
+                                                    {recentEstimate ? (
+                                                        <dd className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(recentEstimate.percent, target).text)}>
+                                                            {recentEstimate.expected}<span className="ml-1 text-xs font-normal text-muted-foreground">de {examSize}</span>
+                                                        </dd>
+                                                    ) : (
+                                                        <dd className="text-sm text-muted-foreground">Sem questões</dd>
+                                                    )}
+                                                </div>
+                                            </dl>
+                                        ) : null}
+                                    </div>
+
+                                    {/* Ritmo até a prova */}
+                                    <div className="space-y-3 md:pl-6">
+                                        <p className="text-sm text-muted-foreground">
+                                            Ritmo até a prova{projection.status === "ok" && <> (média dos últimos {projection.windowDays} {projection.windowDays === 1 ? "dia" : "dias"})</>}
+                                        </p>
+                                        {projection.status === "none" && (
+                                            <p className="text-sm text-muted-foreground">
+                                                Defina a data da prova no <Link href="/" className="underline underline-offset-2 hover:text-foreground">Dashboard</Link> para ver a projeção.
+                                            </p>
+                                        )}
+                                        {projection.status === "passed" && (
+                                            <p className="text-sm text-muted-foreground">
+                                                A prova ({formatExamDate(projection.examDate)}) já passou. Atualize a data no <Link href="/" className="underline underline-offset-2 hover:text-foreground">Dashboard</Link>.
+                                            </p>
+                                        )}
+                                        {projection.status === "ok" && (
+                                            <dl className="grid grid-cols-3 gap-3">
+                                                <div>
+                                                    <dt className="text-xs text-muted-foreground">Prova em</dt>
+                                                    <dd className="font-heading text-2xl font-semibold tabular-nums">
+                                                        {projection.daysLeft === 0 ? "Hoje" : <>{projection.daysLeft}<span className="ml-1 text-xs font-normal text-muted-foreground">{projection.daysLeft === 1 ? "dia" : "dias"}</span></>}
+                                                    </dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs text-muted-foreground">Ritmo</dt>
+                                                    <dd className="font-heading text-2xl font-semibold tabular-nums">
+                                                        {Math.round(projection.perDay)}<span className="ml-1 text-xs font-normal text-muted-foreground">/dia</span>
+                                                    </dd>
+                                                </div>
+                                                <div>
+                                                    <dt className="text-xs text-muted-foreground" title="Total de questões feitas até a prova, mantendo o ritmo atual">Feitas até lá</dt>
+                                                    <dd className="font-heading text-2xl font-semibold tabular-nums">{projection.projectedTotal}</dd>
+                                                </div>
+                                            </dl>
+                                        )}
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Estimativa simples: aplica seu % de acerto ao tamanho da prova. A prova real pode ter dificuldade e peso por matéria diferentes.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
+                {!hasData && (
+                    <Card>
+                        <CardContent>
+                            <p className="py-6 text-center text-sm text-muted-foreground">
+                                Registre questões para ver a estimativa de acertos e o ritmo até a prova.
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             <QuestionLogDialog
