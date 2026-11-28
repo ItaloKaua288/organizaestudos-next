@@ -10,13 +10,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { describeFailure, toastError, toastUndo } from "@/lib/toast-feedback";
 import { cn } from "@/lib/utils";
 import { QuestionEntryInput, QuestionRecentLog, QuestionStats, QuestionSubjectStat } from "@/types/question";
+import { formatExamDate } from "@/lib/exam-plan";
 import { formatRelativeTime } from "@/lib/relative-time";
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, Flame, History, ListChecks, Minus, Plus, Search, Target, Trash2, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, ChevronDown, ChevronsDownUp, ChevronsUpDown, CalendarClock, Flame, History, ListChecks, Minus, Plus, Search, Target, Trash2, TrendingUp } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { PercentBar } from "./percent-bar";
 import {
+    EXAM_SIZE_MAX,
+    EXAM_SIZE_MIN,
     TARGET_MAX,
     TARGET_MIN,
     TARGET_PRESETS,
@@ -28,6 +32,9 @@ import {
     formatDateTime,
     formatPercent,
     percentOf,
+    estimateExamScore,
+    projectToExam,
+    recentAccuracy,
     formatPoints,
     getLevel,
     daysSince,
@@ -37,12 +44,15 @@ import {
     weakBelowOf,
     type SubjectSort,
 } from "./performance-utils";
+import { useExamSize } from "./exam-size";
 import { ScoreRing } from "./score-ring";
 import { TargetProvider, useTargetStorage } from "./target";
 import { TrendChart } from "./trend-chart";
 
 type DesempenhoClientProps = {
     stats: QuestionStats;
+    /** Dia da prova do perfil ativo (AAAA-MM-DD) ou null. */
+    examDate: string | null;
 };
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -58,7 +68,7 @@ function Dot({ color }: { color: string }) {
     return <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />;
 }
 
-export function DesempenhoClient({ stats }: DesempenhoClientProps) {
+export function DesempenhoClient({ stats, examDate }: DesempenhoClientProps) {
     const router = useRouter();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isBusy, setIsBusy] = useState(false);
@@ -67,6 +77,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
     const [sort, setSort] = useState<SubjectSort>("weakest");
     const [query, setQuery] = useState("");
     const [chartSubjectId, setChartSubjectId] = useState("");
+    const [examSize, setExamSize] = useExamSize();
     const [target, setTarget] = useTargetStorage();
     const weakBelow = weakBelowOf(target);
     const [attentionTab, setAttentionTab] = useState<"weak" | "stale">("weak");
@@ -140,6 +151,10 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
     // semana que tinha questões, o que podia ser de meses atrás e enganava o "a mais que a anterior".
     const activity = summarizeActivity(stats.today, stats.daily);
     const { thisWeek, previousWeek } = activity;
+    const scoreEstimate = estimateExamScore(stats.overall.correct, stats.overall.total, examSize);
+    const recent = recentAccuracy(stats.today, stats.daily);
+    const recentEstimate = estimateExamScore(recent.correct, recent.total, examSize);
+    const projection = projectToExam(stats.today, examDate, stats.daily, stats.overall.total);
     const delta =
         thisWeek.percent !== null && previousWeek.percent !== null
             ? Math.round((thisWeek.percent - previousWeek.percent) * 10) / 10
@@ -227,10 +242,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
     return (
         <TargetProvider value={target}>
         <section className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-muted-foreground">
-                    As questões são registradas ao concluir uma sessão do ciclo. Você também pode lançar por aqui.
-                </p>
+            <div className="flex flex-wrap items-center justify-end gap-3">
                 <div className="flex items-center gap-2">
                 <Popover>
                     <PopoverTrigger render={<Button variant="outline" size="sm" />}>
@@ -266,7 +278,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         </label>
                     </PopoverContent>
                 </Popover>
-                <Button variant={"outline"} size="sm" onClick={() => openDialog()} disabled={isBusy || stats.subjects.length === 0}>
+                <Button variant={"outline"} size="sm" onClick={() => openDialog()} disabled={isBusy || stats.subjects.length === 0} title="As questões também são registradas ao concluir uma sessão do ciclo">
                     <Plus className="h-4 w-4" /> Registrar questões
                 </Button>
                 </div>
@@ -321,24 +333,23 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         )}
                     </div>
                 </CardContent>
+                {hasData && (
+                    <dl className="grid grid-cols-3 gap-3 border-t border-border px-6 pt-4 text-sm">
+                        <div>
+                            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Target className="h-3.5 w-3.5" /> Hoje</dt>
+                            <dd className="font-semibold tabular-nums">{activity.todayTotal}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
+                        </div>
+                        <div>
+                            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><TrendingUp className="h-3.5 w-3.5" /> 7 dias</dt>
+                            <dd className="font-semibold tabular-nums">{activity.last7Total}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
+                        </div>
+                        <div>
+                            <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5" /> Sequência</dt>
+                            <dd className="font-semibold tabular-nums">{activity.streak}<span className="ml-1 text-xs font-normal text-muted-foreground">{activity.streak === 1 ? "dia" : "dias"}</span></dd>
+                        </div>
+                    </dl>
+                )}
             </Card>
-
-            {hasData && (
-                <dl className="grid grid-cols-3 gap-3">
-                    <div className="rounded-xl border border-border bg-card px-4 py-3">
-                        <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Target className="h-3.5 w-3.5" /> Hoje</dt>
-                        <dd className="font-heading text-xl font-semibold tabular-nums">{activity.todayTotal}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
-                    </div>
-                    <div className="rounded-xl border border-border bg-card px-4 py-3">
-                        <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><TrendingUp className="h-3.5 w-3.5" /> Últimos 7 dias</dt>
-                        <dd className="font-heading text-xl font-semibold tabular-nums">{activity.last7Total}<span className="ml-1 text-xs font-normal text-muted-foreground">questões</span></dd>
-                    </div>
-                    <div className="rounded-xl border border-border bg-card px-4 py-3">
-                        <dt className="flex items-center gap-1.5 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5" /> Sequência</dt>
-                        <dd className="font-heading text-xl font-semibold tabular-nums">{activity.streak}<span className="ml-1 text-xs font-normal text-muted-foreground">{activity.streak === 1 ? "dia" : "dias"}</span></dd>
-                    </div>
-                </dl>
-            )}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 {/* Evolução */}
@@ -348,9 +359,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                             <TrendingUp className="h-4 w-4 text-muted-foreground" /> Evolução do % de acerto
                             {chartSubject && <span className="min-w-0 truncate font-normal text-muted-foreground">· {chartSubject.title}</span>}
                         </CardTitle>
-                        <CardDescription>
-                            Acertos sobre as questões feitas no período escolhido. A linha sólida marca a meta de {target}%.
-                        </CardDescription>
+                        <CardDescription>A linha sólida marca a meta de {target}%.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {!hasData ? (
@@ -389,9 +398,9 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         <CardDescription>
                             {attentionTab === "weak"
                                 ? belowCutoff > 0
-                                    ? `Os menores % com pelo menos ${WEAK_MIN_QUESTIONS} questões. Abaixo de ${weakBelow}% é ponto fraco.`
-                                    : `Nenhum assunto abaixo de ${weakBelow}%. Estes são os menores % com pelo menos ${WEAK_MIN_QUESTIONS} questões.`
-                                : `Assuntos que você já praticou, mas sem questões há ${STALE_AFTER_DAYS} dias ou mais.`}
+                                    ? `Menores % (mín. ${WEAK_MIN_QUESTIONS} questões). Abaixo de ${weakBelow}% é fraco.`
+                                    : `Nenhum abaixo de ${weakBelow}%. Menores % (mín. ${WEAK_MIN_QUESTIONS} questões).`
+                                : `Sem questões há ${STALE_AFTER_DAYS} dias ou mais.`}
                         </CardDescription>
                         <div role="tablist" aria-label="Tipo de atenção" className="mt-2 grid grid-cols-2 gap-1 rounded-xl border border-border bg-foreground/4 p-1">
                             {([["weak", "Menor acerto", lowestTopics.length], ["stale", "Parados", staleTopics.length]] as const).map(([key, label, count]) => (
@@ -459,6 +468,104 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Projeção para a prova */}
+                {hasData && (
+                    <Card className="lg:col-span-3">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <CalendarClock className="h-4 w-4 text-muted-foreground" /> Projeção para a prova
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:divide-x md:divide-border">
+                                {/* Acertos estimados */}
+                                <div className="space-y-3">
+                                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        Acertos estimados em uma prova de
+                                        <Input
+                                            type="number"
+                                            min={EXAM_SIZE_MIN}
+                                            max={EXAM_SIZE_MAX}
+                                            value={examSize}
+                                            onChange={(event) => {
+                                                const next = Number(event.target.value);
+                                                if (Number.isFinite(next) && next >= EXAM_SIZE_MIN && next <= EXAM_SIZE_MAX) setExamSize(next);
+                                            }}
+                                            className="h-8 w-20"
+                                            aria-label="Quantidade de questões da prova"
+                                        />
+                                        questões
+                                    </label>
+                                    {scoreEstimate ? (
+                                        <dl className="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <dt className="text-xs text-muted-foreground">Acerto geral ({formatPercent(scoreEstimate.percent)})</dt>
+                                                <dd className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(scoreEstimate.percent, target).text)}>
+                                                    {scoreEstimate.expected}<span className="ml-1 text-xs font-normal text-muted-foreground">de {examSize}</span>
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-xs text-muted-foreground" title="Intervalo com 95% de confiança. Fica mais estreito quanto mais questões você faz.">Faixa provável</dt>
+                                                <dd className="font-heading text-2xl font-semibold tabular-nums">{scoreEstimate.low} a {scoreEstimate.high}</dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-xs text-muted-foreground">14 dias{recentEstimate ? ` (${formatPercent(recentEstimate.percent)})` : ""}</dt>
+                                                {recentEstimate ? (
+                                                    <dd className={cn("font-heading text-2xl font-semibold tabular-nums", getLevel(recentEstimate.percent, target).text)}>
+                                                        {recentEstimate.expected}<span className="ml-1 text-xs font-normal text-muted-foreground">de {examSize}</span>
+                                                    </dd>
+                                                ) : (
+                                                    <dd className="text-sm text-muted-foreground">Sem questões</dd>
+                                                )}
+                                            </div>
+                                        </dl>
+                                    ) : null}
+                                </div>
+
+                                {/* Ritmo até a prova */}
+                                <div className="space-y-3 md:pl-6">
+                                    <p className="text-sm text-muted-foreground">
+                                        Ritmo até a prova{projection.status === "ok" && <> (média dos últimos {projection.windowDays} {projection.windowDays === 1 ? "dia" : "dias"})</>}
+                                    </p>
+                                    {projection.status === "none" && (
+                                        <p className="text-sm text-muted-foreground">
+                                            Defina a data da prova no <Link href="/" className="underline underline-offset-2 hover:text-foreground">Dashboard</Link> para ver a projeção.
+                                        </p>
+                                    )}
+                                    {projection.status === "passed" && (
+                                        <p className="text-sm text-muted-foreground">
+                                            A prova ({formatExamDate(projection.examDate)}) já passou. Atualize a data no <Link href="/" className="underline underline-offset-2 hover:text-foreground">Dashboard</Link>.
+                                        </p>
+                                    )}
+                                    {projection.status === "ok" && (
+                                        <dl className="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <dt className="text-xs text-muted-foreground">Prova em</dt>
+                                                <dd className="font-heading text-2xl font-semibold tabular-nums">
+                                                    {projection.daysLeft === 0 ? "Hoje" : <>{projection.daysLeft}<span className="ml-1 text-xs font-normal text-muted-foreground">{projection.daysLeft === 1 ? "dia" : "dias"}</span></>}
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-xs text-muted-foreground">Ritmo</dt>
+                                                <dd className="font-heading text-2xl font-semibold tabular-nums">
+                                                    {Math.round(projection.perDay)}<span className="ml-1 text-xs font-normal text-muted-foreground">/dia</span>
+                                                </dd>
+                                            </div>
+                                            <div>
+                                                <dt className="text-xs text-muted-foreground" title="Total de questões feitas até a prova, mantendo o ritmo atual">Feitas até lá</dt>
+                                                <dd className="font-heading text-2xl font-semibold tabular-nums">{projection.projectedTotal}</dd>
+                                            </div>
+                                        </dl>
+                                    )}
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Estimativa simples: aplica seu % de acerto ao tamanho da prova. A prova real pode ter dificuldade e peso por matéria diferentes.
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Por matéria */}
                 <Card className="lg:col-span-2 h-full">
@@ -614,7 +721,7 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                         <CardTitle className="flex items-center gap-2">
                             <History className="h-4 w-4 text-muted-foreground" /> Registros recentes
                         </CardTitle>
-                        <CardDescription>Lançou errado? Remova o registro e o % é recalculado. Dá para desfazer logo depois.</CardDescription>
+                        <CardDescription>Remover um registro recalcula o %. Dá para desfazer.</CardDescription>
                     </CardHeader>
                     <CardContent className="max-h-200 overflow-auto">
                         {stats.recent.length === 0 ? (

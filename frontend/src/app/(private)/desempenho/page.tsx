@@ -1,3 +1,4 @@
+import { getProfilesAction } from "@/actions/profiles.actions";
 import { getQuestionStatsAction } from "@/actions/questions.actions";
 import { PageHeader } from "@/components/page-header";
 import { DesempenhoClient } from "./components/desempenho-client";
@@ -9,7 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function DesempenhoPage() {
-    const stats = await getQuestionStatsAction();
+    const [stats, profilesState] = await Promise.all([
+        getQuestionStatsAction(),
+        // Sem a data da prova a projeção some, mas o resto da página segue funcionando.
+        getProfilesAction().catch(() => null),
+    ]);
+    const activeProfile = profilesState?.profiles.find((profile) => profile.id === profilesState.activeProfileId) ?? null;
 
     return (
         <main>
@@ -18,7 +24,7 @@ export default async function DesempenhoPage() {
                 description="Seu % de acerto por matéria e por assunto. Os pontos mais fracos aparecem primeiro."
             />
 
-            <DesempenhoClient stats={stats} />
+            <DesempenhoClient stats={stats} examDate={activeProfile?.examDate ?? null} />
         </main>
     );
 }

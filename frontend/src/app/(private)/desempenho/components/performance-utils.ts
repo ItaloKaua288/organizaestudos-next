@@ -147,3 +147,108 @@ export const formatPoints = (value: number) => `${Number.isInteger(value) ? valu
 
 /** % de acerto com uma casa decimal (0 quando não há questões). */
 export const percentOf = (correct: number, total: number) => (total > 0 ? Math.round((correct / total) * 1000) / 10 : 0);
+
+/** Janela (em dias) usada para medir o ritmo de questões. */
+export const PACE_WINDOW_DAYS = 14;
+
+export type ExamProjection =
+    | { status: "none" }
+    | { status: "passed"; examDate: string }
+    | {
+          status: "ok";
+          examDate: string;
+          daysLeft: number;
+          /** Questões por dia na janela de ritmo. */
+          perDay: number;
+          /** Dias usados na média (menor que a janela quando o usuário começou há pouco). */
+          windowDays: number;
+          /** % de acerto na janela de ritmo, null sem questões. */
+          windowPercent: number | null;
+          /** Total feito até hoje + ritmo atual vezes os dias que faltam. */
+          projectedTotal: number;
+      };
+
+/** Projeta quantas questões você terá feito até a prova se mantiver o ritmo dos últimos dias. */
+export function projectToExam(today: string, examDate: string | null, daily: DailyLike[], doneTotal: number): ExamProjection {
+    if (!examDate) return { status: "none" };
+
+    const exam = examDate.slice(0, 10);
+    const daysLeft = Math.round((new Date(`${exam}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / DAY_MS);
+    if (daysLeft < 0) return { status: "passed", examDate: exam };
+
+    // Quem começou há menos de 14 dias não é penalizado pelos dias anteriores ao primeiro registro.
+    const first = daily[0]?.date ?? today;
+    const sinceFirst = Math.round((new Date(`${today}T00:00:00Z`).getTime() - new Date(`${first}T00:00:00Z`).getTime()) / DAY_MS) + 1;
+    const windowDays = Math.max(1, Math.min(PACE_WINDOW_DAYS, sinceFirst));
+    const from = addDays(today, -(windowDays - 1));
+
+    let total = 0;
+    let correct = 0;
+    for (const point of daily) {
+        if (point.date >= from && point.date <= today) {
+            total += point.total;
+            correct += point.correct;
+        }
+    }
+
+    const perDay = total / windowDays;
+    return {
+        status: "ok",
+        examDate: exam,
+        daysLeft,
+        perDay,
+        windowDays,
+        windowPercent: total > 0 ? Math.round((correct / total) * 1000) / 10 : null,
+        projectedTotal: Math.round(doneTotal + perDay * daysLeft),
+    };
+}
+
+export const EXAM_SIZE_DEFAULT = 100;
+export const EXAM_SIZE_MIN = 1;
+export const EXAM_SIZE_MAX = 500;
+
+export type ExamScoreEstimate = {
+    /** % de acerto usado na conta. */
+    percent: number;
+    /** Acertos esperados: % de acerto vezes o número de questões da prova, arredondado. */
+    expected: number;
+    /** Faixa provável (95% de confiança), considerando que poucas questões feitas dão uma estimativa menos firme. */
+    low: number;
+    high: number;
+};
+
+/**
+ * Estima os acertos numa prova de `examQuestions` questões a partir de `correct` acertos em `total` questões.
+ * A faixa usa o intervalo de Wilson (95%): quanto mais questões você fez, mais estreita ela fica.
+ */
+export function estimateExamScore(correct: number, total: number, examQuestions: number): ExamScoreEstimate | null {
+    if (total <= 0 || examQuestions <= 0) return null;
+
+    const p = correct / total;
+    const z = 1.96;
+    const z2 = z * z;
+    const denominator = 1 + z2 / total;
+    const center = (p + z2 / (2 * total)) / denominator;
+    const margin = (z * Math.sqrt((p * (1 - p)) / total + z2 / (4 * total * total))) / denominator;
+
+    return {
+        percent: Math.round(p * 1000) / 10,
+        expected: Math.round(p * examQuestions),
+        low: Math.max(0, Math.floor((center - margin) * examQuestions)),
+        high: Math.min(examQuestions, Math.ceil((center + margin) * examQuestions)),
+    };
+}
+
+/** Questões e % de acerto dos últimos `days` dias (contando hoje). */
+export function recentAccuracy(today: string, daily: DailyLike[], days: number = PACE_WINDOW_DAYS) {
+    const from = addDays(today, -(days - 1));
+    let total = 0;
+    let correct = 0;
+    for (const point of daily) {
+        if (point.date >= from && point.date <= today) {
+            total += point.total;
+            correct += point.correct;
+        }
+    }
+    return { total, correct };
+}
