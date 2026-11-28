@@ -141,3 +141,6 @@ export function daysSince(today: string, iso: string | null): number | null {
     const day = date.toLocaleDateString("en-CA", { timeZone: TIMEZONE });
     return Math.round((new Date(`${today}T00:00:00Z`).getTime() - new Date(`${day}T00:00:00Z`).getTime()) / 86_400_000);
 }
+
+/** Diferença entre dois percentuais, em pontos percentuais: "1,5%". Não confundir com variação relativa. */
+export const formatPoints = (value: number) => `${Number.isInteger(value) ? value : value.toFixed(1)}%`;

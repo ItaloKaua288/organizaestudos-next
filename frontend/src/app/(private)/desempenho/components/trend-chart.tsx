@@ -1,6 +1,6 @@
 "use client";
 
-import { formatPercent, getLevel, weakBelowOf } from "./performance-utils";
+import { formatPercent, formatPoints, getLevel, weakBelowOf } from "./performance-utils";
 import { useTarget } from "./target";
 import { DEFAULT_TREND_RANGE, TREND_RANGES, buildTrendSeries, type TrendBucket, type TrendRange, type TrendSource } from "./trend-buckets";
 import { cn } from "@/lib/utils";
@@ -53,9 +53,20 @@ function smoothPath(points: { x: number; y: number }[]): string {
     return path;
 }
 
-function Stat({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Stat({ label, hint, tooltip, children }: { label: string; hint?: string; tooltip?: React.ReactNode; children: React.ReactNode }) {
     return (
-        <div className="min-w-0">
+        <div
+            className={cn("group relative min-w-0", tooltip && "cursor-help rounded-lg focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:outline-none")}
+            tabIndex={tooltip ? 0 : undefined}
+        >
+            {tooltip && (
+                <div
+                    role="tooltip"
+                    className="glass-popover pointer-events-none absolute right-0 top-full z-30 mt-2 hidden w-72 max-w-[85vw] space-y-1.5 rounded-xl p-3 text-xs font-normal leading-relaxed text-popover-foreground group-hover:block group-focus-visible:block"
+                >
+                    {tooltip}
+                </div>
+            )}
             <dt className="truncate text-xs text-muted-foreground">{label}</dt>
             <dd className="font-heading text-lg font-semibold tabular-nums leading-tight">{children}</dd>
             {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
@@ -87,7 +98,20 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
     const total = points.reduce((sum, point) => sum + point.bucket.total, 0);
     const correct = points.reduce((sum, point) => sum + point.bucket.correct, 0);
     const periodPercent = total > 0 ? round1((correct / total) * 100) : 0;
-    const delta = points.length > 1 ? round1(points[points.length - 1].percent - points[0].percent) : null;
+
+    // Variação entre a média da 2ª metade do período e a da 1ª (soma ponderada de cada metade). Comparar só o
+    // primeiro e o último ponto dava resultados ruidosos: um dia ruim no fim parecia queda de verdade.
+    const half = (from: number, to: number) => {
+        const slice = buckets.slice(from, to);
+        const t = slice.reduce((sum, bucket) => sum + bucket.total, 0);
+        const c = slice.reduce((sum, bucket) => sum + bucket.correct, 0);
+        return t > 0 ? { total: t, correct: c, percent: (c / t) * 100 } : null;
+    };
+    const middle = Math.floor(count / 2);
+    const firstHalf = half(0, middle);
+    const secondHalf = half(middle, count);
+    const delta = firstHalf && secondHalf ? round1(secondHalf.percent - firstHalf.percent) : null;
+    const rangeOf = (from: number, to: number) => (to - from > 1 ? `${buckets[from].label} a ${buckets[to - 1].label}` : buckets[from]?.label ?? "");
     const maxTotal = Math.max(1, ...points.map((point) => point.bucket.total));
 
     // Eixo Y se ajusta aos dados (sempre incluindo a linha dos 60%), assim variações pequenas continuam visíveis.
@@ -177,7 +201,27 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                         <Stat label="Questões feitas" hint={`${correct} acertos`}>
                             {total}
                         </Stat>
-                        <Stat label="Variação" hint={delta === null ? "Precisa de 2 pontos" : "Do primeiro ao último"}>
+                        <Stat
+                            label="Variação"
+                            tooltip={
+                                <>
+                                    <p className="font-semibold">Como a variação é calculada</p>
+                                    <p>
+                                        O período é dividido em duas metades. Para cada uma, o % de acerto é o total de acertos dividido pelo total de questões da metade (não é a média dos dias). A variação é o % da 2ª metade menos o % da 1ª.
+                                    </p>
+                                    {firstHalf && secondHalf ? (
+                                        <ul className="space-y-0.5 tabular-nums">
+                                            <li>1ª metade ({rangeOf(0, middle)}): {firstHalf.correct}/{firstHalf.total} = {formatPercent(round1(firstHalf.percent))}</li>
+                                            <li>2ª metade ({rangeOf(middle, count)}): {secondHalf.correct}/{secondHalf.total} = {formatPercent(round1(secondHalf.percent))}</li>
+                                            <li className="font-semibold">Variação: {formatPercent(round1(secondHalf.percent))} − {formatPercent(round1(firstHalf.percent))} = {delta !== null && delta > 0 ? "+" : ""}{delta !== null ? formatPercent(delta) : ""}</li>
+                                        </ul>
+                                    ) : (
+                                        <p className="text-muted-foreground">Falta registrar questões nas duas metades para calcular.</p>
+                                    )}
+                                    <p className="text-muted-foreground">É a diferença em pontos percentuais, não um crescimento relativo.</p>
+                                </>
+                            }
+                            hint={delta === null ? "Precisa de questões nas duas metades" : "2ª metade contra a 1ª"}>
                             {delta === null ? (
                                 <span className="text-muted-foreground">—</span>
                             ) : delta === 0 ? (
@@ -186,11 +230,11 @@ export function TrendChart({ today, daily, hourly }: TrendChartProps) {
                                 </span>
                             ) : delta > 0 ? (
                                 <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                    <ArrowUpRight className="h-4 w-4" /> {formatPercent(delta)}
+                                    <ArrowUpRight className="h-4 w-4" /> {formatPoints(delta)}
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-1 text-red-600 dark:text-red-400">
-                                    <ArrowDownRight className="h-4 w-4" /> {formatPercent(Math.abs(delta))}
+                                    <ArrowDownRight className="h-4 w-4" /> {formatPoints(Math.abs(delta))}
                                 </span>
                             )}
                         </Stat>

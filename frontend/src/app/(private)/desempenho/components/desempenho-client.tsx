@@ -27,6 +27,7 @@ import {
     WEAK_MIN_QUESTIONS,
     formatDateTime,
     formatPercent,
+    formatPoints,
     getLevel,
     daysSince,
     normalizeText,
@@ -287,9 +288,9 @@ export function DesempenhoClient({ stats }: DesempenhoClientProps) {
                                     ) : delta === 0 ? (
                                         <><Minus className="h-4 w-4" /> Igual à semana passada</>
                                     ) : delta > 0 ? (
-                                        <><ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> {formatPercent(delta)} a mais que a semana passada</>
+                                        <><ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> {formatPoints(delta)} a mais que a semana passada</>
                                     ) : (
-                                        <><ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" /> {formatPercent(Math.abs(delta))} a menos que a semana passada</>
+                                        <><ArrowDownRight className="h-4 w-4 text-red-600 dark:text-red-400" /> {formatPoints(Math.abs(delta))} a menos que a semana passada</>
                                     )}
                                 </p>
                             </>
